@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { apiPost } from "@/lib/api";
 
 // ── Status Bar ─────────────────────────────────────────────────────────────────
 
@@ -39,7 +41,14 @@ function StatusBar() {
         >
           <rect x="0.6" y="0.6" width="21" height="11.8" rx="2.4" />
           <path d="M22.6 4v5" strokeWidth={2} strokeLinecap="round" />
-          <rect x="2" y="2" width="17" height="9" rx="1.5" fill="currentColor" />
+          <rect
+            x="2"
+            y="2"
+            width="17"
+            height="9"
+            rx="1.5"
+            fill="currentColor"
+          />
         </svg>
       </div>
     </div>
@@ -53,8 +62,11 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showNameError, setShowNameError] = useState(false);
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (name.trim() === "") {
       setShowNameError(true);
@@ -62,6 +74,25 @@ export default function RegisterPage() {
     }
     // Handle register logic here
     console.log("Register:", { name, email, password });
+    setError(null);
+    setLoading(true);
+
+    try {
+      // backend MVP ignores name for now — we still send it (future-proof)
+      await apiPost<{ ok: boolean; user: { id: string; email: string } }>(
+        "/auth/register",
+        {
+          name,
+          email,
+          password,
+        },
+      );
+      router.push("/profile");
+    } catch (err: unknown) {
+      setError((err as Error).message || "Register failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -161,12 +192,14 @@ export default function RegisterPage() {
           </div>
 
           {/* Submit button */}
+          {error && <p className="text-sm text-red-500">{error}</p>}
           <div className="pt-4">
             <button
               type="submit"
-              className="w-full rounded-lg bg-[#fa6460] py-3 text-[16px] font-semibold text-white transition-colors hover:bg-[#e55550]"
+              disabled={loading}
+              className="w-full rounded-lg bg-[#fa6460] py-3 text-[16px] font-semibold text-white transition-colors hover:bg-[#e55550] disabled:opacity-60"
             >
-              Sign up
+              {loading ? "Creating..." : "Sign up"}
             </button>
           </div>
         </form>
