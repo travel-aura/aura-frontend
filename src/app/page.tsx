@@ -163,7 +163,7 @@ export default function AuraFeed() {
       {/* Logo */}
         <div className="flex justify-center pt-2">
           <span className="text-[20px] font-bold tracking-tight text-[#1e1e1e]">
-            Aura
+            A
           </span>
         </div>
 
