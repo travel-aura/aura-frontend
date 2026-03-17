@@ -8,6 +8,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_PUBLIC_API_URL=https://aura-backend-255644230597.us-central1.run.app
 RUN npm run build
 
 FROM node:20-slim AS runner

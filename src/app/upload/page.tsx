@@ -1,7 +1,10 @@
 "use client";
 
-import { type ComponentType, useState } from "react";
+import { type ComponentType, useState, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { processAndUploadMultipleAuras, type AuraMetadata, type UploadProgress, type UploadResult } from "@/services/uploadService";
+import type { Archetype } from "../../../shared/aura-schema";
 
 // Figma asset URLs (expire in 7 days)
 const ASSETS = {
@@ -15,8 +18,7 @@ const ASSETS = {
     "https://www.figma.com/api/mcp/asset/cc491114-9e32-4b89-8a7f-51e70c69aedb",
 };
 
-const CATEGORIES = ["Angle", "Path", "Spot", "Interior"] as const;
-type Category = (typeof CATEGORIES)[number];
+const CATEGORIES: readonly Archetype[] = ["The Angle", "The Path", "The Spot", "The Interior"];
 
 // ── Icons ────────────────────────────────────────────────────────────────────
 
@@ -62,49 +64,6 @@ function UserIcon({ className }: { className?: string }) {
   );
 }
 
-// ── Status Bar ────────────────────────────────────────────────────────────────
-
-function StatusBar() {
-  return (
-    <div className="relative flex h-[54px] items-end justify-between px-6 pb-2">
-      <span className="text-[15px] font-semibold">9:41</span>
-      <div className="absolute left-1/2 top-[14px] h-[34px] w-[126px] -translate-x-1/2 rounded-full bg-black" />
-      <div className="flex items-center gap-1.5 text-black">
-        <svg className="h-3 w-4" viewBox="0 0 20 14" fill="currentColor">
-          <rect x="0" y="7" width="3" height="7" rx="1" />
-          <rect x="4.5" y="4.5" width="3" height="9.5" rx="1" />
-          <rect x="9" y="2" width="3" height="12" rx="1" />
-          <rect x="13.5" y="0" width="3" height="14" rx="1" opacity="0.3" />
-        </svg>
-        <svg
-          className="size-[14px]"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          strokeLinecap="round"
-        >
-          <path d="M1.5 8.5a14 14 0 0 1 21 0" />
-          <path d="M5.5 12.5a9 9 0 0 1 13 0" />
-          <path d="M9.5 16.5a4.5 4.5 0 0 1 5 0" />
-          <circle cx="12" cy="20" r="1" fill="currentColor" />
-        </svg>
-        <svg
-          className="h-[13px] w-[25px]"
-          viewBox="0 0 25 13"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={1.2}
-        >
-          <rect x="0.6" y="0.6" width="21" height="11.8" rx="2.4" />
-          <path d="M22.6 4v5" strokeWidth={2} strokeLinecap="round" />
-          <rect x="2" y="2" width="17" height="9" rx="1.5" fill="currentColor" />
-        </svg>
-      </div>
-    </div>
-  );
-}
-
 // ── Bottom Nav ────────────────────────────────────────────────────────────────
 
 type NavItem = "home" | "create" | "profile";
@@ -147,76 +106,180 @@ function BottomNav({ active }: { active: NavItem }) {
 
 // ── Upload Page ───────────────────────────────────────────────────────────────
 
-const MOCK_PHOTOS = [
-  ASSETS.photo,
-  ASSETS.photo,
-  ASSETS.photo,
-  ASSETS.photo,
-  ASSETS.photo,
-];
+interface PhotoFile {
+  file: File;
+  preview: string;
+}
 
 export default function UploadPage() {
-  const [hasPhotos, setHasPhotos] = useState(false);
-  const [photos, setPhotos] = useState<string[]>(MOCK_PHOTOS);
+  const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [photos, setPhotos] = useState<PhotoFile[]>([]);
   const [gpsPhotoIndex, setGpsPhotoIndex] = useState(0);
-  const [activeCategory, setActiveCategory] = useState<Category>("Path");
+  const [activeCategory, setActiveCategory] = useState<Archetype>("The Path");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
+  const [gpsWarning, setGpsWarning] = useState<string | null>(null);
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    const MAX_PHOTOS = 3;
+    const newPhotos: PhotoFile[] = [];
+
+    // Only take first 3 photos
+    for (let i = 0; i < files.length && i < MAX_PHOTOS; i++) {
+      const file = files[i];
+      if (file.type.startsWith('image/')) {
+        newPhotos.push({
+          file,
+          preview: URL.createObjectURL(file),
+        });
+      }
+    }
+
+    // Show warning if user selected more than 3
+    if (files.length > MAX_PHOTOS) {
+      setError(`Maximum ${MAX_PHOTOS} photos allowed. First ${MAX_PHOTOS} selected.`);
+      setTimeout(() => setError(null), 4000);
+    } else {
+      setError(null);
+    }
+
+    setPhotos(newPhotos);
+
+    // Reset file input
+    event.target.value = '';
+  };
 
   const removePhoto = (index: number) => {
     const next = photos.filter((_, i) => i !== index);
     setPhotos(next);
-    if (next.length === 0) setHasPhotos(false);
-    else if (gpsPhotoIndex >= next.length) setGpsPhotoIndex(next.length - 1);
+    if (gpsPhotoIndex >= next.length) setGpsPhotoIndex(Math.max(0, next.length - 1));
     else if (gpsPhotoIndex === index) setGpsPhotoIndex(0);
+  };
+
+  const handleUpload = async () => {
+    if (photos.length === 0) {
+      setError("Please select at least one photo");
+      return;
+    }
+    if (!title.trim()) {
+      setError("Please enter a title");
+      return;
+    }
+
+    setError(null);
+    setGpsWarning(null);
+    setIsUploading(true);
+    setUploadProgress(null);
+
+    try {
+      const gpsPhoto = photos[gpsPhotoIndex];
+      const allFiles = photos.map(p => p.file);
+
+      const metadata: AuraMetadata = {
+        title: title.trim(),
+        archetype_tag: activeCategory,
+        description: description.trim() || undefined,
+      };
+
+      const result: UploadResult = await processAndUploadMultipleAuras(
+        allFiles,
+        gpsPhoto.file,
+        metadata,
+        (progress) => setUploadProgress(progress)
+      );
+
+      // Show warning if no GPS data was found
+      if (!result.hasGPS) {
+        setGpsWarning("⚠️ No location data found in photos. Upload completed as unverified.");
+        // Auto-dismiss warning after 3 seconds and redirect
+        setTimeout(() => {
+          setGpsWarning(null);
+          router.push('/');
+        }, 3000);
+      } else {
+        // Success with GPS! Redirect immediately
+        router.push('/');
+      }
+    } catch (err: unknown) {
+      setError((err as Error).message || "Upload failed");
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(null);
+    }
   };
 
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-white">
-      <StatusBar />
-
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto pb-safe">
+          {/* Hidden file input - always present for ref */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,.heic,.heif"
+            multiple
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+
           <h1 className="px-3 pt-3 text-[24px] font-semibold text-[#1e1e1e]">
             Upload
           </h1>
 
           {/* ── State 1: empty photo picker ── */}
-          {!hasPhotos && (
+          {photos.length === 0 && (
             <button
-              onClick={() => setHasPhotos(true)}
-              className="mx-3 mt-4 flex items-center gap-5"
-            >
-              <div className="flex h-[122px] w-[98px] shrink-0 items-center justify-center rounded-[10px] border border-[#e6e6e6] bg-gradient-to-b from-[#f6fafb] to-white">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={ASSETS.imageIcon} alt="" className="size-[37px]" />
-              </div>
-              <p className="text-left text-[12px] leading-[1.5] text-[#717171]">
-                Select photos or videos
-                <br />
-                (single or multiple)
-              </p>
-            </button>
+                onClick={() => fileInputRef.current?.click()}
+                className="mx-3 mt-4 flex items-center gap-5"
+              >
+                <div className="flex h-[122px] w-[98px] shrink-0 items-center justify-center rounded-[10px] border border-[#e6e6e6] bg-gradient-to-b from-[#f6fafb] to-white">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={ASSETS.imageIcon} alt="" className="size-[37px]" />
+                </div>
+                <p className="text-left text-[12px] leading-[1.5] text-[#717171]">
+                  Select photos
+                  <br />
+                  (max 3 photos)
+                </p>
+              </button>
           )}
 
           {/* ── State 2: photos selected ── */}
-          {hasPhotos && (
+          {photos.length > 0 && (
             <>
               {/* GPS photo selector hint */}
-              <p className="px-3 pt-1 text-[12px] text-[#2080ac]">
-                Select one photo for GPS / Altitude / Heading
-              </p>
+              <div className="flex items-center justify-between px-3 pt-1">
+                <p className="text-[12px] text-[#2080ac]">
+                  {photos.length > 1
+                    ? `Select one photo for GPS data (applied to all ${photos.length} photos)`
+                    : "GPS / Altitude / Heading from this photo"}
+                </p>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-[12px] text-[#fa6460] underline"
+                >
+                  Change
+                </button>
+              </div>
 
               {/* Horizontal photo strip */}
               <div className="mt-2 flex gap-2 overflow-x-auto px-3 pb-1">
-                {photos.map((src, i) => (
+                {photos.map((photo, i) => (
                   <div
                     key={i}
                     className={`relative h-[120px] w-[90px] shrink-0 overflow-hidden rounded-[12px] bg-[#d9d9d9] ${gpsPhotoIndex === i ? "ring-2 ring-[#abd2f4]" : ""}`}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={src}
+                      src={photo.preview}
                       alt=""
                       className="h-full w-full object-cover"
                     />
@@ -250,23 +313,14 @@ export default function UploadPage() {
                   </div>
                 ))}
               </div>
-
-              {/* Upload more */}
-              <button className="ml-3 mt-3 flex items-center gap-1.5 rounded-[8px] border border-[#e6e6e6] bg-gradient-to-b from-[#f6fafb] to-white px-3 py-1.5">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={ASSETS.imageIconSmall} alt="" className="size-4" />
-                <span className="text-[12px] text-[#717171]">
-                  Upload photos
-                </span>
-              </button>
-            </>
+</>
           )}
 
           {/* Title */}
           <div className="mt-5 px-3">
             <input
               type="text"
-              value={hasPhotos ? "Yosemite National Park" : title}
+              value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Title"
               className="w-full rounded-[8px] border border-[#d9d9d9] px-3 py-[10px] text-[15px] text-[#1e1e1e] outline-none placeholder:text-[#b7b7b7] focus:border-[#aaa]"
@@ -306,10 +360,50 @@ export default function UploadPage() {
             </div>
           </div>
 
+          {/* Error message */}
+          {error && (
+            <div className="mx-3 mt-4 rounded-lg bg-red-50 px-4 py-3">
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          )}
+
+          {/* GPS warning */}
+          {gpsWarning && (
+            <div className="mx-3 mt-4 rounded-lg bg-yellow-50 px-4 py-3 border border-yellow-200">
+              <p className="text-sm text-yellow-800">{gpsWarning}</p>
+            </div>
+          )}
+
+          {/* Upload progress */}
+          {uploadProgress && (
+            <div className="mx-3 mt-4 rounded-lg bg-blue-50 px-4 py-3">
+              <p className="text-sm font-medium text-blue-900">
+                Uploading photo {uploadProgress.current} of {uploadProgress.total}
+              </p>
+              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-blue-200">
+                <div
+                  className="h-full bg-blue-600 transition-all duration-300"
+                  style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
+                />
+              </div>
+              <p className="mt-1 text-xs text-blue-700 capitalize">
+                {uploadProgress.status}...
+              </p>
+            </div>
+          )}
+
           {/* Upload button */}
           <div className="mb-6 mt-8 px-3">
-            <button className="w-full rounded-[40px] bg-[#101827] py-[13px] text-[20px] font-medium text-white">
-              Upload
+            <button
+              onClick={handleUpload}
+              disabled={isUploading || photos.length === 0}
+              className="w-full rounded-[40px] bg-[#101827] py-[13px] text-[20px] font-medium text-white transition-opacity disabled:opacity-50"
+            >
+              {isUploading
+                ? "Uploading..."
+                : photos.length > 1
+                  ? `Upload ${photos.length} Photos`
+                  : "Upload"}
             </button>
           </div>
         </div>
