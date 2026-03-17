@@ -39,9 +39,7 @@ export const processAndUploadMultipleAuras = async (
 
     console.log('Extracting GPS from anchor photo...');
     const exifData = await exifr.parse(gpsAnchorFile, {
-      gps: true,
-      altitude: true,
-      imgDirection: true,
+      gps: true, // This usually includes altitude, latitude, longitude, and direction
     });
 
     let sharedGPS: {
