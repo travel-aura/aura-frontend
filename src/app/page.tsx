@@ -3,7 +3,7 @@
 import { type ComponentType, useState, useEffect } from "react";
 import Link from "next/link";
 import { apiGet } from "@/lib/api";
-import type { Post } from "../shared/aura-schema";
+import type { Post } from "../../shared/aura-schema";
 
 // Multi-image indicator icon
 function LayersIcon({ className }: { className?: string }) {
