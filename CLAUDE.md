@@ -39,7 +39,7 @@ User selects 1-3 photos → Pick GPS anchor photo → Fill title/category
 ```
 
 ### GPS Handling
-- **With GPS**: `is_verified: true`, includes `lat`, `lng`, `alt`, `heading`
+- **With GPS**: `is_verified: true`, includes `lat`, `lng`, `altitude`, `heading`
 - **Without GPS**: `is_verified: false`, GPS fields omitted
 
 ### Critical Naming
@@ -69,7 +69,7 @@ User logs in → Backend returns { session: { access_token } }
 **Location**: `/upload`
 
 **"Magic" 4-Step Process**:
-1. **Extract** - Reads GPS (lat/lng), altitude, heading from EXIF before compression (from anchor photo)
+1. **Extract** - Reads GPS (lat/lng), altitudeitude, heading from EXIF before compression (from anchor photo)
    - If GPS found → `is_verified: true` + GPS data included
    - If NO GPS → `is_verified: false` + GPS data omitted (not sent to backend)
 2. **Compress** - Converts any image format (JPG, PNG, HEIC) → WebP (max 400KB, 1440px) for all photos
@@ -102,7 +102,7 @@ User logs in → Backend returns { session: { access_token } }
 **GPS Optional Behavior**:
 ```
 Photos WITH GPS (original camera photos):
-→ Extract GPS → Upload with lat/lng/alt/heading → is_verified: true
+→ Extract GPS → Upload with lat/lng/altitude/heading → is_verified: true
 → Redirect to feed immediately
 
 Photos WITHOUT GPS (screenshots, downloads, edited photos):
@@ -111,25 +111,67 @@ Photos WITHOUT GPS (screenshots, downloads, edited photos):
 → Auto-dismiss after 3 seconds → Redirect to feed
 ```
 
-#### 3. Pages Implemented
+#### 3. Feed/Landing Page
+**Location**: `/` (Home)
 
-- **Feed/Home** (`/`) - Two-column masonry feed with cards
-- **Upload** (`/upload`) - Photo upload with metadata
-- **Profile** (`/profile`) - User profile with tabs (Uploaded/Saved)
+**Features**:
+- Fetches all users' posts from `GET /api/auras/feed?limit=10&offset=0`
+- Two-column masonry layout
+- Shows latest 10 posts by default (sorted by `created_at` DESC)
+- "Load More" pagination button
+- Displays first image from carousel (`image_urls[0]`)
+- Multi-image indicator (layers icon) for carousels
+- Shows archetype badge, title, description
+- Relative timestamps (5m ago, 2h ago, 3d ago)
+- Verification pin 📍 for GPS-verified posts
+
+**Data Flow**:
+```typescript
+GET /api/auras/feed?limit=10&offset=0
+→ Returns: { ok: true, auras: Post[], pagination: {...} }
+→ Display in two-column grid
+→ Load More → offset=10, offset=20, etc.
+```
+
+#### 4. Profile Page
+**Location**: `/profile`
+
+**Features**:
+- Fetches current user's posts from `GET /api/auras/me`
+- Fetches archetype statistics from `GET /api/auras/me/stats`
+- Real-time stats calculation (count & percentage per archetype)
+- Grid display of user's uploaded posts (3 columns)
+- Shows first image from carousel with multi-image indicator
+- Tabs: Uploaded / Saved (Saved not yet implemented)
+- Edit profile button
+- Auto-redirect to login if not authenticated
+
+**Archetype Stats Display**:
+```
+Angle    Path    Spot    Interior
+  5       3       12        2
+22.73%  13.64%  54.55%   9.09%
+```
+
+#### 5. Pages Implemented
+
+- **Feed/Home** (`/`) - Two-column masonry feed with real backend data & pagination
+- **Upload** (`/upload`) - Multi-photo upload with EXIF processing
+- **Profile** (`/profile`) - User profile with real posts & archetype stats
 - **Edit Profile** (`/profile/edit`) - Name, bio, avatar editing
 - **Login** (`/login`) - Authentication
 - **Register** (`/register`) - User signup
 
-#### 4. Design Updates
+#### 6. Design Updates
 - **Removed mock phone status bars** - Cleaned up time, battery, signal indicators from all pages (these were design mockups, not needed in actual webapp)
 
 ## API Integration
 
 ### Backend URL
-**Local Development**: `http://192.168.1.30:8080`
+**Local Development**: `http://localhost:8080`
 **Production**: `https://aura-backend-255644230597.us-central1.run.app`
 
-Currently configured for **local development**.
+Currently configured for **localhost** (local development).
 
 ### Endpoints Used
 
@@ -140,10 +182,59 @@ POST /auth/login
 POST /auth/logout
 
 // User
-GET /me
+GET /me                          // Get current user info
 
-// Upload
-POST /api/auras/upload
+// Auras/Posts
+GET /api/auras/feed              // Get all auras (paginated) ?limit=10&offset=0
+GET /api/auras/me                // Get current user's auras
+GET /api/auras/me/stats          // Get current user's archetype statistics
+POST /api/auras/upload           // Upload new aura with images
+```
+
+### Backend Responses
+
+**Feed Response:**
+```json
+{
+  "ok": true,
+  "auras": [
+    {
+      "id": "uuid",
+      "title": "Beach Sunset",
+      "image_urls": ["url1", "url2"],
+      "archetype_tag": "The Path",
+      "created_at": "2026-03-18T...",
+      "is_verified": true,
+      ...
+    }
+  ],
+  "pagination": {
+    "limit": 10,
+    "offset": 0,
+    "count": 10
+  }
+}
+```
+
+**Stats Response:**
+```json
+{
+  "ok": true,
+  "stats": {
+    "angle": 5,
+    "path": 3,
+    "spot": 12,
+    "interior": 2
+  }
+}
+```
+
+**User's Posts Response:**
+```json
+{
+  "ok": true,
+  "auras": [...]
+}
 ```
 
 ### Authentication Headers
@@ -183,24 +274,39 @@ src/
 
 This file contains TypeScript interfaces that define the data contract between frontend and backend. All code should reference these types to ensure consistency.
 
+**CRITICAL**: Uses **snake_case** to match SQL exactly (`image_urls`, `archetype_tag`, `created_at`, `is_verified`).
+
 **Key Types**:
-- `Archetype` - Union type for category tags
-- `Aura` - Complete aura object (from database)
-- `AuraUploadMetadata` - Metadata sent in upload FormData
-- `InsertAuraParams` - Backend RPC function parameters
+1. `Archetype` - Union type for category tags
+2. `Aura` - Complete database object with all fields
+3. `Post` - Simplified for profile/feed display
+4. `AuraUploadMetadata` - What frontend sends in upload
+5. `ProfileData` - Profile page response structure
+6. `InsertAuraParams` - Backend RPC function parameters
+7. `FeedResponse` - Feed response with pagination
+8. `ArchetypeStats` - Archetype statistics
 
 **Usage**:
 ```typescript
-import type { Archetype, AuraUploadMetadata } from '@/shared/aura-schema';
+import type { Post, ArchetypeStats } from '@/shared/aura-schema';
 
-const payload: AuraUploadMetadata = {
-  title: "Beach Day",
-  archetype_tag: "The Path",
-  lat: 37.77,
-  lng: -122.41,
-  is_verified: true
+// Feed posts
+const posts: Post[] = feedResponse.auras;
+
+// Stats
+const stats: ArchetypeStats = {
+  angle: 5,
+  path: 3,
+  spot: 12,
+  interior: 2
 };
 ```
+
+**Key Fields**:
+- `image_urls` (NOT `imageUrls`) - Array of image URLs for carousel
+- `archetype_tag` (NOT `archetypeTag`) - Category tag
+- `created_at` (NOT `createdAt`) - Timestamp
+- `is_verified` (NOT `isVerified`) - GPS verification flag
 
 ## Configuration
 
@@ -208,12 +314,31 @@ const payload: AuraUploadMetadata = {
 
 **`.env.local`** (local development):
 ```env
-NEXT_PUBLIC_API_URL=http://192.168.1.30:8080
+NEXT_PUBLIC_API_URL=http://localhost:8080
 ```
 
 **`Dockerfile`** (production):
 ```dockerfile
 ENV NEXT_PUBLIC_API_URL=https://aura-backend-255644230597.us-central1.run.app
+```
+
+### CORS Configuration (Backend Required)
+
+For local development, backend must have CORS configured:
+
+```typescript
+import cors from 'cors';
+
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:3006',
+    'http://10.124.57.22:3006',  // Your local network
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 ```
 
 ### Deployment URLs
@@ -293,7 +418,7 @@ fetch('/api/auras/upload', {
 // 1. Extract EXIF from anchor photo (before compression strips it)
 const exifData = await exifr.parse(gpsAnchorFile, {
   gps: true,
-  altitude: true,
+  altitudeitude: true,
   imgDirection: true
 });
 
@@ -311,7 +436,7 @@ if (!exifData?.latitude || !exifData?.longitude) {
   sharedGPS = {
     lat: exifData.latitude,
     lng: exifData.longitude,
-    alt: exifData.altitude || 0,
+    altitude: exifData.altitudeitude || 0,
     heading: exifData.GPSImgDirection || 0
   };
   isVerified = true;
@@ -341,7 +466,7 @@ const metadata = {
   title,
   archetype_tag,
   description,
-  ...sharedGPS,        // Empty object {} if no GPS, or { lat, lng, alt, heading }
+  ...sharedGPS,        // Empty object {} if no GPS, or { lat, lng, altitude, heading }
   is_verified: isVerified  // false if no GPS, true if GPS found
 };
 
@@ -401,7 +526,7 @@ app.post('/api/auras/upload',
       p_description: metadata.description || null,
       p_lat: metadata.lat || null,        // NULL if no GPS
       p_lng: metadata.lng || null,        // NULL if no GPS
-      p_alt: metadata.alt || 0,           // Default 0
+      p_altitude: metadata.altitude || 0,           // Default 0
       p_heading: metadata.heading || 0,   // Default 0
       p_is_verified: metadata.is_verified // false if no GPS
     });
@@ -428,7 +553,7 @@ CREATE TABLE auras (
   -- GPS fields - NULLABLE (may be NULL if no GPS data)
   lat DOUBLE PRECISION,        -- NULL if no GPS
   lng DOUBLE PRECISION,        -- NULL if no GPS
-  alt DOUBLE PRECISION DEFAULT 0,
+  altitude DOUBLE PRECISION DEFAULT 0,
   heading DOUBLE PRECISION DEFAULT 0,
   is_verified BOOLEAN DEFAULT false,
 
@@ -445,7 +570,7 @@ CREATE OR REPLACE FUNCTION insert_aura(
   p_description TEXT DEFAULT NULL,
   p_lat DOUBLE PRECISION DEFAULT NULL,     -- Nullable GPS fields
   p_lng DOUBLE PRECISION DEFAULT NULL,     -- Nullable GPS fields
-  p_alt DOUBLE PRECISION DEFAULT 0,
+  p_altitude DOUBLE PRECISION DEFAULT 0,
   p_heading DOUBLE PRECISION DEFAULT 0,
   p_is_verified BOOLEAN DEFAULT false
 )
@@ -466,11 +591,11 @@ BEGIN
   RETURN QUERY
   INSERT INTO auras (
     user_id, title, image_urls, archetype_tag, description,
-    lat, lng, alt, heading, is_verified
+    lat, lng, altitude, heading, is_verified
   )
   VALUES (
     p_user_id, p_title, p_image_urls, p_archetype_tag, p_description,
-    p_lat, p_lng, p_alt, p_heading, p_is_verified
+    p_lat, p_lng, p_altitude, p_heading, p_is_verified
   )
   RETURNING *;
 END;
@@ -530,7 +655,7 @@ npm run dev -- -H 0.0.0.0
 - [ ] Backend receives single request with 3 files (check Network tab)
 - [ ] Database stores array of URLs in `image_urls` column
 - [ ] Verify GPS fields in metadata:
-  - [ ] With GPS: `lat`, `lng`, `alt`, `heading` present, `is_verified: true`
+  - [ ] With GPS: `lat`, `lng`, `altitude`, `heading` present, `is_verified: true`
   - [ ] Without GPS: GPS fields omitted, `is_verified: false`
 
 ### UI/UX
@@ -662,7 +787,7 @@ const metadata = JSON.parse(req.body.metadata);
 //   description: "Sunset walk",
 //   lat: 37.7749,
 //   lng: -122.4194,
-//   alt: 15.5,
+//   altitude: 15.5,
 //   heading: 270.0,
 //   is_verified: true
 // }
@@ -676,7 +801,7 @@ const metadata = JSON.parse(req.body.metadata);
 //   archetype_tag: "The Interior",
 //   description: "Cozy space",
 //   is_verified: false
-//   // Note: lat, lng, alt, heading NOT present
+//   // Note: lat, lng, altitude, heading NOT present
 // }
 ```
 
@@ -707,7 +832,7 @@ Content-Type: image/webp
 ------WebKitFormBoundary...
 Content-Disposition: form-data; name="metadata"
 
-{"title":"Beach Day","archetype_tag":"The Path","description":"Sunset","lat":37.77,"lng":-122.41,"alt":10,"heading":180,"is_verified":true}
+{"title":"Beach Day","archetype_tag":"The Path","description":"Sunset","lat":37.77,"lng":-122.41,"altitude":10,"heading":180,"is_verified":true}
 ------WebKitFormBoundary...
 ```
 
@@ -723,7 +848,7 @@ interface AuraUploadMetadata {
   // GPS fields - ONLY included if EXIF data found
   lat?: number;               // From anchor photo (omitted if no GPS)
   lng?: number;               // From anchor photo (omitted if no GPS)
-  alt?: number;               // From anchor photo (omitted if no GPS, default: 0)
+  altitude?: number;               // From anchor photo (omitted if no GPS, default: 0)
   heading?: number;           // From anchor photo (omitted if no GPS, default: 0)
 }
 ```
@@ -736,7 +861,7 @@ interface AuraUploadMetadata {
   "description": "Beautiful evening",
   "lat": 37.7749,
   "lng": -122.4194,
-  "alt": 15.5,
+  "altitude": 15.5,
   "heading": 270.0,
   "is_verified": true
 }
@@ -751,7 +876,7 @@ interface AuraUploadMetadata {
   "is_verified": false
 }
 ```
-Note: `lat`, `lng`, `alt`, `heading` fields are **not sent** when GPS is missing.
+Note: `lat`, `lng`, `altitude`, `heading` fields are **not sent** when GPS is missing.
 
 **Key Points:**
 - All images use the SAME FormData field name: `images`
@@ -803,7 +928,7 @@ console.log(localStorage)
 
 1. **GPS Fields Are Optional**
    - Frontend checks if EXIF data exists
-   - If GPS found: sends `lat`, `lng`, `alt`, `heading` + `is_verified: true`
+   - If GPS found: sends `lat`, `lng`, `altitude`, `heading` + `is_verified: true`
    - If NO GPS: omits GPS fields entirely + `is_verified: false`
    - Backend MUST handle nullable GPS columns
 
@@ -880,7 +1005,7 @@ FormData {
     description?: string,
     lat?: number,                // Only if GPS found
     lng?: number,                // Only if GPS found
-    alt?: number,                // Only if GPS found
+    altitude?: number,                // Only if GPS found
     heading?: number,            // Only if GPS found
     is_verified: boolean         // false if no GPS
   }
@@ -914,32 +1039,52 @@ FormData {
 ## Project Status Summary
 
 ### ✅ Frontend - COMPLETE (100%)
+
+**Upload:**
 - [x] Multi-photo upload UI (max 3 photos)
 - [x] GPS anchor photo selector
 - [x] Single request upload (all images in one POST)
 - [x] Upload progress tracking
 - [x] GPS optional handling (`is_verified: false` if no GPS)
-- [x] Type-safe schema (`shared/aura-schema.ts`)
 - [x] Yellow warning for uploads without GPS
 - [x] FormData with field name `images`
-- [x] Metadata with optional GPS fields
+- [x] Metadata with optional GPS fields (`altitude` not `alt`)
 
-### ⚠️ Backend - PENDING (0%)
+**Profile:**
+- [x] Fetch and display user's posts from `/api/auras/me`
+- [x] Real archetype statistics from `/api/auras/me/stats`
+- [x] Dynamic percentage calculation
+- [x] Grid display with multi-image indicators
+- [x] Auto-redirect to login if not authenticated
+
+**Feed:**
+- [x] Fetch all users' posts from `/api/auras/feed`
+- [x] Two-column masonry layout
+- [x] Pagination (Load More button)
+- [x] Display first image from carousel
+- [x] Relative timestamps (5m ago, 2h ago)
+- [x] Verification indicators
+
+**Shared:**
+- [x] Type-safe schema (`shared/aura-schema.ts`) with snake_case
+- [x] All interfaces match SQL structure exactly
+
+### ⚠️ Backend - Required for Full Functionality
+- [ ] CORS configuration for local development
 - [ ] Change Multer to `upload.array('images', 5)`
-- [ ] Database migration: `image_url` → `image_urls TEXT[]`
-- [ ] Make GPS fields nullable (lat, lng)
-- [ ] Update RPC function: `p_image_urls TEXT[]`
-- [ ] Handle nullable GPS in insert logic
-- [ ] Test carousel structure
+- [ ] Endpoints: `/api/auras/me`, `/api/auras/me/stats`, `/api/auras/feed`
+- [ ] Database: `image_urls TEXT[]` column
+- [ ] RPC functions: `get_user_auras`, `get_user_archetype_stats`, `get_all_auras`
 
 ### 📋 Data Contract
-**Frontend sends:** FormData with multiple files + metadata JSON
-**Metadata includes:** GPS fields ONLY if EXIF found, else omitted
-**Backend expects:** `req.files` array + nullable GPS handling
+**Frontend sends:** FormData with multiple files + metadata JSON (snake_case)
+**Backend expects:** `req.files` array + snake_case fields
 **Database stores:** `image_urls TEXT[]` + nullable `lat`/`lng`
+**All fields:** snake_case (`image_urls`, `archetype_tag`, `created_at`, `is_verified`)
 
 ---
 
-**Last Updated**: 2026-03-17
-**Current Phase**: Frontend complete, awaiting backend implementation
-**Blocker**: Backend needs Multer + database updates to accept multi-photo carousel uploads
+**Last Updated**: 2026-03-18
+**Current Status**: Core features complete - Upload, Profile, Feed all implemented with real backend integration
+**Environment**: Configured for `localhost:8080` (local development)
+**Next**: Backend CORS + Multer configuration needed for full testing

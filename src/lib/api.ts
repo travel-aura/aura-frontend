@@ -45,5 +45,8 @@ export async function apiGet<T>(path: string): Promise<T> {
 // - POST /auth/register
 // - POST /auth/login
 // - POST /auth/logout
-// - GET /me
+// - GET /me (get current user info)
+// - GET /api/auras/me (get current user's auras/posts)
+// - GET /api/auras/me/stats (get current user's archetype stats)
+// - GET /api/auras/feed?limit=10&offset=0 (get all auras paginated)
 // - POST /api/auras/upload

@@ -45,7 +45,7 @@ export const processAndUploadMultipleAuras = async (
     let sharedGPS: {
       lat?: number;
       lng?: number;
-      alt?: number;
+      altitude?: number;
       heading?: number;
     } = {};
     let isVerified = true;
@@ -57,7 +57,7 @@ export const processAndUploadMultipleAuras = async (
       sharedGPS = {
         lat: exifData.latitude,
         lng: exifData.longitude,
-        alt: exifData.altitude || 0,
+        altitude: exifData.altitude || 0,
         heading: exifData.GPSImgDirection || 0,
       };
       console.log('Shared GPS data:', sharedGPS);

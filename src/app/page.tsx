@@ -1,109 +1,69 @@
 "use client";
 
-import { type ComponentType, useState } from "react";
+import { type ComponentType, useState, useEffect } from "react";
 import Link from "next/link";
+import { apiGet } from "@/lib/api";
+import type { Post } from "../shared/aura-schema";
 
-// Figma asset URLs (expire in 7 days — swap with real assets)
-const ASSETS = {
-  yosemiteLeft:
-    "https://www.figma.com/api/mcp/asset/c6bb1c02-5591-4678-a799-77dfc001d563",
-  kyoto:
-    "https://www.figma.com/api/mcp/asset/664a6573-012e-4144-85ca-4ec7bded6c31",
-  leftPlaceholder:
-    "https://www.figma.com/api/mcp/asset/24feac19-fd45-4bf7-b520-dc5e40a9f84c",
-  yosemiteRight:
-    "https://www.figma.com/api/mcp/asset/7a674c82-f255-44d2-ba3d-d1b001dc86fd",
-  goldCoast:
-    "https://www.figma.com/api/mcp/asset/9927e25f-215a-4156-86a7-8ea9e92011af",
-  avatar:
-    "https://www.figma.com/api/mcp/asset/e4add399-8205-4c2a-8782-3da6c9f7bf60",
-};
-
-interface Post {
-  id: string;
-  image: string;
-  flag: string;
-  location: string;
-  cityTime: string;
-  username: string;
-  badge: string;
+// Multi-image indicator icon
+function LayersIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2L2 7l10 5 10-5-10-5z" opacity="0.6"/>
+      <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
+    </svg>
+  );
 }
 
-const leftPosts: Post[] = [
-  {
-    id: "1",
-    image: ASSETS.yosemiteLeft,
-    flag: "🇺🇸",
-    location: "Yosemite National Park",
-    cityTime: "California • 7:20am",
-    username: "Username",
-    badge: "The Spot",
-  },
-  {
-    id: "2",
-    image: ASSETS.kyoto,
-    flag: "🇯🇵",
-    location: "Tetsugaku no Michi",
-    cityTime: "Kyoto • 7:20am",
-    username: "Username",
-    badge: "The Path",
-  },
-];
-
-const rightPosts: Post[] = [
-  {
-    id: "3",
-    image: ASSETS.yosemiteRight,
-    flag: "🇺🇸",
-    location: "Yosemite National Park",
-    cityTime: "California • 6:20am",
-    username: "Username",
-    badge: "The Spot",
-  },
-  {
-    id: "4",
-    image: ASSETS.goldCoast,
-    flag: "🇦🇺",
-    location: "Gold Coast",
-    cityTime: "Gold Coast • 1:11pm",
-    username: "Username",
-    badge: "The Angle",
-  },
-];
-
 function FeedCard({ post }: { post: Post }) {
+  // Format date to show relative time
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+  };
+
   return (
     <div className="flex flex-col gap-1">
       <div className="relative h-[232px] w-full overflow-hidden rounded-lg bg-[#d9d9d9]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={post.image}
-          alt={post.location}
+          src={post.image_urls[0]}
+          alt={post.title}
           className="h-full w-full object-cover"
         />
+        {/* Multi-image indicator */}
+        {post.image_urls.length > 1 && (
+          <div className="absolute left-2 top-2">
+            <LayersIcon className="size-5 text-white drop-shadow-lg" />
+          </div>
+        )}
+        {/* Archetype badge */}
         <span className="absolute bottom-[10px] right-2 rounded-full bg-[#2c2c2c] px-2 py-0.5 text-[9px] font-medium text-[#f3f3f3] shadow-[0px_0px_4px_0px_rgba(0,0,0,0.12)]">
-          {post.badge}
+          {post.archetype_tag}
         </span>
       </div>
       <div className="flex flex-col gap-0.5 pt-0.5">
         <div className="flex items-center gap-1 overflow-hidden">
-          <span className="shrink-0 text-[11px]">{post.flag}</span>
+          {post.is_verified && <span className="shrink-0 text-[11px]">📍</span>}
           <span className="truncate text-[13px] font-semibold leading-tight text-[#1e1e1e]">
-            {post.location}
+            {post.title}
           </span>
         </div>
-        <p className="text-[13px] leading-tight text-[#757575]">{post.cityTime}</p>
-        <div className="mt-0.5 flex items-center gap-1.5">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={ASSETS.avatar}
-            alt={post.username}
-            className="size-[18px] rounded-full object-cover"
-          />
-          <span className="text-[11px] text-[rgba(17,17,17,0.8)]">
-            {post.username}
-          </span>
-        </div>
+        {post.description && (
+          <p className="truncate text-[13px] leading-tight text-[#757575]">
+            {post.description}
+          </p>
+        )}
+        <p className="text-[11px] text-[#999]">{formatDate(post.created_at)}</p>
       </div>
     </div>
   );
@@ -157,13 +117,60 @@ type NavItem = "home" | "create" | "profile";
 export default function AuraFeed() {
   const [activeTab, setActiveTab] = useState<Tab>("all");
   const [activeNav, setActiveNav] = useState<NavItem>("home");
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [offset, setOffset] = useState(0);
+  const LIMIT = 10;
+
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
+  const fetchPosts = async (loadMore = false) => {
+    try {
+      setLoading(true);
+      const currentOffset = loadMore ? offset : 0;
+
+      const response = await apiGet<{
+        ok: boolean;
+        auras: Post[];
+        pagination: { limit: number; offset: number; count: number };
+      }>(`/api/auras/feed?limit=${LIMIT}&offset=${currentOffset}`);
+
+      console.log('Feed response:', response);
+
+      if (loadMore) {
+        setPosts(prev => [...prev, ...response.auras]);
+      } else {
+        setPosts(response.auras);
+      }
+
+      setOffset(currentOffset + response.auras.length);
+      setHasMore(response.auras.length === LIMIT);
+    } catch (err) {
+      console.error('Failed to fetch feed:', err);
+      setError((err as Error).message || 'Failed to load feed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLoadMore = () => {
+    fetchPosts(true);
+  };
+
+  // Split posts into two columns for masonry layout
+  const leftPosts = posts.filter((_, i) => i % 2 === 0);
+  const rightPosts = posts.filter((_, i) => i % 2 === 1);
 
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-white">
       {/* Logo */}
         <div className="flex justify-center pt-2">
           <span className="text-[20px] font-bold tracking-tight text-[#1e1e1e]">
-            A
+            Aura
           </span>
         </div>
 
@@ -193,22 +200,59 @@ export default function AuraFeed() {
 
         {/* Feed — two-column layout */}
         <div className="mt-4 flex-1 overflow-y-auto px-[7px] pb-20">
-          <div className="flex gap-2">
-            {/* Left column */}
-            <div className="flex flex-1 flex-col gap-4">
-              {leftPosts.map((post) => (
-                <FeedCard key={post.id} post={post} />
-              ))}
-              {/* Placeholder (3rd card, no metadata yet) */}
-              <div className="h-[232px] w-full rounded-lg bg-[#d9d9d9]" />
+          {/* Loading state */}
+          {loading && posts.length === 0 && (
+            <div className="flex items-center justify-center py-24">
+              <p className="text-[15px] text-[#757575]">Loading feed...</p>
             </div>
-            {/* Right column */}
-            <div className="flex flex-1 flex-col gap-4">
-              {rightPosts.map((post) => (
-                <FeedCard key={post.id} post={post} />
-              ))}
+          )}
+
+          {/* Error state */}
+          {error && (
+            <div className="flex items-center justify-center py-24">
+              <p className="text-[15px] text-red-500">{error}</p>
             </div>
-          </div>
+          )}
+
+          {/* Posts grid */}
+          {!error && posts.length > 0 && (
+            <>
+              <div className="flex gap-2">
+                {/* Left column */}
+                <div className="flex flex-1 flex-col gap-4">
+                  {leftPosts.map((post) => (
+                    <FeedCard key={post.id} post={post} />
+                  ))}
+                </div>
+                {/* Right column */}
+                <div className="flex flex-1 flex-col gap-4">
+                  {rightPosts.map((post) => (
+                    <FeedCard key={post.id} post={post} />
+                  ))}
+                </div>
+              </div>
+
+              {/* Load more button */}
+              {hasMore && (
+                <div className="mt-6 flex justify-center">
+                  <button
+                    onClick={handleLoadMore}
+                    disabled={loading}
+                    className="rounded-lg bg-[#ededed] px-6 py-2.5 text-[14px] font-medium text-[#1e1e1e] transition-opacity hover:bg-[#e0e0e0] disabled:opacity-50"
+                  >
+                    {loading ? 'Loading...' : 'Load More'}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Empty state */}
+          {!loading && !error && posts.length === 0 && (
+            <div className="flex items-center justify-center py-24">
+              <p className="text-[15px] text-[#757575]">No posts yet</p>
+            </div>
+          )}
         </div>
 
         {/* Bottom nav */}

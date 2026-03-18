@@ -1,7 +1,11 @@
 "use client";
 
-import { type ComponentType, useState } from "react";
+import { type ComponentType, useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { apiGet } from "@/lib/api";
+import { getToken } from "@/lib/auth";
+import type { Post } from "../../../shared/aura-schema";
 
 const AVATAR =
   "https://www.figma.com/api/mcp/asset/e4add399-8205-4c2a-8782-3da6c9f7bf60";
@@ -118,60 +122,97 @@ function BottomNav({ active }: { active: NavItem }) {
 
 // ── Stats ──────────────────────────────────────────────────────────────────────
 
-const STATS = [
-  { value: "3", percentage: "30.00%", label: "Angle" },
-  { value: "7", percentage: "70.00%", label: "Path" },
-  { value: "3", percentage: "30.00%", label: "Spot" },
-  { value: "0", percentage: "0.00%", label: "Interior" },
-];
+interface ArchetypeStats {
+  angle: number;
+  path: number;
+  spot: number;
+  interior: number;
+}
+
+// Helper to calculate percentage
+function calculatePercentage(count: number, total: number): string {
+  if (total === 0) return "0.00%";
+  return ((count / total) * 100).toFixed(2) + "%";
+}
 
 // ── Profile Page ───────────────────────────────────────────────────────────────
 
 const TABS = ["Uploaded", "Saved"] as const;
 type Tab = (typeof TABS)[number];
 
-// Mock post data - in a real app, this would come from an API
-type Post = {
-  id: string;
-  imageUrl: string;
-  createdAt: Date;
-};
-
-// Example posts - modify count to test different layouts
-const MOCK_UPLOADED_POSTS: Post[] = [
-  {
-    id: "1",
-    imageUrl: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Crect width='128' height='128' fill='%23fa6460'/%3E%3Ctext x='50%25' y='50%25' font-size='20' fill='white' text-anchor='middle' dominant-baseline='middle'%3EPost 1%3C/text%3E%3C/svg%3E",
-    createdAt: new Date("2024-03-05"),
-  },
-  {
-    id: "2",
-    imageUrl: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Crect width='128' height='128' fill='%235a5a5a'/%3E%3Ctext x='50%25' y='50%25' font-size='20' fill='white' text-anchor='middle' dominant-baseline='middle'%3EPost 2%3C/text%3E%3C/svg%3E",
-    createdAt: new Date("2024-03-04"),
-  },
-  {
-    id: "3",
-    imageUrl: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Crect width='128' height='128' fill='%232c2c2c'/%3E%3Ctext x='50%25' y='50%25' font-size='20' fill='white' text-anchor='middle' dominant-baseline='middle'%3EPost 3%3C/text%3E%3C/svg%3E",
-    createdAt: new Date("2024-03-03"),
-  },
-  {
-    id: "4",
-    imageUrl: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Crect width='128' height='128' fill='%23757575'/%3E%3Ctext x='50%25' y='50%25' font-size='20' fill='white' text-anchor='middle' dominant-baseline='middle'%3EPost 4%3C/text%3E%3C/svg%3E",
-    createdAt: new Date("2024-03-02"),
-  },
-  {
-    id: "5",
-    imageUrl: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Crect width='128' height='128' fill='%23ededed'/%3E%3Ctext x='50%25' y='50%25' font-size='20' fill='%231e1e1e' text-anchor='middle' dominant-baseline='middle'%3EPost 5%3C/text%3E%3C/svg%3E",
-    createdAt: new Date("2024-03-01"),
-  },
-];
+// Multi-image indicator icon
+function LayersIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2L2 7l10 5 10-5-10-5z" opacity="0.6"/>
+      <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
+    </svg>
+  );
+}
 
 export default function ProfilePage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("Uploaded");
+  const [uploadedPosts, setUploadedPosts] = useState<Post[]>([]);
+  const [savedPosts] = useState<Post[]>([]); // TODO: Implement saved posts
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [userName, setUserName] = useState("User");
+  const [stats, setStats] = useState<ArchetypeStats>({
+    angle: 0,
+    path: 0,
+    spot: 0,
+    interior: 0,
+  });
 
-  // In a real app, these would be separate data sources
-  const uploadedPosts = MOCK_UPLOADED_POSTS;
-  const savedPosts: Post[] = [];
+  useEffect(() => {
+    const fetchUserPosts = async () => {
+      try {
+        setLoading(true);
+        const token = getToken();
+
+        if (!token) {
+          // Redirect to login if not authenticated
+          router.push("/login");
+          return;
+        }
+
+        // Fetch user info
+        const userInfo = await apiGet<{ id: string; name: string; email: string }>("/me");
+        setUserName(userInfo.name);
+
+        // Fetch current user's posts
+        const response = await apiGet<{ ok: boolean; auras: Post[] }>("/api/auras/me");
+
+        console.log('Backend response:', response);
+
+        // Extract the auras array
+        const posts = response.auras;
+
+        // Sort by created_at (newest first)
+        const sortedPosts = posts.sort((a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+
+        setUploadedPosts(sortedPosts);
+
+        // Fetch archetype stats
+        const statsResponse = await apiGet<{ ok: boolean; stats: ArchetypeStats }>("/api/auras/me/stats");
+        console.log('Stats response:', statsResponse);
+
+        if (statsResponse.stats) {
+          setStats(statsResponse.stats);
+        }
+      } catch (err) {
+        console.error("Failed to fetch posts:", err);
+        setError((err as Error).message || "Failed to load posts");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserPosts();
+  }, [router]);
 
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-white">
@@ -198,30 +239,40 @@ export default function ProfilePage() {
 
           {/* Username */}
           <p className="mt-3 text-center text-[22px] font-bold text-[#1e1e1e]">
-            INameame
+            {userName}
           </p>
 
           {/* Stats row */}
           <div className="mx-4 mt-4 flex">
-            {STATS.map((stat, i) => (
-              <div key={i} className="flex flex-1">
-                {/* Divider before all but the first */}
-                {i > 0 && (
-                  <div className="w-px self-stretch bg-[#d9d9d9]" />
-                )}
-                <div className="flex flex-1 flex-col items-center py-1">
-                  <span className="text-[15px] font-semibold text-[#1e1e1e]">
-                    {stat.label}
-                  </span>
-                  <span className="mt-1 text-[17px] font-bold text-[#1e1e1e]">
-                    {stat.value}
-                  </span>
-                  <span className="text-[10px] leading-tight text-[#1e1e1e]">
-                    {stat.percentage}
-                  </span>
+            {[
+              { label: "Angle", count: stats.angle },
+              { label: "Path", count: stats.path },
+              { label: "Spot", count: stats.spot },
+              { label: "Interior", count: stats.interior },
+            ].map((stat, i) => {
+              const totalPosts = stats.angle + stats.path + stats.spot + stats.interior;
+              const percentage = calculatePercentage(stat.count, totalPosts);
+
+              return (
+                <div key={i} className="flex flex-1">
+                  {/* Divider before all but the first */}
+                  {i > 0 && (
+                    <div className="w-px self-stretch bg-[#d9d9d9]" />
+                  )}
+                  <div className="flex flex-1 flex-col items-center py-1">
+                    <span className="text-[15px] font-semibold text-[#1e1e1e]">
+                      {stat.label}
+                    </span>
+                    <span className="mt-1 text-[17px] font-bold text-[#1e1e1e]">
+                      {stat.count}
+                    </span>
+                    <span className="text-[10px] leading-tight text-[#1e1e1e]">
+                      {percentage}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Action buttons */}
@@ -255,7 +306,22 @@ export default function ProfilePage() {
 
           {/* Content area */}
           <div className="px-0.5 py-0.5">
-            {activeTab === "Uploaded" && uploadedPosts.length === 0 && (
+            {/* Loading state */}
+            {loading && (
+              <div className="flex flex-col items-center justify-center py-24">
+                <p className="text-[15px] text-[#757575]">Loading...</p>
+              </div>
+            )}
+
+            {/* Error state */}
+            {error && !loading && (
+              <div className="flex flex-col items-center justify-center py-24">
+                <p className="text-[15px] text-red-500">{error}</p>
+              </div>
+            )}
+
+            {/* Uploaded tab - Empty state */}
+            {!loading && !error && activeTab === "Uploaded" && uploadedPosts.length === 0 && (
               <div className="flex flex-col items-center justify-center py-24">
                 <ImageEmptyIcon className="size-[31px] text-black" />
                 <p className="mt-5 text-[17px] font-semibold text-[#1e1e1e]">
@@ -267,33 +333,50 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {activeTab === "Uploaded" && uploadedPosts.length === 1 && (
+            {/* Uploaded tab - Single post */}
+            {!loading && !error && activeTab === "Uploaded" && uploadedPosts.length === 1 && (
               <div className="w-[128px]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={uploadedPosts[0].imageUrl}
-                  alt="Post"
-                  className="aspect-square w-full object-cover"
-                />
+                <div className="relative aspect-square">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={uploadedPosts[0].image_urls[0]}
+                    alt={uploadedPosts[0].title}
+                    className="h-full w-full object-cover"
+                  />
+                  {/* Multi-image indicator */}
+                  {uploadedPosts[0].image_urls.length > 1 && (
+                    <div className="absolute right-2 top-2">
+                      <LayersIcon className="size-5 text-white drop-shadow-lg" />
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
-            {activeTab === "Uploaded" && uploadedPosts.length > 1 && (
+            {/* Uploaded tab - Multiple posts grid */}
+            {!loading && !error && activeTab === "Uploaded" && uploadedPosts.length > 1 && (
               <div className="grid grid-cols-3 gap-1">
                 {uploadedPosts.map((post) => (
-                  <div key={post.id} className="aspect-square">
+                  <div key={post.id} className="relative aspect-square">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={post.imageUrl}
-                      alt="Post"
+                      src={post.image_urls[0]}
+                      alt={post.title}
                       className="h-full w-full object-cover"
                     />
+                    {/* Multi-image indicator */}
+                    {post.image_urls.length > 1 && (
+                      <div className="absolute right-2 top-2">
+                        <LayersIcon className="size-4 text-white drop-shadow-lg" />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
             )}
 
-            {activeTab === "Saved" && savedPosts.length === 0 && (
+            {/* Saved tab - Empty state */}
+            {!loading && !error && activeTab === "Saved" && savedPosts.length === 0 && (
               <div className="flex flex-col items-center justify-center py-24">
                 <ImageEmptyIcon className="size-[31px] text-black" />
                 <p className="mt-5 text-[17px] font-semibold text-[#1e1e1e]">
@@ -305,27 +388,43 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {activeTab === "Saved" && savedPosts.length === 1 && (
+            {/* Saved tab - Single post */}
+            {!loading && !error && activeTab === "Saved" && savedPosts.length === 1 && (
               <div className="w-[128px]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={savedPosts[0].imageUrl}
-                  alt="Post"
-                  className="aspect-square w-full object-cover"
-                />
+                <div className="relative aspect-square">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={savedPosts[0].image_urls[0]}
+                    alt={savedPosts[0].title}
+                    className="h-full w-full object-cover"
+                  />
+                  {/* Multi-image indicator */}
+                  {savedPosts[0].image_urls.length > 1 && (
+                    <div className="absolute right-2 top-2">
+                      <LayersIcon className="size-5 text-white drop-shadow-lg" />
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
-            {activeTab === "Saved" && savedPosts.length > 1 && (
+            {/* Saved tab - Multiple posts grid */}
+            {!loading && !error && activeTab === "Saved" && savedPosts.length > 1 && (
               <div className="grid grid-cols-3 gap-1">
                 {savedPosts.map((post) => (
-                  <div key={post.id} className="aspect-square">
+                  <div key={post.id} className="relative aspect-square">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={post.imageUrl}
-                      alt="Post"
+                      src={post.image_urls[0]}
+                      alt={post.title}
                       className="h-full w-full object-cover"
                     />
+                    {/* Multi-image indicator */}
+                    {post.image_urls.length > 1 && (
+                      <div className="absolute right-2 top-2">
+                        <LayersIcon className="size-4 text-white drop-shadow-lg" />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
