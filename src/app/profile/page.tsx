@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiGet } from "@/lib/api";
 import { getToken } from "@/lib/auth";
-import type { Post } from "../../../shared/aura-schema";
+import type { Post, UserProfile } from "../../../shared/aura-schema";
 
 const AVATAR =
   "https://www.figma.com/api/mcp/asset/e4add399-8205-4c2a-8782-3da6c9f7bf60";
@@ -158,6 +158,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userName, setUserName] = useState("User");
+  const [userBio, setUserBio] = useState<string | null>(null);
   const [stats, setStats] = useState<ArchetypeStats>({
     angle: 0,
     path: 0,
@@ -178,16 +179,24 @@ export default function ProfilePage() {
         }
 
         // Fetch user info
-        const userInfo = await apiGet<{ id: string; name: string; email: string }>("/me");
-        setUserName(userInfo.name);
+        const userResponse = await apiGet<{ ok: boolean; user: UserProfile }>("/me");
+        const userInfo = userResponse.user;
+        console.log('User info from backend:', userInfo);
+
+        // Use name if available, otherwise fallback to email prefix
+        const displayName = userInfo.name || userInfo.email?.split('@')[0] || 'User';
+        console.log('Display name:', displayName);
+
+        setUserName(displayName);
+        setUserBio(userInfo.bio);
 
         // Fetch current user's posts
-        const response = await apiGet<{ ok: boolean; auras: Post[] }>("/api/auras/me");
+        const aurasResponse = await apiGet<{ ok: boolean; auras: Post[] }>("/api/auras/me");
 
-        console.log('Backend response:', response);
+        console.log('Backend response:', aurasResponse);
 
         // Extract the auras array
-        const posts = response.auras;
+        const posts = aurasResponse.auras;
 
         // Sort by created_at (newest first)
         const sortedPosts = posts.sort((a, b) =>
@@ -241,6 +250,13 @@ export default function ProfilePage() {
           <p className="mt-3 text-center text-[22px] font-bold text-[#1e1e1e]">
             {userName}
           </p>
+
+          {/* Bio */}
+          {userBio && (
+            <p className="mt-2 px-4 text-center text-[14px] leading-relaxed text-[#757575]">
+              {userBio}
+            </p>
+          )}
 
           {/* Stats row */}
           <div className="mx-4 mt-4 flex">

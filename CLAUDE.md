@@ -153,16 +153,67 @@ Angle    Path    Spot    Interior
 22.73%  13.64%  54.55%   9.09%
 ```
 
-#### 5. Pages Implemented
+#### 5. Profile & Edit Profile Pages
+**Locations**: `/profile`, `/profile/edit`
+
+**Profile Page Features**:
+- Displays user's **name** under profile picture
+- Shows user bio (if exists)
+- Fetches current user's posts from `GET /api/auras/me`
+- Fetches archetype statistics from `GET /api/auras/me/stats`
+- Real-time stats calculation (count & percentage per archetype)
+- Grid display of user's uploaded posts (3 columns)
+- Shows first image from carousel with multi-image indicator
+- Tabs: Uploaded / Saved (Saved not yet implemented)
+- Edit profile button
+- Auto-redirect to login if not authenticated
+
+**Edit Profile Features**:
+- Fetches current user profile from `GET /me`
+- Edit name (max 10 characters)
+- Edit bio (max 100 characters)
+- Character counters for name and bio
+- **Account section**: Shows user's email
+- Saves changes via `PUT /api/profile/update`
+- Validation: name is required
+- Error handling for rate limits and failed saves
+- Auto-redirect to profile after successful save
+
+**Backend Response Format**:
+```typescript
+// GET /me returns
+{
+  ok: true,
+  user: {
+    id: string;               // UUID (note: "id", not "user_id")
+    email: string;
+    name?: string;            // May not exist for new users
+    bio?: string | null;
+    avatar_url?: string | null;
+  }
+}
+
+// PUT /api/profile/update payload
+{
+  name?: string;              // Max 10 chars
+  bio?: string;               // Max 100 chars
+}
+```
+
+**Display Logic**:
+- Profile page: Shows **name** under profile picture (fallback to email prefix if no name)
+- Edit profile page: Shows **email** in Account section at bottom
+
+#### 6. Pages Implemented
 
 - **Feed/Home** (`/`) - Two-column masonry feed with real backend data & pagination
 - **Upload** (`/upload`) - Multi-photo upload with EXIF processing
-- **Profile** (`/profile`) - User profile with real posts & archetype stats
-- **Edit Profile** (`/profile/edit`) - Name, bio, avatar editing
+- **Profile** (`/profile`) - User profile with name, bio, posts & archetype stats
+- **Edit Profile** (`/profile/edit`) - Name & bio editing with validation
 - **Login** (`/login`) - Authentication
 - **Register** (`/register`) - User signup
 
-#### 6. Design Updates
+#### 7. Design Updates
 - **Removed mock phone status bars** - Cleaned up time, battery, signal indicators from all pages (these were design mockups, not needed in actual webapp)
 
 ## API Integration
@@ -181,8 +232,9 @@ POST /auth/register
 POST /auth/login
 POST /auth/logout
 
-// User
+// User Profile
 GET /me                          // Get current user info
+PUT /api/profile/update          // Update user profile (name, bio)
 
 // Auras/Posts
 GET /api/auras/feed              // Get all auras (paginated) ?limit=10&offset=0
@@ -285,6 +337,8 @@ This file contains TypeScript interfaces that define the data contract between f
 6. `InsertAuraParams` - Backend RPC function parameters
 7. `FeedResponse` - Feed response with pagination
 8. `ArchetypeStats` - Archetype statistics
+9. `UserProfile` - User profile from GET /me endpoint
+10. `ProfileUpdatePayload` - Profile update request body
 
 **Usage**:
 ```typescript
@@ -308,14 +362,37 @@ const stats: ArchetypeStats = {
 - `created_at` (NOT `createdAt`) - Timestamp
 - `is_verified` (NOT `isVerified`) - GPS verification flag
 
+**UserProfile Schema**:
+```typescript
+export interface UserProfile {
+  id: string;               // UUID (backend sends "id", not "user_id")
+  email: string;
+  name?: string;            // Max 10 chars, may not exist for new users
+  bio?: string | null;      // Max 100 chars, optional
+  avatar_url?: string | null; // Optional
+}
+
+export interface ProfileUpdatePayload {
+  name?: string;            // Max 10 chars
+  bio?: string;             // Max 100 chars
+}
+```
+
+**Important Notes**:
+- Backend returns `{ ok: true, user: UserProfile }` - user data is nested
+- Field `id` (not `user_id`) matches Supabase auth response
+- `name`, `bio`, `avatar_url` are optional - new users may not have them set
+- Frontend falls back to email prefix if `name` is missing
+
 ## Configuration
 
 ### Environment Variables
 
 **`.env.local`** (local development):
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:8080
+NEXT_PUBLIC_API_URL=http://10.124.57.22:8080
 ```
+*(Using network IP for mobile device testing)*
 
 **`Dockerfile`** (production):
 ```dockerfile
@@ -1056,6 +1133,17 @@ FormData {
 - [x] Dynamic percentage calculation
 - [x] Grid display with multi-image indicators
 - [x] Auto-redirect to login if not authenticated
+- [x] Display user name under profile picture
+- [x] Display bio if exists
+
+**Edit Profile:**
+- [x] Fetch user profile from `/me` endpoint
+- [x] Edit name (max 10 chars) with character counter
+- [x] Edit bio (max 100 chars) with character counter
+- [x] Save changes via `PUT /api/profile/update`
+- [x] Validation (name required)
+- [x] Error handling for rate limits
+- [x] Display email in Account section
 
 **Feed:**
 - [x] Fetch all users' posts from `/api/auras/feed`
@@ -1084,7 +1172,7 @@ FormData {
 
 ---
 
-**Last Updated**: 2026-03-18
-**Current Status**: Core features complete - Upload, Profile, Feed all implemented with real backend integration
-**Environment**: Configured for `localhost:8080` (local development)
-**Next**: Backend CORS + Multer configuration needed for full testing
+**Last Updated**: 2026-03-19
+**Current Status**: Core features complete - Upload, Profile, Edit Profile, Feed all implemented with real backend integration
+**Environment**: Configured for `http://10.124.57.22:8080` (network IP for mobile testing)
+**Next**: Backend profile update endpoint (`PUT /api/profile/update`) implementation

@@ -97,3 +97,22 @@ export interface ArchetypeStats {
   spot: number;
   interior: number;
 }
+
+// 8. User profile (from GET /me endpoint)
+export interface UserProfile {
+  id: string;               // UUID (backend sends "id", not "user_id")
+  email: string;
+  name?: string;            // Max 10 chars, may not exist on new users
+  bio?: string | null;      // Max 100 chars, optional
+  avatar_url?: string | null; // Optional
+  // Additional fields from Supabase auth
+  aud?: string;
+  role?: string;
+  email_confirmed_at?: string;
+}
+
+// 9. Profile update payload (all fields optional)
+export interface ProfileUpdatePayload {
+  name?: string;            // Max 10 chars
+  bio?: string;             // Max 100 chars
+}

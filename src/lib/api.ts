@@ -41,11 +41,25 @@ export async function apiGet<T>(path: string): Promise<T> {
     return data as T;
 }
 
+export async function apiPut<T>(path: string, body: unknown): Promise<T> {
+    const res = await fetch(`${API_BASE}${path}`, {
+        method: "PUT",
+        headers: getAuthHeaders(),
+        credentials: "include",
+        body: JSON.stringify(body),
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.error || `Request failed: ${res.status}`);
+    return data as T;
+}
+
 // Available API endpoints:
 // - POST /auth/register
 // - POST /auth/login
 // - POST /auth/logout
 // - GET /me (get current user info)
+// - PUT /api/profile/update (update user profile)
 // - GET /api/auras/me (get current user's auras/posts)
 // - GET /api/auras/me/stats (get current user's archetype stats)
 // - GET /api/auras/feed?limit=10&offset=0 (get all auras paginated)

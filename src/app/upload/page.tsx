@@ -209,7 +209,14 @@ export default function UploadPage() {
         router.push('/');
       }
     } catch (err: unknown) {
-      setError((err as Error).message || "Upload failed");
+      const errorMessage = (err as Error).message || "Upload failed";
+
+      // Check for quota error
+      if (errorMessage.includes("MAX_WRITE_OPERATIONS_PER_HOUR")) {
+        setError("Rate limit exceeded. Too many uploads in a short time. Please try again later.");
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setIsUploading(false);
       setUploadProgress(null);
