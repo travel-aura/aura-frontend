@@ -188,7 +188,7 @@ export default function ProfilePage() {
         console.log('Display name:', displayName);
 
         setUserName(displayName);
-        setUserBio(userInfo.bio);
+        setUserBio(userInfo.bio ?? null);
 
         // Fetch current user's posts
         const aurasResponse = await apiGet<{ ok: boolean; auras: Post[] }>("/api/auras/me");
