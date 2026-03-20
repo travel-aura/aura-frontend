@@ -9,6 +9,9 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NEXT_PUBLIC_API_URL=https://aura-backend-255644230597.us-central1.run.app
+# NEXT_PUBLIC_MAPBOX_TOKEN should be set via Cloud Build substitution or as ARG
+ARG NEXT_PUBLIC_MAPBOX_TOKEN
+ENV NEXT_PUBLIC_MAPBOX_TOKEN=${NEXT_PUBLIC_MAPBOX_TOKEN}
 RUN npm run build
 
 FROM node:20-slim AS runner

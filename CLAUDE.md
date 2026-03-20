@@ -391,12 +391,23 @@ export interface ProfileUpdatePayload {
 **`.env.local`** (local development):
 ```env
 NEXT_PUBLIC_API_URL=http://10.124.57.22:8080
+NEXT_PUBLIC_MAPBOX_TOKEN=pk.your_mapbox_public_token_here
 ```
 *(Using network IP for mobile device testing)*
+*(Actual Mapbox token stored in .env.local - not committed to git)*
 
 **`Dockerfile`** (production):
 ```dockerfile
 ENV NEXT_PUBLIC_API_URL=https://aura-backend-255644230597.us-central1.run.app
+ARG NEXT_PUBLIC_MAPBOX_TOKEN
+ENV NEXT_PUBLIC_MAPBOX_TOKEN=${NEXT_PUBLIC_MAPBOX_TOKEN}
+```
+*(Mapbox token passed as build argument during deployment)*
+
+**Deployment with Cloud Build:**
+```bash
+gcloud run deploy aura-frontend --source . \
+  --build-arg NEXT_PUBLIC_MAPBOX_TOKEN=pk.your_actual_token_here
 ```
 
 ### CORS Configuration (Backend Required)
