@@ -211,6 +211,15 @@ export default function UploadPage() {
     } catch (err: unknown) {
       const errorMessage = (err as Error).message || "Upload failed";
 
+      // Check if error is related to authentication
+      if (errorMessage.includes("Invalid or expired token") ||
+          errorMessage.includes("401") ||
+          errorMessage.includes("Unauthorized")) {
+        // Token is invalid/expired, redirect to login
+        router.push("/login");
+        return;
+      }
+
       // Check for quota error
       if (errorMessage.includes("MAX_WRITE_OPERATIONS_PER_HOUR")) {
         setError("Rate limit exceeded. Too many uploads in a short time. Please try again later.");

@@ -214,7 +214,18 @@ export default function ProfilePage() {
         }
       } catch (err) {
         console.error("Failed to fetch posts:", err);
-        setError((err as Error).message || "Failed to load posts");
+        const errorMessage = (err as Error).message || "Failed to load posts";
+
+        // Check if error is related to authentication
+        if (errorMessage.includes("Invalid or expired token") ||
+            errorMessage.includes("401") ||
+            errorMessage.includes("Unauthorized")) {
+          // Token is invalid/expired, redirect to login
+          router.push("/login");
+          return;
+        }
+
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }

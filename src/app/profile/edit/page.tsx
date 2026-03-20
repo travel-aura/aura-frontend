@@ -85,7 +85,18 @@ export default function EditProfilePage() {
         setBio(userProfile.bio || "");
       } catch (err) {
         console.error("Failed to fetch profile:", err);
-        setError((err as Error).message || "Failed to load profile");
+        const errorMessage = (err as Error).message || "Failed to load profile";
+
+        // Check if error is related to authentication
+        if (errorMessage.includes("Invalid or expired token") ||
+            errorMessage.includes("401") ||
+            errorMessage.includes("Unauthorized")) {
+          // Token is invalid/expired, redirect to login
+          router.push("/login");
+          return;
+        }
+
+        setError(errorMessage);
         // Still set loading to false so we can see the error
       } finally {
         setLoading(false);
