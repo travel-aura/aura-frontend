@@ -1,9 +1,14 @@
 steps:
+  # Write public env vars to .env.production so Next.js bakes them in at build time
+  - name: 'ubuntu'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - 'echo "NEXT_PUBLIC_MAPBOX_TOKEN=${_MAPBOX_TOKEN}" > .env.production'
+
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_MAPBOX_TOKEN=${_MAPBOX_TOKEN}'
       - '-t'
       - 'gcr.io/$PROJECT_ID/aura-frontend:latest'
       - '.'
