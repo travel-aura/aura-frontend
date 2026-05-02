@@ -3,7 +3,12 @@
  * Converts lat/lng coordinates to city name
  */
 
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+function getMapboxToken(): string {
+  if (typeof window !== "undefined" && (window as { __MAPBOX_TOKEN__?: string }).__MAPBOX_TOKEN__) {
+    return (window as { __MAPBOX_TOKEN__?: string }).__MAPBOX_TOKEN__!;
+  }
+  return process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
+}
 
 interface MapboxSearchFeature {
   properties: {
@@ -36,15 +41,14 @@ export async function getCityFromCoordinates(
   lat: number,
   lng: number
 ): Promise<string> {
-  if (!MAPBOX_TOKEN) {
+  const token = getMapboxToken();
+  if (!token) {
     console.warn('Mapbox token not configured');
     return 'Unknown Location';
   }
 
   try {
-    // Use Mapbox Search Box API reverse geocoding
-    // Note: Mapbox uses longitude, latitude order
-    const url = `https://api.mapbox.com/search/searchbox/v1/reverse?longitude=${lng}&latitude=${lat}&access_token=${MAPBOX_TOKEN}&types=place`;
+    const url = `https://api.mapbox.com/search/searchbox/v1/reverse?longitude=${lng}&latitude=${lat}&access_token=${token}&types=place`;
 
     const response = await fetch(url);
 

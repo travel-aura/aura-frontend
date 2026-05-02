@@ -5,7 +5,12 @@ import Link from "next/link";
 import { apiGet } from "@/lib/api";
 import type { Post } from "../../shared/aura-schema";
 
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+function getMapboxToken(): string {
+  if (typeof window !== "undefined" && (window as { __MAPBOX_TOKEN__?: string }).__MAPBOX_TOKEN__) {
+    return (window as { __MAPBOX_TOKEN__?: string }).__MAPBOX_TOKEN__!;
+  }
+  return process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
+}
 const RADIUS = 5000;
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
@@ -180,10 +185,11 @@ export default function AuraFeed() {
     }
 
     debounceRef.current = setTimeout(async () => {
-      if (!MAPBOX_TOKEN) return;
+      const token = getMapboxToken();
+      if (!token) return;
       setSuggestionsLoading(true);
       try {
-        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchQuery)}.json?access_token=${MAPBOX_TOKEN}&types=place,locality,neighborhood,district&limit=5`;
+        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchQuery)}.json?access_token=${token}&types=place,locality,neighborhood,district&limit=5`;
         const res = await fetch(url);
         const data = await res.json();
         const results: LocationSuggestion[] = (data.features ?? []).map((f: {
