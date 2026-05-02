@@ -32,7 +32,7 @@ function FeedCard({ post }: { post: Post }) {
   };
 
   return (
-    <div className="flex flex-col gap-1">
+    <Link href={`/post/${post.id}`} className="flex flex-col gap-1">
       <div className="relative h-[232px] w-full overflow-hidden rounded-lg bg-[#d9d9d9]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -65,7 +65,7 @@ function FeedCard({ post }: { post: Post }) {
         )}
         <p className="text-[11px] text-[#999]">{formatDate(post.created_at)}</p>
       </div>
-    </div>
+    </Link>
   );
 }
 

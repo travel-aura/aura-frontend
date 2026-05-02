@@ -363,7 +363,7 @@ export default function ProfilePage() {
             {/* Uploaded tab - Single post */}
             {!loading && !error && activeTab === "Uploaded" && uploadedPosts.length === 1 && (
               <div className="w-[128px]">
-                <div className="relative aspect-square">
+                <Link href={`/post/${uploadedPosts[0].id}`} className="relative block aspect-square">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={uploadedPosts[0].image_urls[0]}
@@ -376,7 +376,7 @@ export default function ProfilePage() {
                       <LayersIcon className="size-5 text-white drop-shadow-lg" />
                     </div>
                   )}
-                </div>
+                </Link>
               </div>
             )}
 
@@ -384,7 +384,7 @@ export default function ProfilePage() {
             {!loading && !error && activeTab === "Uploaded" && uploadedPosts.length > 1 && (
               <div className="grid grid-cols-3 gap-1">
                 {uploadedPosts.map((post) => (
-                  <div key={post.id} className="relative aspect-square">
+                  <Link key={post.id} href={`/post/${post.id}`} className="relative block aspect-square">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={post.image_urls[0]}
@@ -397,7 +397,7 @@ export default function ProfilePage() {
                         <LayersIcon className="size-4 text-white drop-shadow-lg" />
                       </div>
                     )}
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}
@@ -418,7 +418,7 @@ export default function ProfilePage() {
             {/* Saved tab - Single post */}
             {!loading && !error && activeTab === "Saved" && savedPosts.length === 1 && (
               <div className="w-[128px]">
-                <div className="relative aspect-square">
+                <Link href={`/post/${savedPosts[0].id}`} className="relative block aspect-square">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={savedPosts[0].image_urls[0]}
@@ -431,7 +431,7 @@ export default function ProfilePage() {
                       <LayersIcon className="size-5 text-white drop-shadow-lg" />
                     </div>
                   )}
-                </div>
+                </Link>
               </div>
             )}
 
@@ -439,7 +439,7 @@ export default function ProfilePage() {
             {!loading && !error && activeTab === "Saved" && savedPosts.length > 1 && (
               <div className="grid grid-cols-3 gap-1">
                 {savedPosts.map((post) => (
-                  <div key={post.id} className="relative aspect-square">
+                  <Link key={post.id} href={`/post/${post.id}`} className="relative block aspect-square">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={post.image_urls[0]}
@@ -452,7 +452,7 @@ export default function ProfilePage() {
                         <LayersIcon className="size-4 text-white drop-shadow-lg" />
                       </div>
                     )}
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}
