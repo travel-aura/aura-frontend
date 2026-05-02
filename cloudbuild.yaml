@@ -5,13 +5,8 @@ steps:
       - '--build-arg'
       - 'NEXT_PUBLIC_MAPBOX_TOKEN=${_MAPBOX_TOKEN}'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/aura-frontend:$COMMIT_SHA'
-      - '-t'
       - 'gcr.io/$PROJECT_ID/aura-frontend:latest'
       - '.'
-
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/aura-frontend:$COMMIT_SHA']
 
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/aura-frontend:latest']
@@ -23,7 +18,7 @@ steps:
       - 'deploy'
       - 'aura-frontend'
       - '--image'
-      - 'gcr.io/$PROJECT_ID/aura-frontend:$COMMIT_SHA'
+      - 'gcr.io/$PROJECT_ID/aura-frontend:latest'
       - '--region'
       - 'us-central1'
       - '--platform'
@@ -31,7 +26,6 @@ steps:
       - '--allow-unauthenticated'
 
 images:
-  - 'gcr.io/$PROJECT_ID/aura-frontend:$COMMIT_SHA'
   - 'gcr.io/$PROJECT_ID/aura-frontend:latest'
 
 substitutions:
