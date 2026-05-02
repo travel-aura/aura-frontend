@@ -6,8 +6,7 @@ import { apiGet } from "@/lib/api";
 import { getCityFromCoordinates } from "@/lib/geocoding";
 import type { Aura } from "../../../../shared/aura-schema";
 
-const AVATAR =
-  "https://www.figma.com/api/mcp/asset/e4add399-8205-4c2a-8782-3da6c9f7bf60";
+const DEFAULT_AVATAR = "https://www.figma.com/api/mcp/asset/e4add399-8205-4c2a-8782-3da6c9f7bf60";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -58,7 +57,6 @@ export default function PostDetailPage() {
   const postId = params.id as string;
 
   const [post, setPost] = useState<Aura | null>(null);
-  const [userName, setUserName] = useState("Username");
   const [cityLocation, setCityLocation] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -100,10 +98,6 @@ export default function PostDetailPage() {
         }
 
         setPost(foundPost);
-
-        // Fetch user info for the poster
-        // For now, using placeholder - backend should return user info with post
-        setUserName("Username");
 
         // Get city location from coordinates if available
         if (foundPost.lat && foundPost.lng) {
@@ -164,13 +158,13 @@ export default function PostDetailPage() {
           <div className="size-8 overflow-hidden rounded-full">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={AVATAR}
-              alt={userName}
+              src={post.user?.avatar_url || DEFAULT_AVATAR}
+              alt={post.user?.name || "User"}
               className="h-full w-full object-cover"
             />
           </div>
           <span className="text-[15px] font-semibold text-[#1e1e1e]">
-            {userName}
+            {post.user?.name || post.user?.email?.split("@")[0] || "User"}
           </span>
         </div>
 

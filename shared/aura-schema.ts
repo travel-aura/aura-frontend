@@ -9,6 +9,12 @@ export type Archetype = 'The Angle' | 'The Path' | 'The Spot' | 'The Interior';
 export interface Aura {
   id: string;             // uuid
   user_id: string;        // uuid (snake_case)
+  user?: {               // joined from users table
+    id: string;
+    name?: string;
+    email: string;
+    avatar_url?: string | null;
+  };
   title: string;
   description: string;
   image_urls: string[];   // text[] - carousel (snake_case)
