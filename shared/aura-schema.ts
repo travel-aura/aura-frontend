@@ -39,6 +39,7 @@ export interface Post {
   lng: number;
   created_at: string;          // snake_case
   is_verified: boolean;
+  distance_meters?: number | null; // only present when feed called with lat/lng
 }
 
 // 3. What frontend sends in upload metadata

@@ -4,7 +4,11 @@ import { type ComponentType, useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { processAndUploadMultipleAuras, type AuraMetadata, type UploadProgress, type UploadResult } from "@/services/uploadService";
+import { getToken } from "@/lib/auth";
+import { API_BASE } from "@/lib/api";
 import type { Archetype } from "../../../shared/aura-schema";
+
+interface NearbyPost { id: string; title: string; distance_meters: number; }
 
 // Figma asset URLs (expire in 7 days)
 const ASSETS = {
@@ -124,6 +128,8 @@ export default function UploadPage() {
   const [error, setError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
   const [gpsWarning, setGpsWarning] = useState<string | null>(null);
+  const [nearbyPosts, setNearbyPosts] = useState<NearbyPost[]>([]);
+  const [showNearbyPrompt, setShowNearbyPrompt] = useState(false);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -164,72 +170,71 @@ export default function UploadPage() {
     else if (gpsPhotoIndex === index) setGpsPhotoIndex(0);
   };
 
-  const handleUpload = async () => {
-    if (photos.length === 0) {
-      setError("Please select at least one photo");
-      return;
-    }
-    if (!title.trim()) {
-      setError("Please enter a title");
-      return;
-    }
-
+  const doUpload = async () => {
     setError(null);
     setGpsWarning(null);
     setIsUploading(true);
     setUploadProgress(null);
-
     try {
       const gpsPhoto = photos[gpsPhotoIndex];
       const allFiles = photos.map(p => p.file);
-
       const metadata: AuraMetadata = {
         title: title.trim(),
         archetype_tag: activeCategory,
         description: description.trim() || undefined,
       };
-
       const result: UploadResult = await processAndUploadMultipleAuras(
-        allFiles,
-        gpsPhoto.file,
-        metadata,
+        allFiles, gpsPhoto.file, metadata,
         (progress) => setUploadProgress(progress)
       );
-
-      // Show warning if no GPS data was found
       if (!result.hasGPS) {
         setGpsWarning("⚠️ No location data found in photos. Upload completed as unverified.");
-        // Auto-dismiss warning after 3 seconds and redirect
-        setTimeout(() => {
-          setGpsWarning(null);
-          router.push('/');
-        }, 3000);
+        setTimeout(() => { setGpsWarning(null); router.push('/'); }, 3000);
       } else {
-        // Success with GPS! Redirect immediately
         router.push('/');
       }
     } catch (err: unknown) {
-      const errorMessage = (err as Error).message || "Upload failed";
-
-      // Check if error is related to authentication
-      if (errorMessage.includes("Invalid or expired token") ||
-          errorMessage.includes("401") ||
-          errorMessage.includes("Unauthorized")) {
-        // Token is invalid/expired, redirect to login
+      const msg = (err as Error).message || "Upload failed";
+      if (msg.includes("Invalid or expired token") || msg.includes("401") || msg.includes("Unauthorized")) {
         router.push("/login");
         return;
       }
-
-      // Check for quota error
-      if (errorMessage.includes("MAX_WRITE_OPERATIONS_PER_HOUR")) {
-        setError("Rate limit exceeded. Too many uploads in a short time. Please try again later.");
-      } else {
-        setError(errorMessage);
-      }
+      setError(msg.includes("MAX_WRITE_OPERATIONS_PER_HOUR")
+        ? "Rate limit exceeded. Please try again later."
+        : msg);
     } finally {
       setIsUploading(false);
       setUploadProgress(null);
     }
+  };
+
+  const handleUpload = async () => {
+    if (photos.length === 0) { setError("Please select at least one photo"); return; }
+    if (!title.trim()) { setError("Please enter a title"); return; }
+
+    // Check for nearby posts before uploading
+    try {
+      const { default: exifr } = await import("exifr");
+      const exifData = await exifr.parse(photos[gpsPhotoIndex].file, { gps: true });
+      if (exifData?.latitude && exifData?.longitude) {
+        const token = getToken();
+        const res = await fetch(
+          `${API_BASE}/api/auras/check-nearby?lat=${exifData.latitude}&lng=${exifData.longitude}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const nearby: NearbyPost[] = data.nearby ?? [];
+          if (nearby.length > 0) {
+            setNearbyPosts(nearby);
+            setShowNearbyPrompt(true);
+            return; // Pause — wait for user to confirm in the prompt
+          }
+        }
+      }
+    } catch { /* no GPS or check-nearby not available — proceed normally */ }
+
+    await doUpload();
   };
 
   return (
@@ -425,6 +430,36 @@ export default function UploadPage() {
         </div>
 
       <BottomNav active="create" />
+
+      {/* Nearby post prompt */}
+      {showNearbyPrompt && nearbyPosts.length > 0 && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40">
+          <div className="w-full rounded-t-2xl bg-white px-5 pb-10 pt-5">
+            <div className="mb-4 h-1 w-10 rounded-full bg-[#d9d9d9] mx-auto" />
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-[#fa6460]">📍 Posts nearby</p>
+            <h2 className="mt-2 text-[20px] font-bold text-[#1e1e1e]">
+              Are you adding a new perspective to "{nearbyPosts[0].title}"?
+            </h2>
+            <p className="mt-1 text-[14px] text-[#757575]">
+              {nearbyPosts.length === 1
+                ? `1 post within ${Math.round(nearbyPosts[0].distance_meters)}m of this location.`
+                : `${nearbyPosts.length} posts within range of this location.`}
+            </p>
+            <button
+              onClick={async () => { setShowNearbyPrompt(false); await doUpload(); }}
+              className="mt-5 w-full rounded-[40px] bg-[#101827] py-[13px] text-[17px] font-medium text-white"
+            >
+              Yes, upload anyway
+            </button>
+            <button
+              onClick={() => setShowNearbyPrompt(false)}
+              className="mt-3 w-full rounded-[40px] border border-[#e0e0e0] py-[13px] text-[17px] font-medium text-[#1e1e1e]"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

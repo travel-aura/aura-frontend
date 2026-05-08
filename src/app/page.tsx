@@ -3,23 +3,27 @@
 import { type ComponentType, useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { apiGet } from "@/lib/api";
-import type { Post } from "../../shared/aura-schema";
+import type { Post, Archetype } from "../../shared/aura-schema";
 
-function getMapboxToken(): string {
-  if (typeof window !== "undefined" && (window as { __MAPBOX_TOKEN__?: string }).__MAPBOX_TOKEN__) {
-    return (window as { __MAPBOX_TOKEN__?: string }).__MAPBOX_TOKEN__!;
-  }
-  return process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
-}
 const RADIUS = 5000;
+const LIMIT = 10;
+const ARCHETYPES: Archetype[] = ["The Angle", "The Path", "The Spot", "The Interior"];
+
+function archetypeParam(a: Archetype) {
+  return a.replace(/\s+/g, ""); // "The Path" → "ThePath"
+}
+
+function formatDistance(m: number) {
+  return m < 1000 ? `${Math.round(m)}m away` : `${(m / 1000).toFixed(1)}km away`;
+}
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
 function LayersIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2L2 7l10 5 10-5-10-5z" opacity="0.6"/>
-      <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
+      <path d="M12 2L2 7l10 5 10-5-10-5z" opacity="0.6" />
+      <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
     </svg>
   );
 }
@@ -27,8 +31,7 @@ function LayersIcon({ className }: { className?: string }) {
 function SearchIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="11" cy="11" r="8" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+      <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
     </svg>
   );
 }
@@ -36,8 +39,7 @@ function SearchIcon({ className }: { className?: string }) {
 function XIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
+      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
     </svg>
   );
 }
@@ -45,7 +47,15 @@ function XIcon({ className }: { className?: string }) {
 function PinIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/>
+      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z" />
+    </svg>
+  );
+}
+
+function NearMeIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z" />
     </svg>
   );
 }
@@ -62,8 +72,7 @@ function PlusSquareIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
       <rect x="3" y="3" width="18" height="18" rx="3" />
-      <line x1="12" y1="8" x2="12" y2="16" />
-      <line x1="8" y1="12" x2="16" y2="12" />
+      <line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" />
     </svg>
   );
 }
@@ -71,8 +80,7 @@ function PlusSquareIcon({ className }: { className?: string }) {
 function UserIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-      <circle cx="12" cy="7" r="4" />
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
     </svg>
   );
 }
@@ -87,27 +95,22 @@ interface LocationSuggestion {
   lng: number;
 }
 
-interface SelectedLocation {
-  name: string;
-  lat: number;
-  lng: number;
-}
+interface Coords { lat: number; lng: number; }
+
+type LocationMode = "global" | "nearby" | "city";
 
 // ── Feed Card ─────────────────────────────────────────────────────────────────
 
 function FeedCard({ post }: { post: Post }) {
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
+  const formatDate = (d: string) => {
+    const diff = Date.now() - new Date(d).getTime();
+    const m = Math.floor(diff / 60000);
+    const h = Math.floor(m / 60);
+    const day = Math.floor(h / 24);
+    if (m < 60) return `${m}m ago`;
+    if (h < 24) return `${h}h ago`;
+    if (day < 7) return `${day}d ago`;
+    return new Date(d).toLocaleDateString();
   };
 
   return (
@@ -132,7 +135,12 @@ function FeedCard({ post }: { post: Post }) {
         {post.description && (
           <p className="truncate text-[13px] leading-tight text-[#757575]">{post.description}</p>
         )}
-        <p className="text-[11px] text-[#999]">{formatDate(post.created_at)}</p>
+        <div className="flex items-center gap-2">
+          <p className="text-[11px] text-[#999]">{formatDate(post.created_at)}</p>
+          {post.distance_meters != null && (
+            <p className="text-[11px] font-medium text-[#fa6460]">{formatDistance(post.distance_meters)}</p>
+          )}
+        </div>
       </div>
     </Link>
   );
@@ -146,133 +154,181 @@ type NavItem = "home" | "create" | "profile";
 export default function AuraFeed() {
   const [activeTab, setActiveTab] = useState<Tab>("all");
   const [activeNav, setActiveNav] = useState<NavItem>("home");
+
+  // Location state
+  const [locationMode, setLocationMode] = useState<LocationMode>("global");
+  const [userCoords, setUserCoords] = useState<Coords | null>(null);
+  const [nearMeLoading, setNearMeLoading] = useState(false);
+  const [selectedCity, setSelectedCity] = useState<{ name: string } & Coords | null>(null);
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  // Archetype filter
+  const [activeArchetype, setActiveArchetype] = useState<Archetype | null>(null);
+
+  // Feed state
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
 
-  // Location search state
-  const [searchQuery, setSearchQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState<SelectedLocation | null>(null);
-  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const searchRef = useRef<HTMLDivElement>(null);
-
-  const LIMIT = 10;
-
-  // Close suggestions when clicking outside
+  // Click outside to close suggestions
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
+    const handler = (e: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
         setShowSuggestions(false);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, []);
 
   // Debounced Mapbox geocoding
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-
     if (!searchQuery.trim() || searchQuery.length < 2) {
       setSuggestions([]);
       setShowSuggestions(false);
       return;
     }
-
     debounceRef.current = setTimeout(async () => {
-      const token = getMapboxToken();
+      const token = typeof window !== "undefined"
+        ? (window as { __MAPBOX_TOKEN__?: string }).__MAPBOX_TOKEN__ ?? ""
+        : "";
       if (!token) return;
       setSuggestionsLoading(true);
       try {
-        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchQuery)}.json?access_token=${token}&types=place,locality,neighborhood,district&limit=5`;
-        const res = await fetch(url);
+        const res = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchQuery)}.json?access_token=${token}&types=place,locality,neighborhood,district&limit=5`
+        );
         const data = await res.json();
         const results: LocationSuggestion[] = (data.features ?? []).map((f: {
-          id: string;
-          text: string;
-          place_name: string;
-          center: [number, number];
-        }) => ({
-          id: f.id,
-          name: f.text,
-          place_name: f.place_name,
-          lat: f.center[1],
-          lng: f.center[0],
-        }));
+          id: string; text: string; place_name: string; center: [number, number];
+        }) => ({ id: f.id, name: f.text, place_name: f.place_name, lat: f.center[1], lng: f.center[0] }));
         setSuggestions(results);
         setShowSuggestions(results.length > 0);
-      } catch {
-        setSuggestions([]);
-      } finally {
-        setSuggestionsLoading(false);
-      }
+      } catch { setSuggestions([]); }
+      finally { setSuggestionsLoading(false); }
     }, 300);
   }, [searchQuery]);
 
-  const fetchPosts = useCallback(async (loadMore = false, location: SelectedLocation | null = null) => {
+  const buildUrl = useCallback((currentOffset: number, coords: Coords | null, archetype: Archetype | null) => {
+    let url = `/api/auras/feed?limit=${LIMIT}&offset=${currentOffset}`;
+    if (coords) url += `&lat=${coords.lat}&lng=${coords.lng}&radius=${RADIUS}`;
+    if (archetype) url += `&archetype=${archetypeParam(archetype)}`;
+    return url;
+  }, []);
+
+  const fetchPosts = useCallback(async (opts: {
+    loadMore?: boolean;
+    coords?: Coords | null;
+    archetype?: Archetype | null;
+    currentOffset?: number;
+  }) => {
+    const { loadMore = false, coords = null, archetype = null, currentOffset } = opts;
+    const off = currentOffset ?? (loadMore ? offset : 0);
     try {
       setLoading(true);
-      const currentOffset = loadMore ? offset : 0;
-
-      let url = `/api/auras/feed?limit=${LIMIT}&offset=${currentOffset}`;
-      if (location) {
-        url += `&lat=${location.lat}&lng=${location.lng}&radius=${RADIUS}`;
-      }
-
       const response = await apiGet<{
         ok: boolean;
         auras: Post[];
         pagination: { limit: number; offset: number; count: number };
-      }>(url);
+      }>(buildUrl(off, coords, archetype));
 
       if (loadMore) {
         setPosts(prev => [...prev, ...response.auras]);
       } else {
         setPosts(response.auras);
       }
-
-      setOffset(currentOffset + response.auras.length);
+      setOffset(off + response.auras.length);
       setHasMore(response.auras.length === LIMIT);
     } catch (err) {
       setError((err as Error).message || "Failed to load feed");
     } finally {
       setLoading(false);
     }
-  }, [offset]);
+  }, [offset, buildUrl]);
 
   useEffect(() => {
-    fetchPosts(false, null);
+    fetchPosts({ coords: null, archetype: null, currentOffset: 0 });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleSelectLocation = (suggestion: LocationSuggestion) => {
-    const location: SelectedLocation = {
-      name: suggestion.name,
-      lat: suggestion.lat,
-      lng: suggestion.lng,
-    };
-    setSelectedLocation(location);
+  const handleNearMe = () => {
+    if (locationMode === "nearby") {
+      // Toggle off
+      setLocationMode("global");
+      setUserCoords(null);
+      setSelectedCity(null);
+      setOffset(0);
+      fetchPosts({ coords: null, archetype: activeArchetype, currentOffset: 0 });
+      return;
+    }
+    setNearMeLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setUserCoords(coords);
+        setSelectedCity(null);
+        setSearchQuery("");
+        setSuggestions([]);
+        setLocationMode("nearby");
+        setOffset(0);
+        fetchPosts({ coords, archetype: activeArchetype, currentOffset: 0 });
+        setNearMeLoading(false);
+      },
+      () => {
+        setNearMeLoading(false);
+        setError("Location access denied. Showing all posts.");
+        setTimeout(() => setError(null), 3000);
+      }
+    );
+  };
+
+  const handleSelectCity = (s: LocationSuggestion) => {
+    const city = { name: s.name, lat: s.lat, lng: s.lng };
+    setSelectedCity(city);
+    setUserCoords(null);
+    setLocationMode("city");
     setSearchQuery("");
     setSuggestions([]);
     setShowSuggestions(false);
     setOffset(0);
-    fetchPosts(false, location);
+    fetchPosts({ coords: city, archetype: activeArchetype, currentOffset: 0 });
   };
 
   const handleClearLocation = () => {
-    setSelectedLocation(null);
+    setLocationMode("global");
+    setUserCoords(null);
+    setSelectedCity(null);
     setSearchQuery("");
     setOffset(0);
-    fetchPosts(false, null);
+    fetchPosts({ coords: null, archetype: activeArchetype, currentOffset: 0 });
   };
+
+  const handleArchetype = (a: Archetype | null) => {
+    setActiveArchetype(a);
+    const coords = locationMode === "nearby" ? userCoords : locationMode === "city" ? selectedCity : null;
+    setOffset(0);
+    fetchPosts({ coords, archetype: a, currentOffset: 0 });
+  };
+
+  const activeCoords = locationMode === "nearby" ? userCoords : locationMode === "city" ? selectedCity : null;
 
   const leftPosts = posts.filter((_, i) => i % 2 === 0);
   const rightPosts = posts.filter((_, i) => i % 2 === 1);
+
+  const contextLabel =
+    locationMode === "nearby" ? "📍 Showing nearby posts" :
+    locationMode === "city" ? `📍 Showing Auras in ${selectedCity?.name}` :
+    null;
 
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-white">
@@ -281,97 +337,125 @@ export default function AuraFeed() {
         <span className="text-[20px] font-bold tracking-tight text-[#1e1e1e]">Aura</span>
       </div>
 
-      {/* Filter tabs */}
+      {/* Tabs */}
       <div className="mt-2 flex items-center justify-center gap-2">
-        <button
-          onClick={() => setActiveTab("all")}
-          className={`rounded-full px-3 py-0.5 text-[15px] font-medium transition-colors ${
-            activeTab === "all" ? "bg-[#5a5a5a] text-[#f5f5f5]" : "text-[#1e1e1e]"
-          }`}
-        >
-          All
-        </button>
-        <button
-          onClick={() => setActiveTab("following")}
-          className={`rounded-full px-3 py-0.5 text-[15px] transition-colors ${
-            activeTab === "following" ? "bg-[#5a5a5a] text-[#f5f5f5]" : "text-[#1e1e1e]"
-          }`}
-        >
-          Following
-        </button>
+        {(["all", "following"] as Tab[]).map((t) => (
+          <button
+            key={t}
+            onClick={() => setActiveTab(t)}
+            className={`rounded-full px-3 py-0.5 text-[15px] font-medium transition-colors capitalize ${
+              activeTab === t ? "bg-[#5a5a5a] text-[#f5f5f5]" : "text-[#1e1e1e]"
+            }`}
+          >
+            {t === "all" ? "All" : "Following"}
+          </button>
+        ))}
       </div>
 
-      {/* Search bar */}
-      <div className="relative px-4 pt-3" ref={searchRef}>
-        <div className="flex items-center gap-2 rounded-xl bg-[#f3f3f3] px-3 py-2">
-          <SearchIcon className="size-4 shrink-0 text-[#757575]" />
-          <input
-            type="text"
-            placeholder="Search a location…"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-            className="flex-1 bg-transparent text-[14px] text-[#1e1e1e] placeholder-[#757575] outline-none"
-          />
-          {suggestionsLoading && (
-            <span className="text-[11px] text-[#757575]">…</span>
-          )}
-          {searchQuery && !suggestionsLoading && (
-            <button onClick={() => { setSearchQuery(""); setSuggestions([]); setShowSuggestions(false); }}>
-              <XIcon className="size-4 text-[#757575]" />
-            </button>
+      {/* Search + Near Me */}
+      <div className="flex items-center gap-2 px-4 pt-3" ref={searchRef}>
+        <div className="relative flex-1">
+          <div className="flex items-center gap-2 rounded-xl bg-[#f3f3f3] px-3 py-2">
+            <SearchIcon className="size-4 shrink-0 text-[#757575]" />
+            <input
+              type="text"
+              placeholder="Search a location…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+              className="flex-1 bg-transparent text-[14px] text-[#1e1e1e] placeholder-[#757575] outline-none"
+            />
+            {suggestionsLoading && <span className="text-[11px] text-[#757575]">…</span>}
+            {searchQuery && !suggestionsLoading && (
+              <button onClick={() => { setSearchQuery(""); setSuggestions([]); setShowSuggestions(false); }}>
+                <XIcon className="size-4 text-[#757575]" />
+              </button>
+            )}
+          </div>
+
+          {/* Suggestions dropdown */}
+          {showSuggestions && (
+            <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-xl border border-[#e8e8e8] bg-white shadow-lg">
+              {suggestions.map((s) => (
+                <button
+                  key={s.id}
+                  onMouseDown={(e) => { e.preventDefault(); handleSelectCity(s); }}
+                  className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-[#f9f9f9]"
+                >
+                  <PinIcon className="mt-0.5 size-4 shrink-0 text-[#fa6460]" />
+                  <div className="min-w-0">
+                    <p className="text-[14px] font-medium text-[#1e1e1e]">{s.name}</p>
+                    <p className="truncate text-[12px] text-[#757575]">{s.place_name}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
           )}
         </div>
 
-        {/* Suggestions dropdown */}
-        {showSuggestions && (
-          <div className="absolute left-4 right-4 top-full z-50 mt-1 overflow-hidden rounded-xl border border-[#e8e8e8] bg-white shadow-lg">
-            {suggestions.map((s) => (
-              <button
-                key={s.id}
-                onMouseDown={(e) => { e.preventDefault(); handleSelectLocation(s); }}
-                className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-[#f9f9f9] active:bg-[#f3f3f3]"
-              >
-                <PinIcon className="mt-0.5 size-4 shrink-0 text-[#fa6460]" />
-                <div className="min-w-0">
-                  <p className="text-[14px] font-medium text-[#1e1e1e]">{s.name}</p>
-                  <p className="truncate text-[12px] text-[#757575]">{s.place_name}</p>
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
+        {/* Near Me button */}
+        <button
+          onClick={handleNearMe}
+          disabled={nearMeLoading}
+          className={`flex size-[42px] shrink-0 items-center justify-center rounded-xl transition-colors ${
+            locationMode === "nearby"
+              ? "bg-[#fa6460] text-white"
+              : "bg-[#f3f3f3] text-[#757575]"
+          }`}
+        >
+          {nearMeLoading
+            ? <span className="text-[11px]">…</span>
+            : <NearMeIcon className="size-5" />}
+        </button>
       </div>
 
-      {/* Active location breadcrumb */}
-      {selectedLocation && (
+      {/* Context label */}
+      {contextLabel && (
         <div className="mx-4 mt-2 flex items-center justify-between rounded-lg bg-[#fff3f3] px-3 py-2">
-          <div className="flex items-center gap-1.5">
-            <PinIcon className="size-4 shrink-0 text-[#fa6460]" />
-            <span className="text-[13px] font-medium text-[#1e1e1e]">
-              Showing Auras in <span className="text-[#fa6460]">{selectedLocation.name}</span>
-            </span>
-          </div>
-          <button onClick={handleClearLocation} className="ml-2 shrink-0">
+          <span className="text-[13px] font-medium text-[#1e1e1e]">
+            {contextLabel}
+          </span>
+          <button onClick={handleClearLocation}>
             <XIcon className="size-4 text-[#757575]" />
           </button>
         </div>
       )}
 
+      {/* Archetype chips */}
+      <div className="mt-2 flex gap-2 overflow-x-auto px-4 pb-1 scrollbar-hide">
+        <button
+          onClick={() => handleArchetype(null)}
+          className={`shrink-0 rounded-full px-3 py-1 text-[13px] font-medium transition-colors ${
+            activeArchetype === null ? "bg-[#2c2c2c] text-white" : "bg-[#f3f3f3] text-[#757575]"
+          }`}
+        >
+          All
+        </button>
+        {ARCHETYPES.map((a) => (
+          <button
+            key={a}
+            onClick={() => handleArchetype(activeArchetype === a ? null : a)}
+            className={`shrink-0 rounded-full px-3 py-1 text-[13px] font-medium transition-colors ${
+              activeArchetype === a ? "bg-[#2c2c2c] text-white" : "bg-[#f3f3f3] text-[#757575]"
+            }`}
+          >
+            {a}
+          </button>
+        ))}
+      </div>
+
       {/* Feed */}
-      <div className="mt-4 flex-1 overflow-y-auto px-[7px] pb-20">
+      <div className="mt-3 flex-1 overflow-y-auto px-[7px] pb-20">
         {loading && posts.length === 0 && (
           <div className="flex items-center justify-center py-24">
             <p className="text-[15px] text-[#757575]">Loading feed...</p>
           </div>
         )}
-
         {error && (
-          <div className="flex items-center justify-center py-24">
-            <p className="text-[15px] text-red-500">{error}</p>
+          <div className="flex items-center justify-center py-8">
+            <p className="text-[14px] text-red-500">{error}</p>
           </div>
         )}
-
         {!error && posts.length > 0 && (
           <>
             <div className="flex gap-2">
@@ -382,13 +466,12 @@ export default function AuraFeed() {
                 {rightPosts.map((post) => <FeedCard key={post.id} post={post} />)}
               </div>
             </div>
-
             {hasMore && (
               <div className="mt-6 flex justify-center">
                 <button
-                  onClick={() => fetchPosts(true, selectedLocation)}
+                  onClick={() => fetchPosts({ loadMore: true, coords: activeCoords, archetype: activeArchetype })}
                   disabled={loading}
-                  className="rounded-lg bg-[#ededed] px-6 py-2.5 text-[14px] font-medium text-[#1e1e1e] transition-opacity hover:bg-[#e0e0e0] disabled:opacity-50"
+                  className="rounded-lg bg-[#ededed] px-6 py-2.5 text-[14px] font-medium text-[#1e1e1e] disabled:opacity-50"
                 >
                   {loading ? "Loading..." : "Load More"}
                 </button>
@@ -396,21 +479,16 @@ export default function AuraFeed() {
             )}
           </>
         )}
-
-        {/* Empty state */}
         {!loading && !error && posts.length === 0 && (
           <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
-            {selectedLocation ? (
+            {locationMode !== "global" ? (
               <>
                 <p className="text-[32px]">🗺️</p>
                 <p className="mt-3 text-[17px] font-semibold text-[#1e1e1e]">
-                  No Auras in {selectedLocation.name} yet.
+                  No Auras here yet.
                 </p>
                 <p className="mt-1 text-[14px] text-[#757575]">Be the first to capture this place.</p>
-                <Link
-                  href="/upload"
-                  className="mt-5 rounded-xl bg-[#fa6460] px-6 py-3 text-[15px] font-semibold text-white"
-                >
+                <Link href="/upload" className="mt-5 rounded-xl bg-[#fa6460] px-6 py-3 text-[15px] font-semibold text-white">
                   Be a Pioneer 🚩
                 </Link>
               </>
@@ -431,12 +509,7 @@ export default function AuraFeed() {
               { id: "profile", label: "Profile", href: "/profile", Icon: UserIcon },
             ] as { id: NavItem; label: string; href: string; Icon: ComponentType<{ className?: string }> }[]
           ).map(({ id, label, href, Icon }) => (
-            <Link
-              key={id}
-              href={href}
-              onClick={() => setActiveNav(id)}
-              className="flex w-[37px] flex-col items-center"
-            >
+            <Link key={id} href={href} onClick={() => setActiveNav(id)} className="flex w-[37px] flex-col items-center">
               <Icon className={`size-6 ${activeNav === id ? "text-[#fa6460]" : "text-[#2c2c2c]"}`} />
               <span className={`text-[11px] leading-[1.5] ${activeNav === id ? "text-[#fa6460]" : "text-[#2c2c2c]"}`}>
                 {label}
