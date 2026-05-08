@@ -60,6 +60,7 @@ export default function PostDetailPage() {
   const [cityLocation, setCityLocation] = useState<string | null>(null);
   const [mapToken, setMapToken] = useState<string>("");
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [routeInfo, setRouteInfo] = useState<{ distanceM: number; durationS: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFavorited, setIsFavorited] = useState(false);
@@ -129,9 +130,23 @@ export default function PostDetailPage() {
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
       (pos) => setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => {} // silently ignore denial
+      () => {}
     );
   }, []);
+
+  useEffect(() => {
+    if (!userCoords || !post?.lat || !post?.lng || !mapToken) return;
+    const coords = `${userCoords.lng},${userCoords.lat};${post.lng},${post.lat}`;
+    fetch(
+      `https://api.mapbox.com/directions/v5/mapbox/walking/${coords}?access_token=${mapToken}&overview=false`
+    )
+      .then((r) => r.json())
+      .then((data) => {
+        const route = data.routes?.[0];
+        if (route) setRouteInfo({ distanceM: route.distance, durationS: route.duration });
+      })
+      .catch(() => {});
+  }, [userCoords, post, mapToken]);
 
   if (loading) {
     return (
@@ -285,9 +300,38 @@ export default function PostDetailPage() {
             const padding = userCoords ? "&padding=60" : "";
             const src = `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/${postPin}${userPin}/${viewport}/600x320@2x?access_token=${mapToken}${padding}`;
             return (
-              <div className="mt-5 overflow-hidden rounded-2xl">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={src} alt="Post location map" className="w-full object-cover" />
+              <div className="mt-5">
+                <div className="overflow-hidden rounded-2xl">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={src} alt="Post location map" className="w-full object-cover" />
+                </div>
+                {routeInfo && (
+                  <div className="mt-3 flex items-center gap-4 rounded-xl bg-[#f5f5f5] px-4 py-3">
+                    <div className="flex items-center gap-1.5">
+                      <svg className="size-4 shrink-0 text-[#757575]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                      </svg>
+                      <span className="text-[14px] font-medium text-[#1e1e1e]">
+                        {routeInfo.durationS < 3600
+                          ? `${Math.round(routeInfo.durationS / 60)} min walk`
+                          : `${Math.floor(routeInfo.durationS / 3600)}h ${Math.round((routeInfo.durationS % 3600) / 60)}m walk`}
+                      </span>
+                    </div>
+                    <div className="h-4 w-px bg-[#d9d9d9]" />
+                    <div className="flex items-center gap-1.5">
+                      <svg className="size-4 shrink-0 text-[#757575]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
+                        <circle cx="12" cy="9" r="2.5" />
+                      </svg>
+                      <span className="text-[14px] font-medium text-[#1e1e1e]">
+                        {routeInfo.distanceM < 1000
+                          ? `${Math.round(routeInfo.distanceM)} m away`
+                          : `${(routeInfo.distanceM / 1000).toFixed(1)} km away`}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })()}
