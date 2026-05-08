@@ -108,7 +108,7 @@ export default function PostDetailPage() {
         setPost(foundPost);
 
         const token = getToken();
-        const authHeader = token ? { Authorization: `Bearer ${token}` } : {};
+        const authHeader: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
         // Fetch city, map token, save status, and perspectives in parallel
         const [cityTokenRes, saveRes, perspRes] = await Promise.allSettled([
