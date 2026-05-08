@@ -133,9 +133,7 @@ function FeedCard({ post }: { post: Post }) {
           {post.is_verified && <span className="shrink-0 text-[11px]">📍</span>}
           <span className="truncate text-[13px] font-semibold leading-tight text-[#1e1e1e]">{post.title}</span>
         </div>
-        {post.description && (
-          <p className="truncate text-[13px] leading-tight text-[#757575]">{post.description}</p>
-        )}
+
         <div className="flex items-center gap-2">
           <p className="text-[11px] text-[#999]">{formatDate(post.created_at)}</p>
           {post.distance_meters != null && (
