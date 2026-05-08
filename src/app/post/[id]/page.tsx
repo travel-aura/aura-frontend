@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { apiGet } from "@/lib/api";
+import Link from "next/link";
+import { apiGet, API_BASE } from "@/lib/api";
+import { getToken } from "@/lib/auth";
 import { getCityFromCoordinates } from "@/lib/geocoding";
 import type { Aura } from "../../../../shared/aura-schema";
 
@@ -64,6 +66,8 @@ export default function PostDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFavorited, setIsFavorited] = useState(false);
+  const [savePending, setSavePending] = useState(false);
+  const [perspectives, setPerspectives] = useState<Aura[]>([]);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
@@ -103,18 +107,33 @@ export default function PostDetailPage() {
 
         setPost(foundPost);
 
-        // Get city location and map token
-        if (foundPost.lat && foundPost.lng) {
-          try {
-            const [city, tokenRes] = await Promise.all([
-              getCityFromCoordinates(foundPost.lat, foundPost.lng),
-              fetch("/api/mapbox-token").then((r) => r.json()),
-            ]);
-            setCityLocation(city);
-            setMapToken(tokenRes.token ?? "");
-          } catch {
-            setCityLocation(`${foundPost.lat.toFixed(4)}, ${foundPost.lng.toFixed(4)}`);
-          }
+        const token = getToken();
+        const authHeader = token ? { Authorization: `Bearer ${token}` } : {};
+
+        // Fetch city, map token, save status, and perspectives in parallel
+        const [cityTokenRes, saveRes, perspRes] = await Promise.allSettled([
+          foundPost.lat && foundPost.lng
+            ? Promise.all([
+                getCityFromCoordinates(foundPost.lat, foundPost.lng),
+                fetch("/api/mapbox-token").then((r) => r.json()),
+              ])
+            : Promise.resolve(null),
+          fetch(`${API_BASE}/api/saves/check?aura_id=${foundPost.id}`, { headers: authHeader })
+            .then((r) => r.ok ? r.json() : { saved: false }),
+          fetch(`${API_BASE}/api/auras/${foundPost.id}/perspectives`, { headers: authHeader })
+            .then((r) => r.ok ? r.json() : { perspectives: [] }),
+        ]);
+
+        if (cityTokenRes.status === "fulfilled" && cityTokenRes.value) {
+          const [city, tokenData] = cityTokenRes.value as [string, { token: string }];
+          setCityLocation(city);
+          setMapToken(tokenData.token ?? "");
+        }
+        if (saveRes.status === "fulfilled") {
+          setIsFavorited((saveRes.value as { saved: boolean }).saved ?? false);
+        }
+        if (perspRes.status === "fulfilled") {
+          setPerspectives((perspRes.value as { perspectives: Aura[] }).perspectives ?? []);
         }
       } catch (err) {
         console.error("Failed to fetch post:", err);
@@ -196,7 +215,24 @@ export default function PostDetailPage() {
         </div>
 
         <button
-          onClick={() => setIsFavorited(!isFavorited)}
+          disabled={savePending}
+          onClick={async () => {
+            if (savePending || !post) return;
+            setSavePending(true);
+            const token = getToken();
+            const headers: Record<string, string> = { "Content-Type": "application/json" };
+            if (token) headers.Authorization = `Bearer ${token}`;
+            try {
+              if (isFavorited) {
+                await fetch(`${API_BASE}/api/saves/${post.id}`, { method: "DELETE", headers });
+                setIsFavorited(false);
+              } else {
+                await fetch(`${API_BASE}/api/saves`, { method: "POST", headers, body: JSON.stringify({ aura_id: post.id }) });
+                setIsFavorited(true);
+              }
+            } catch { /* keep optimistic state */ }
+            finally { setSavePending(false); }
+          }}
           className="flex items-center"
         >
           <HeartIcon
@@ -337,6 +373,30 @@ export default function PostDetailPage() {
               </div>
             );
           })()}
+
+          {/* Perspectives */}
+          {perspectives.length > 0 && (
+            <div className="mt-6 border-t border-[#f3f3f3] pt-4">
+              <p className="text-[13px] font-semibold text-[#1e1e1e]">
+                {perspectives.length} Perspective{perspectives.length > 1 ? "s" : ""}
+              </p>
+              <div className="mt-3 flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                {perspectives.map((p) => (
+                  <Link key={p.id} href={`/post/${p.id}`} className="relative shrink-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={p.image_urls[0]}
+                      alt={p.title}
+                      className="size-24 rounded-xl object-cover"
+                    />
+                    {p.image_urls.length > 1 && (
+                      <span className="absolute right-1.5 top-1.5 text-white text-[10px] drop-shadow">⊞</span>
+                    )}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Metadata */}
           {post.is_verified && (

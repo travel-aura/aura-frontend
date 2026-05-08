@@ -154,7 +154,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("Uploaded");
   const [uploadedPosts, setUploadedPosts] = useState<Post[]>([]);
-  const [savedPosts] = useState<Post[]>([]); // TODO: Implement saved posts
+  const [savedPosts, setSavedPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userName, setUserName] = useState("User");
@@ -204,6 +204,12 @@ export default function ProfilePage() {
         );
 
         setUploadedPosts(sortedPosts);
+
+        // Fetch saved posts
+        try {
+          const savesRes = await apiGet<{ ok: boolean; auras: Post[] }>("/api/saves");
+          setSavedPosts(savesRes.auras ?? []);
+        } catch { /* endpoint may not exist yet */ }
 
         // Fetch archetype stats
         const statsResponse = await apiGet<{ ok: boolean; stats: ArchetypeStats }>("/api/auras/me/stats");

@@ -170,7 +170,7 @@ export default function UploadPage() {
     else if (gpsPhotoIndex === index) setGpsPhotoIndex(0);
   };
 
-  const doUpload = async () => {
+  const doUpload = async (parentId?: string | null) => {
     setError(null);
     setGpsWarning(null);
     setIsUploading(true);
@@ -182,6 +182,7 @@ export default function UploadPage() {
         title: title.trim(),
         archetype_tag: activeCategory,
         description: description.trim() || undefined,
+        parent_id: parentId ?? null,
       };
       const result: UploadResult = await processAndUploadMultipleAuras(
         allFiles, gpsPhoto.file, metadata,
@@ -436,24 +437,28 @@ export default function UploadPage() {
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40">
           <div className="w-full rounded-t-2xl bg-white px-5 pb-10 pt-5">
             <div className="mb-4 h-1 w-10 rounded-full bg-[#d9d9d9] mx-auto" />
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-[#fa6460]">📍 Posts nearby</p>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-[#fa6460]">📍 You&apos;re nearby</p>
             <h2 className="mt-2 text-[20px] font-bold text-[#1e1e1e]">
-              Are you adding a new perspective to "{nearbyPosts[0].title}"?
+              "{nearbyPosts[0].title}" is {Math.round(nearbyPosts[0].distance_meters)}m away
             </h2>
             <p className="mt-1 text-[14px] text-[#757575]">
-              {nearbyPosts.length === 1
-                ? `1 post within ${Math.round(nearbyPosts[0].distance_meters)}m of this location.`
-                : `${nearbyPosts.length} posts within range of this location.`}
+              Add your photo as a Perspective of this spot, or start a new Anchor.
             </p>
             <button
-              onClick={async () => { setShowNearbyPrompt(false); await doUpload(); }}
+              onClick={async () => { setShowNearbyPrompt(false); await doUpload(nearbyPosts[0].id); }}
               className="mt-5 w-full rounded-[40px] bg-[#101827] py-[13px] text-[17px] font-medium text-white"
             >
-              Yes, upload anyway
+              Add as Perspective
+            </button>
+            <button
+              onClick={async () => { setShowNearbyPrompt(false); await doUpload(null); }}
+              className="mt-3 w-full rounded-[40px] border border-[#e0e0e0] py-[13px] text-[17px] font-medium text-[#1e1e1e]"
+            >
+              No, new Anchor
             </button>
             <button
               onClick={() => setShowNearbyPrompt(false)}
-              className="mt-3 w-full rounded-[40px] border border-[#e0e0e0] py-[13px] text-[17px] font-medium text-[#1e1e1e]"
+              className="mt-2 w-full py-2 text-[14px] text-[#999]"
             >
               Cancel
             </button>

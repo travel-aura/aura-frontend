@@ -139,6 +139,9 @@ function FeedCard({ post }: { post: Post }) {
           {post.distance_meters != null && (
             <p className="text-[11px] font-medium text-[#fa6460]">{formatDistance(post.distance_meters)}</p>
           )}
+          {(post.perspectives_count ?? 0) > 0 && (
+            <p className="text-[11px] font-medium text-[#757575]">+{post.perspectives_count} perspectives</p>
+          )}
         </div>
       </div>
     </Link>

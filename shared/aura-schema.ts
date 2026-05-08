@@ -40,6 +40,8 @@ export interface Post {
   created_at: string;          // snake_case
   is_verified: boolean;
   distance_meters?: number | null; // only present when feed called with lat/lng
+  parent_id?: string | null;   // null = Anchor, string = Perspective
+  perspectives_count?: number; // enriched by backend on feed queries
 }
 
 // 3. What frontend sends in upload metadata
@@ -52,6 +54,7 @@ export interface AuraUploadMetadata {
   heading?: number;            // Optional - only if GPS found
   altitude?: number;           // Optional - only if GPS found (formerly alt)
   is_verified: boolean;        // true if GPS, false if no GPS
+  parent_id?: string | null;   // null = new Anchor, string = Perspective of that post
 }
 
 // 4. Profile page response
