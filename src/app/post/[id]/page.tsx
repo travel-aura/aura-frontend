@@ -58,6 +58,7 @@ export default function PostDetailPage() {
 
   const [post, setPost] = useState<Aura | null>(null);
   const [cityLocation, setCityLocation] = useState<string | null>(null);
+  const [mapToken, setMapToken] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFavorited, setIsFavorited] = useState(false);
@@ -99,15 +100,16 @@ export default function PostDetailPage() {
 
         setPost(foundPost);
 
-        // Get city location from coordinates if available
+        // Get city location and map token
         if (foundPost.lat && foundPost.lng) {
           try {
-            console.log("Fetching city for:", foundPost.lat, foundPost.lng);
-            const city = await getCityFromCoordinates(foundPost.lat, foundPost.lng);
-            console.log("City:", city);
+            const [city, tokenRes] = await Promise.all([
+              getCityFromCoordinates(foundPost.lat, foundPost.lng),
+              fetch("/api/mapbox-token").then((r) => r.json()),
+            ]);
             setCityLocation(city);
-          } catch (geoError) {
-            console.error("Geocoding failed, using coordinates:", geoError);
+            setMapToken(tokenRes.token ?? "");
+          } catch {
             setCityLocation(`${foundPost.lat.toFixed(4)}, ${foundPost.lng.toFixed(4)}`);
           }
         }
@@ -260,6 +262,18 @@ export default function PostDetailPage() {
             <p className="mt-4 text-[15px] leading-relaxed text-[#757575]">
               {post.description}
             </p>
+          )}
+
+          {/* Static map */}
+          {post.lat && post.lng && mapToken && (
+            <div className="mt-5 overflow-hidden rounded-2xl">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/pin-l+fa6460(${post.lng},${post.lat})/${post.lng},${post.lat},14,0/600x320@2x?access_token=${mapToken}`}
+                alt="Post location map"
+                className="w-full object-cover"
+              />
+            </div>
           )}
 
           {/* Metadata */}
