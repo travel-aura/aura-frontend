@@ -59,6 +59,7 @@ export default function PostDetailPage() {
   const [post, setPost] = useState<Aura | null>(null);
   const [cityLocation, setCityLocation] = useState<string | null>(null);
   const [mapToken, setMapToken] = useState<string>("");
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFavorited, setIsFavorited] = useState(false);
@@ -123,6 +124,14 @@ export default function PostDetailPage() {
 
     fetchPost();
   }, [postId]);
+
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => {} // silently ignore denial
+    );
+  }, []);
 
   if (loading) {
     return (
@@ -265,16 +274,23 @@ export default function PostDetailPage() {
           )}
 
           {/* Static map */}
-          {post.lat && post.lng && mapToken && (
-            <div className="mt-5 overflow-hidden rounded-2xl">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={`https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/pin-l+fa6460(${post.lng},${post.lat})/${post.lng},${post.lat},14,0/600x320@2x?access_token=${mapToken}`}
-                alt="Post location map"
-                className="w-full object-cover"
-              />
-            </div>
-          )}
+          {post.lat && post.lng && mapToken && (() => {
+            const postPin = `pin-l+fa6460(${post.lng},${post.lat})`;
+            const userPin = userCoords
+              ? `,pin-s+4285f4(${userCoords.lng},${userCoords.lat})`
+              : "";
+            const viewport = userCoords
+              ? `auto`
+              : `${post.lng},${post.lat},14,0`;
+            const padding = userCoords ? "&padding=60" : "";
+            const src = `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/${postPin}${userPin}/${viewport}/600x320@2x?access_token=${mapToken}${padding}`;
+            return (
+              <div className="mt-5 overflow-hidden rounded-2xl">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={src} alt="Post location map" className="w-full object-cover" />
+              </div>
+            );
+          })()}
 
           {/* Metadata */}
           {post.is_verified && (
