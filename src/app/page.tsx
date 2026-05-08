@@ -3,6 +3,7 @@
 import { type ComponentType, useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { apiGet } from "@/lib/api";
+import { searchPlaces } from "@/lib/geocoding";
 import type { Post, Archetype } from "../../shared/aura-schema";
 
 const RADIUS = 5000;
@@ -199,19 +200,16 @@ export default function AuraFeed() {
       return;
     }
     debounceRef.current = setTimeout(async () => {
-      const token = typeof window !== "undefined"
-        ? (window as { __MAPBOX_TOKEN__?: string }).__MAPBOX_TOKEN__ ?? ""
-        : "";
-      if (!token) return;
       setSuggestionsLoading(true);
       try {
-        const res = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchQuery)}.json?access_token=${token}&types=place,locality,neighborhood,district&limit=5`
-        );
-        const data = await res.json();
-        const results: LocationSuggestion[] = (data.features ?? []).map((f: {
-          id: string; text: string; place_name: string; center: [number, number];
-        }) => ({ id: f.id, name: f.text, place_name: f.place_name, lat: f.center[1], lng: f.center[0] }));
+        const places = await searchPlaces(searchQuery);
+        const results: LocationSuggestion[] = places.map((p, i) => ({
+          id: String(i),
+          name: p.name.split(",")[0],
+          place_name: p.name,
+          lat: p.lat,
+          lng: p.lng,
+        }));
         setSuggestions(results);
         setShowSuggestions(results.length > 0);
       } catch { setSuggestions([]); }
