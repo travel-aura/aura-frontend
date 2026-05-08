@@ -22,6 +22,8 @@ steps:
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
+      - '--set-env-vars'
+      - 'MAPBOX_TOKEN=$_MAPBOX_TOKEN'
 
 images:
   - 'gcr.io/$PROJECT_ID/aura-frontend:latest'
