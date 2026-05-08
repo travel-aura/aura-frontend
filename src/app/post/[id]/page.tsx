@@ -65,6 +65,7 @@ export default function PostDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isFavorited, setIsFavorited] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -221,7 +222,8 @@ export default function PostDetailPage() {
             {post.image_urls.map((url, index) => (
               <div
                 key={index}
-                className="aspect-[3/4] w-[60%] shrink-0 snap-start overflow-hidden rounded-2xl"
+                className="aspect-[3/4] w-[60%] shrink-0 snap-start overflow-hidden rounded-2xl cursor-zoom-in"
+                onClick={() => setLightboxIndex(index)}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -359,6 +361,63 @@ export default function PostDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Lightbox */}
+      {lightboxIndex !== null && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black"
+          onClick={() => setLightboxIndex(null)}
+        >
+          {/* Close button */}
+          <button
+            className="absolute right-4 top-4 flex size-9 items-center justify-center rounded-full bg-white/20 text-white"
+            onClick={() => setLightboxIndex(null)}
+          >
+            <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={2}>
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+
+          {/* Image counter */}
+          {post.image_urls.length > 1 && (
+            <span className="absolute left-4 top-5 text-[13px] font-medium text-white/70">
+              {lightboxIndex + 1} / {post.image_urls.length}
+            </span>
+          )}
+
+          {/* Image */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={post.image_urls[lightboxIndex]}
+            alt={post.title}
+            className="max-h-screen max-w-full object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+
+          {/* Prev / Next arrows */}
+          {lightboxIndex > 0 && (
+            <button
+              className="absolute left-3 top-1/2 -translate-y-1/2 flex size-10 items-center justify-center rounded-full bg-white/20 text-white"
+              onClick={(e) => { e.stopPropagation(); setLightboxIndex(lightboxIndex - 1); }}
+            >
+              <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+          )}
+          {lightboxIndex < post.image_urls.length - 1 && (
+            <button
+              className="absolute right-3 top-1/2 -translate-y-1/2 flex size-10 items-center justify-center rounded-full bg-white/20 text-white"
+              onClick={(e) => { e.stopPropagation(); setLightboxIndex(lightboxIndex + 1); }}
+            >
+              <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
