@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiGet } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import TopBar from "@/components/TopBar";
+import PostGrid from "@/components/PostGrid";
 import type { Post, UserProfile } from "../../../shared/aura-schema";
 
 const AVATAR =
@@ -60,26 +62,6 @@ function UserIcon({ className, filled }: { className?: string; filled?: boolean 
     </svg>
   );
 }
-
-function ImageEmptyIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 32 32"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={3}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M22.5 30H8.5C5.7 30 4.3 30 3.23 29.455A4 4 0 0 1 1.045 27.27C.5 26.2.5 24.8.5 22V10C.5 7.2.5 5.8 1.045 4.73A4 4 0 0 1 3.23 2.545C4.3 2 5.7 2 8.5 2H22.5C25.3 2 26.7 2 27.77 2.545A4 4 0 0 1 29.955 4.73C30.5 5.8 30.5 7.2 30.5 10V22C30.5 24.8 30.5 26.2 29.955 27.27A4 4 0 0 1 27.77 29.455C26.7 30 25.3 30 22.5 30Z" />
-      <path d="M22.5 30C25.3 30 26.7 30 27.77 29.455A4 4 0 0 0 29.955 27.27C30.5 26.2 30.5 24.8 30.5 22V18M22.5 30H8.5C5.7 30 4.3 30 3.23 29.455A4 4 0 0 1 1.045 27.27C.5 26.2.5 24.8.5 22V18M22.5 18L16.5 12 4.109 25.552C4.038 25.628 4.003 25.666 3.804 25.8M22.5 18L30.5 10" />
-      <circle cx="9.667" cy="9.167" r="3.333" />
-    </svg>
-  );
-}
-
-// ── Bottom Nav ─────────────────────────────────────────────────────────────────
 
 type NavItem = "home" | "create" | "profile";
 
@@ -140,15 +122,6 @@ function calculatePercentage(count: number, total: number): string {
 const TABS = ["Uploaded", "Saved"] as const;
 type Tab = (typeof TABS)[number];
 
-// Multi-image indicator icon
-function LayersIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2L2 7l10 5 10-5-10-5z" opacity="0.6"/>
-      <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
-    </svg>
-  );
-}
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -242,26 +215,7 @@ export default function ProfilePage() {
 
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-white">
-      {/* Header */}
-      <div className="relative flex items-center justify-center px-4 pt-3">
-        <span className="text-[20px] font-bold tracking-tight text-[#1e1e1e]">Aura</span>
-        <div className="absolute right-4 flex items-center gap-3">
-          <Link href="/friends" aria-label="Find friends">
-            <svg className="size-6 text-[#1e1e1e]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <line x1="19" y1="8" x2="19" y2="14" />
-              <line x1="22" y1="11" x2="16" y2="11" />
-            </svg>
-          </Link>
-          <Link href="/notifications" aria-label="Notifications">
-            <svg className="size-6 text-[#1e1e1e]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-            </svg>
-          </Link>
-        </div>
-      </div>
+      <TopBar />
 
         {/* Scrollable body */}
         <div className="flex-1 overflow-y-auto">
@@ -353,128 +307,29 @@ export default function ProfilePage() {
 
           {/* Content area */}
           <div className="px-0.5 py-0.5">
-            {/* Loading state */}
             {loading && (
               <div className="flex flex-col items-center justify-center py-24">
                 <p className="text-[15px] text-[#757575]">Loading...</p>
               </div>
             )}
-
-            {/* Error state */}
             {error && !loading && (
               <div className="flex flex-col items-center justify-center py-24">
                 <p className="text-[15px] text-red-500">{error}</p>
               </div>
             )}
-
-            {/* Uploaded tab - Empty state */}
-            {!loading && !error && activeTab === "Uploaded" && uploadedPosts.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-24">
-                <ImageEmptyIcon className="size-[31px] text-black" />
-                <p className="mt-5 text-[17px] font-semibold text-[#1e1e1e]">
-                  No posts yet
-                </p>
-                <p className="mt-1 text-center text-[13px] leading-[1.5] text-[#757575]">
-                  You haven&apos;t uploaded anything yet.
-                </p>
-              </div>
+            {!loading && !error && activeTab === "Uploaded" && (
+              <PostGrid
+                posts={uploadedPosts}
+                emptyTitle="No posts yet"
+                emptyMessage="You haven't uploaded anything yet."
+              />
             )}
-
-            {/* Uploaded tab - Single post */}
-            {!loading && !error && activeTab === "Uploaded" && uploadedPosts.length === 1 && (
-              <div className="w-[128px]">
-                <Link href={`/post/${uploadedPosts[0].id}`} className="relative block aspect-square">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={uploadedPosts[0].image_urls[0]}
-                    alt={uploadedPosts[0].title}
-                    className="h-full w-full object-cover"
-                  />
-                  {/* Multi-image indicator */}
-                  {uploadedPosts[0].image_urls.length > 1 && (
-                    <div className="absolute right-2 top-2">
-                      <LayersIcon className="size-5 text-white drop-shadow-lg" />
-                    </div>
-                  )}
-                </Link>
-              </div>
-            )}
-
-            {/* Uploaded tab - Multiple posts grid */}
-            {!loading && !error && activeTab === "Uploaded" && uploadedPosts.length > 1 && (
-              <div className="grid grid-cols-3 gap-1">
-                {uploadedPosts.map((post) => (
-                  <Link key={post.id} href={`/post/${post.id}`} className="relative block aspect-square">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={post.image_urls[0]}
-                      alt={post.title}
-                      className="h-full w-full object-cover"
-                    />
-                    {/* Multi-image indicator */}
-                    {post.image_urls.length > 1 && (
-                      <div className="absolute right-2 top-2">
-                        <LayersIcon className="size-4 text-white drop-shadow-lg" />
-                      </div>
-                    )}
-                  </Link>
-                ))}
-              </div>
-            )}
-
-            {/* Saved tab - Empty state */}
-            {!loading && !error && activeTab === "Saved" && savedPosts.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-24">
-                <ImageEmptyIcon className="size-[31px] text-black" />
-                <p className="mt-5 text-[17px] font-semibold text-[#1e1e1e]">
-                  No saved posts
-                </p>
-                <p className="mt-1 text-center text-[13px] leading-[1.5] text-[#757575]">
-                  You haven&apos;t saved anything yet.
-                </p>
-              </div>
-            )}
-
-            {/* Saved tab - Single post */}
-            {!loading && !error && activeTab === "Saved" && savedPosts.length === 1 && (
-              <div className="w-[128px]">
-                <Link href={`/post/${savedPosts[0].id}`} className="relative block aspect-square">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={savedPosts[0].image_urls[0]}
-                    alt={savedPosts[0].title}
-                    className="h-full w-full object-cover"
-                  />
-                  {/* Multi-image indicator */}
-                  {savedPosts[0].image_urls.length > 1 && (
-                    <div className="absolute right-2 top-2">
-                      <LayersIcon className="size-5 text-white drop-shadow-lg" />
-                    </div>
-                  )}
-                </Link>
-              </div>
-            )}
-
-            {/* Saved tab - Multiple posts grid */}
-            {!loading && !error && activeTab === "Saved" && savedPosts.length > 1 && (
-              <div className="grid grid-cols-3 gap-1">
-                {savedPosts.map((post) => (
-                  <Link key={post.id} href={`/post/${post.id}`} className="relative block aspect-square">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={post.image_urls[0]}
-                      alt={post.title}
-                      className="h-full w-full object-cover"
-                    />
-                    {/* Multi-image indicator */}
-                    {post.image_urls.length > 1 && (
-                      <div className="absolute right-2 top-2">
-                        <LayersIcon className="size-4 text-white drop-shadow-lg" />
-                      </div>
-                    )}
-                  </Link>
-                ))}
-              </div>
+            {!loading && !error && activeTab === "Saved" && (
+              <PostGrid
+                posts={savedPosts}
+                emptyTitle="No saved posts"
+                emptyMessage="You haven't saved anything yet."
+              />
             )}
           </div>
         </div>

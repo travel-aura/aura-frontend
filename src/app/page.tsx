@@ -4,6 +4,7 @@ import { type ComponentType, useState, useEffect, useRef, useCallback } from "re
 import Link from "next/link";
 import { apiGet } from "@/lib/api";
 import { searchPlaces } from "@/lib/geocoding";
+import TopBar from "@/components/TopBar";
 import type { Post, Archetype } from "../../shared/aura-schema";
 
 const RADIUS = 5000;
@@ -331,16 +332,7 @@ export default function AuraFeed() {
 
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-white">
-      {/* Header */}
-      <div className="relative flex items-center justify-center px-4 pt-2">
-        <span className="text-[20px] font-bold tracking-tight text-[#1e1e1e]">Aura</span>
-        <Link href="/notifications" aria-label="Notifications" className="absolute right-4">
-          <svg className="size-6 text-[#1e1e1e]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-          </svg>
-        </Link>
-      </div>
+      <TopBar />
 
       {/* Tabs */}
       <div className="mt-2 flex items-center justify-center gap-2">
