@@ -10,17 +10,6 @@ import type { Archetype } from "../../../shared/aura-schema";
 
 interface NearbyPost { id: string; title: string; distance_meters: number; }
 
-// Figma asset URLs (expire in 7 days)
-const ASSETS = {
-  imageIcon:
-    "https://www.figma.com/api/mcp/asset/611d27dc-b9b5-4146-bda0-d90c92fa69a8",
-  imageIconSmall:
-    "https://www.figma.com/api/mcp/asset/2532ec2f-efad-4e68-81b9-27d4929f781a",
-  photo:
-    "https://www.figma.com/api/mcp/asset/357d9b5a-bd30-40f7-adb4-e337eee5c36c",
-  closeIcon:
-    "https://www.figma.com/api/mcp/asset/cc491114-9e32-4b89-8a7f-51e70c69aedb",
-};
 
 const CATEGORIES: readonly Archetype[] = ["The Angle", "The Path", "The Spot", "The Interior"];
 
@@ -263,8 +252,10 @@ export default function UploadPage() {
                 className="mx-3 mt-4 flex items-center gap-5"
               >
                 <div className="flex h-[122px] w-[98px] shrink-0 items-center justify-center rounded-[10px] border border-[#e6e6e6] bg-gradient-to-b from-[#f6fafb] to-white">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={ASSETS.imageIcon} alt="" className="size-[37px]" />
+                  <svg className="size-[37px] text-[#b7b7b7]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
                 </div>
                 <p className="text-left text-[12px] leading-[1.5] text-[#717171]">
                   Select photos
@@ -325,12 +316,10 @@ export default function UploadPage() {
                       onClick={() => removePhoto(i)}
                       className="absolute right-[5px] top-[5px] flex size-[20px] items-center justify-center rounded-full bg-black/50"
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={ASSETS.closeIcon}
-                        alt="Remove"
-                        className="size-3"
-                      />
+                      <svg className="size-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
                     </button>
                   </div>
                 ))}

@@ -196,7 +196,10 @@ export default function PostDetailPage() {
     <div className="relative flex min-h-screen w-full flex-col bg-white">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-[#d9d9d9] px-4 py-3">
-        <button onClick={() => router.back()} className="flex items-center">
+        <button
+          onClick={() => window.history.length > 1 ? router.back() : router.push("/")}
+          className="flex items-center"
+        >
           <ChevronLeftIcon className="size-6 text-[#1e1e1e]" />
         </button>
 
