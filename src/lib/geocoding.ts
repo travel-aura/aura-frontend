@@ -31,7 +31,10 @@ async function getMapboxToken(): Promise<string> {
 interface MapboxSearchFeature {
   properties: {
     name: string;
+    feature_type?: string;
     context?: {
+      neighborhood?: { name: string };
+      locality?: { name: string };
       place?: { name: string };
       region?: { name: string };
       country?: { name: string };
@@ -44,33 +47,35 @@ interface MapboxSearchResponse {
 }
 
 /**
- * Get city name from coordinates using Mapbox Search API
+ * Get a rich location label from coordinates.
+ * Returns "Neighborhood, City" when available, otherwise "City" or "City, Country".
  */
 export async function getCityFromCoordinates(
   lat: number,
   lng: number
 ): Promise<string> {
   const token = await getMapboxToken();
-  if (!token) {
-    console.warn("Mapbox token not configured");
-    return "Unknown Location";
-  }
+  if (!token) return "Unknown Location";
 
   try {
-    const url = `https://api.mapbox.com/search/searchbox/v1/reverse?longitude=${lng}&latitude=${lat}&access_token=${token}&types=place`;
+    // Request neighborhood + locality + place so we get the most specific result first
+    const url = `https://api.mapbox.com/search/searchbox/v1/reverse?longitude=${lng}&latitude=${lat}&access_token=${token}&types=neighborhood,locality,place`;
     const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error(`Geocoding failed: ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`${response.status}`);
 
     const data: MapboxSearchResponse = await response.json();
+    if (!data.features?.length) return "Unknown Location";
 
-    if (data.features && data.features.length > 0) {
-      return data.features[0].properties.name || "Secret Spot";
-    }
+    const feat = data.features[0];
+    const name = feat.properties.name;
+    const ctx = feat.properties.context;
 
-    return "Unknown Location";
+    // Build "SubArea, City" when the top result is a neighborhood/locality
+    const city = ctx?.place?.name ?? ctx?.locality?.name;
+    if (city && city !== name) return `${name}, ${city}`;
+
+    // Just city name
+    return name || "Unknown Location";
   } catch {
     return `${lat.toFixed(4)}°, ${lng.toFixed(4)}°`;
   }
@@ -84,7 +89,7 @@ export async function searchPlaces(query: string): Promise<Array<{ name: string;
   if (!token) return [];
 
   try {
-    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${token}&types=place,locality,neighborhood&limit=5`;
+    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${token}&types=country,region,place,locality,neighborhood&limit=5`;
     const response = await fetch(url);
 
     if (!response.ok) return [];
