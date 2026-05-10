@@ -77,7 +77,7 @@ export default function FriendsPage() {
     <div className="relative flex min-h-screen w-full flex-col bg-white">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-[#f0f0f0]">
-        <button onClick={() => router.back()} className="flex items-center justify-center">
+        <button onClick={() => window.history.length > 1 ? router.back() : router.push("/")} className="flex items-center justify-center">
           <svg className="size-6 text-[#1e1e1e]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6" />
           </svg>
