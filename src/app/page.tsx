@@ -219,10 +219,11 @@ export default function AuraFeed() {
     }, 300);
   }, [searchQuery]);
 
-  const buildUrl = useCallback((currentOffset: number, coords: Coords | null, archetype: Archetype | null) => {
+  const buildUrl = useCallback((currentOffset: number, coords: Coords | null, archetype: Archetype | null, following: boolean) => {
     let url = `/api/auras/feed?limit=${LIMIT}&offset=${currentOffset}`;
     if (coords) url += `&lat=${coords.lat}&lng=${coords.lng}&radius=${RADIUS}`;
     if (archetype) url += `&archetype=${archetypeParam(archetype)}`;
+    if (following) url += `&following=true`;
     return url;
   }, []);
 
@@ -231,8 +232,9 @@ export default function AuraFeed() {
     coords?: Coords | null;
     archetype?: Archetype | null;
     currentOffset?: number;
+    following?: boolean;
   }) => {
-    const { loadMore = false, coords = null, archetype = null, currentOffset } = opts;
+    const { loadMore = false, coords = null, archetype = null, currentOffset, following = false } = opts;
     const off = currentOffset ?? (loadMore ? offset : 0);
     try {
       setLoading(true);
@@ -240,7 +242,7 @@ export default function AuraFeed() {
         ok: boolean;
         auras: Post[];
         pagination: { limit: number; offset: number; count: number };
-      }>(buildUrl(off, coords, archetype));
+      }>(buildUrl(off, coords, archetype, following));
 
       if (loadMore) {
         setPosts(prev => [...prev, ...response.auras]);
@@ -257,18 +259,29 @@ export default function AuraFeed() {
   }, [offset, buildUrl]);
 
   useEffect(() => {
-    fetchPosts({ coords: null, archetype: null, currentOffset: 0 });
+    fetchPosts({ coords: null, archetype: null, currentOffset: 0, following: false });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const handleTabChange = (tab: Tab) => {
+    setActiveTab(tab);
+    setOffset(0);
+    setLocationMode("global");
+    setUserCoords(null);
+    setSelectedCity(null);
+    setActiveArchetype(null);
+    fetchPosts({ coords: null, archetype: null, currentOffset: 0, following: tab === "following" });
+  };
+
+  const isFollowing = activeTab === "following";
+
   const handleNearMe = () => {
     if (locationMode === "nearby") {
-      // Toggle off
       setLocationMode("global");
       setUserCoords(null);
       setSelectedCity(null);
       setOffset(0);
-      fetchPosts({ coords: null, archetype: activeArchetype, currentOffset: 0 });
+      fetchPosts({ coords: null, archetype: activeArchetype, currentOffset: 0, following: isFollowing });
       return;
     }
     setNearMeLoading(true);
@@ -281,7 +294,7 @@ export default function AuraFeed() {
         setSuggestions([]);
         setLocationMode("nearby");
         setOffset(0);
-        fetchPosts({ coords, archetype: activeArchetype, currentOffset: 0 });
+        fetchPosts({ coords, archetype: activeArchetype, currentOffset: 0, following: isFollowing });
         setNearMeLoading(false);
       },
       () => {
@@ -301,7 +314,7 @@ export default function AuraFeed() {
     setSuggestions([]);
     setShowSuggestions(false);
     setOffset(0);
-    fetchPosts({ coords: city, archetype: activeArchetype, currentOffset: 0 });
+    fetchPosts({ coords: city, archetype: activeArchetype, currentOffset: 0, following: isFollowing });
   };
 
   const handleClearLocation = () => {
@@ -310,14 +323,14 @@ export default function AuraFeed() {
     setSelectedCity(null);
     setSearchQuery("");
     setOffset(0);
-    fetchPosts({ coords: null, archetype: activeArchetype, currentOffset: 0 });
+    fetchPosts({ coords: null, archetype: activeArchetype, currentOffset: 0, following: isFollowing });
   };
 
   const handleArchetype = (a: Archetype | null) => {
     setActiveArchetype(a);
     const coords = locationMode === "nearby" ? userCoords : locationMode === "city" ? selectedCity : null;
     setOffset(0);
-    fetchPosts({ coords, archetype: a, currentOffset: 0 });
+    fetchPosts({ coords, archetype: a, currentOffset: 0, following: isFollowing });
   };
 
   const activeCoords = locationMode === "nearby" ? userCoords : locationMode === "city" ? selectedCity : null;
@@ -339,7 +352,7 @@ export default function AuraFeed() {
         {(["all", "following"] as Tab[]).map((t) => (
           <button
             key={t}
-            onClick={() => setActiveTab(t)}
+            onClick={() => handleTabChange(t)}
             className={`rounded-full px-3 py-0.5 text-[15px] font-medium transition-colors capitalize ${
               activeTab === t ? "bg-[#5a5a5a] text-[#f5f5f5]" : "text-[#1e1e1e]"
             }`}
@@ -466,7 +479,7 @@ export default function AuraFeed() {
             {hasMore && (
               <div className="mt-6 flex justify-center">
                 <button
-                  onClick={() => fetchPosts({ loadMore: true, coords: activeCoords, archetype: activeArchetype })}
+                  onClick={() => fetchPosts({ loadMore: true, coords: activeCoords, archetype: activeArchetype, following: isFollowing })}
                   disabled={loading}
                   className="rounded-lg bg-[#ededed] px-6 py-2.5 text-[14px] font-medium text-[#1e1e1e] disabled:opacity-50"
                 >

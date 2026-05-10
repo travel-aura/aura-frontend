@@ -8,6 +8,7 @@ import { getToken } from "@/lib/auth";
 import { getCityFromCoordinates } from "@/lib/geocoding";
 import type { Aura } from "../../../../shared/aura-schema";
 
+
 const DEFAULT_AVATAR = "https://www.figma.com/api/mcp/asset/e4add399-8205-4c2a-8782-3da6c9f7bf60";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
@@ -107,33 +108,49 @@ export default function PostDetailPage() {
 
         setPost(foundPost);
 
+        // Use is_saved and perspectives embedded in the post response if available
+        if (foundPost.is_saved !== undefined) setIsFavorited(foundPost.is_saved);
+        if (foundPost.perspectives) setPerspectives(foundPost.perspectives);
+
         const token = getToken();
         const authHeader: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
-        // Fetch city, map token, save status, and perspectives in parallel
-        const [cityTokenRes, saveRes, perspRes] = await Promise.allSettled([
+        // Fetch city + map token; fall back to separate saves/perspectives calls if not embedded
+        const requests: Promise<unknown>[] = [
           foundPost.lat && foundPost.lng
             ? Promise.all([
                 getCityFromCoordinates(foundPost.lat, foundPost.lng),
                 fetch("/api/mapbox-token").then((r) => r.json()),
               ])
             : Promise.resolve(null),
-          fetch(`${API_BASE}/api/saves/check?aura_id=${foundPost.id}`, { headers: authHeader })
-            .then((r) => r.ok ? r.json() : { saved: false }),
-          fetch(`${API_BASE}/api/auras/${foundPost.id}/perspectives`, { headers: authHeader })
-            .then((r) => r.ok ? r.json() : { perspectives: [] }),
-        ]);
+        ];
+        if (foundPost.is_saved === undefined) {
+          requests.push(
+            fetch(`${API_BASE}/api/saves/check?aura_id=${foundPost.id}`, { headers: authHeader })
+              .then((r) => r.ok ? r.json() : { saved: false })
+          );
+        }
+        if (!foundPost.perspectives) {
+          requests.push(
+            fetch(`${API_BASE}/api/auras/${foundPost.id}/perspectives`, { headers: authHeader })
+              .then((r) => r.ok ? r.json() : { perspectives: [] })
+          );
+        }
 
+        const results = await Promise.allSettled(requests);
+
+        const cityTokenRes = results[0];
         if (cityTokenRes.status === "fulfilled" && cityTokenRes.value) {
           const [city, tokenData] = cityTokenRes.value as [string, { token: string }];
           setCityLocation(city);
           setMapToken(tokenData.token ?? "");
         }
-        if (saveRes.status === "fulfilled") {
-          setIsFavorited((saveRes.value as { saved: boolean }).saved ?? false);
+        if (foundPost.is_saved === undefined && results[1]?.status === "fulfilled") {
+          setIsFavorited((results[1].value as { saved: boolean }).saved ?? false);
         }
-        if (perspRes.status === "fulfilled") {
-          setPerspectives((perspRes.value as { perspectives: Aura[] }).perspectives ?? []);
+        const perspResult = results[foundPost.is_saved === undefined ? 2 : 1];
+        if (!foundPost.perspectives && perspResult?.status === "fulfilled") {
+          setPerspectives((perspResult.value as { perspectives: Aura[] }).perspectives ?? []);
         }
       } catch (err) {
         console.error("Failed to fetch post:", err);
@@ -203,7 +220,10 @@ export default function PostDetailPage() {
           <ChevronLeftIcon className="size-6 text-[#1e1e1e]" />
         </button>
 
-        <div className="flex items-center gap-2">
+        <Link
+          href={post.user?.id ? `/profile/${post.user.id}` : "#"}
+          className="flex items-center gap-2"
+        >
           <div className="size-8 overflow-hidden rounded-full">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -215,7 +235,7 @@ export default function PostDetailPage() {
           <span className="text-[15px] font-semibold text-[#1e1e1e]">
             {post.user?.name || post.user?.email?.split("@")[0] || "User"}
           </span>
-        </div>
+        </Link>
 
         <button
           disabled={savePending}

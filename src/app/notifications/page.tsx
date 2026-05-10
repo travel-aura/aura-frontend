@@ -5,17 +5,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { API_BASE } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import type { Notification } from "../../../shared/aura-schema";
 
 const DEFAULT_AVATAR = "https://www.figma.com/api/mcp/asset/e4add399-8205-4c2a-8782-3da6c9f7bf60";
-
-interface Notification {
-  id: string;
-  type: "follow" | "save" | "perspective";
-  actor: { id: string; name?: string; email: string; avatar_url?: string | null };
-  aura_id?: string;
-  aura_title?: string;
-  created_at: string;
-}
 
 function formatDate(d: string) {
   const diff = Date.now() - new Date(d).getTime();
@@ -29,15 +21,14 @@ function formatDate(d: string) {
   return new Date(d).toLocaleDateString();
 }
 
-function notificationText(n: Notification): { main: string; sub?: string } {
-  const name = n.actor.name || n.actor.email.split("@")[0];
+function notificationText(n: Notification) {
   switch (n.type) {
     case "follow":
-      return { main: `${name} started following you` };
+      return { main: `${n.actor_name} started following you` };
     case "save":
-      return { main: `${name} saved your post`, sub: n.aura_title };
+      return { main: `${n.actor_name} saved your post`, sub: n.aura_title };
     case "perspective":
-      return { main: `${name} added a perspective to`, sub: n.aura_title };
+      return { main: `${n.actor_name} added a perspective to`, sub: n.aura_title };
     default:
       return { main: "New notification" };
   }
@@ -47,9 +38,10 @@ export default function NotificationsPage() {
   const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [followPending, setFollowPending] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    const fetchNotifications = async () => {
+    const load = async () => {
       try {
         const token = getToken();
         const headers: Record<string, string> = {};
@@ -58,14 +50,33 @@ export default function NotificationsPage() {
         if (res.ok) {
           const data = await res.json();
           setNotifications(data.notifications ?? []);
+          // Mark all as read
+          fetch(`${API_BASE}/api/notifications/read`, { method: "PATCH", headers }).catch(() => {});
         }
-      } catch { /* endpoint not ready yet */ }
-      finally {
-        setLoading(false);
-      }
+      } catch { /* endpoint not ready */ }
+      finally { setLoading(false); }
     };
-    fetchNotifications();
+    load();
   }, []);
+
+  const handleFollowBack = async (n: Notification) => {
+    if (followPending[n.id]) return;
+    setFollowPending((p) => ({ ...p, [n.id]: true }));
+    const token = getToken();
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (token) headers.Authorization = `Bearer ${token}`;
+    try {
+      if (n.is_following) {
+        await fetch(`${API_BASE}/api/follows/${n.actor_id}`, { method: "DELETE", headers });
+      } else {
+        await fetch(`${API_BASE}/api/follows`, { method: "POST", headers, body: JSON.stringify({ user_id: n.actor_id }) });
+      }
+      setNotifications((prev) =>
+        prev.map((notif) => notif.id === n.id ? { ...notif, is_following: !notif.is_following } : notif)
+      );
+    } catch { /* keep state */ }
+    finally { setFollowPending((p) => ({ ...p, [n.id]: false })); }
+  };
 
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-white">
@@ -79,7 +90,6 @@ export default function NotificationsPage() {
         <h1 className="text-[18px] font-bold text-[#1e1e1e]">Notifications</h1>
       </div>
 
-      {/* Content */}
       <div className="flex-1 overflow-y-auto">
         {loading && (
           <div className="flex items-center justify-center py-20">
@@ -103,43 +113,54 @@ export default function NotificationsPage() {
             {notifications.map((n) => {
               const { main, sub } = notificationText(n);
               return (
-                <li key={n.id} className="flex items-start gap-3 px-4 py-3">
-                  {/* Avatar */}
-                  <div className="mt-0.5 size-10 shrink-0 overflow-hidden rounded-full bg-[#f3f3f3]">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={n.actor.avatar_url || DEFAULT_AVATAR}
-                      alt={n.actor.name || "User"}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
+                <li key={n.id} className={`flex items-start gap-3 px-4 py-3 ${!n.read ? "bg-[#fff8f8]" : ""}`}>
+                  {/* Avatar — taps to public profile */}
+                  <Link href={`/profile/${n.actor_id}`} className="mt-0.5 shrink-0">
+                    <div className="size-10 overflow-hidden rounded-full bg-[#f3f3f3]">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={n.actor_avatar || DEFAULT_AVATAR} alt={n.actor_name} className="h-full w-full object-cover" />
+                    </div>
+                  </Link>
 
                   {/* Text */}
                   <div className="min-w-0 flex-1">
                     <p className="text-[14px] leading-snug text-[#1e1e1e]">
-                      {main}
-                      {sub && (
+                      <Link href={`/profile/${n.actor_id}`} className="font-semibold">
+                        {n.actor_name}
+                      </Link>
+                      {" "}
+                      {n.type === "follow" ? "started following you" : n.type === "save" ? "saved your post" : "added a perspective to"}
+                      {sub && n.aura_id && (
                         <>
                           {" "}
-                          {n.aura_id ? (
-                            <Link href={`/post/${n.aura_id}`} className="font-semibold text-[#1e1e1e] underline-offset-2 hover:underline">
-                              {sub}
-                            </Link>
-                          ) : (
-                            <span className="font-semibold">{sub}</span>
-                          )}
+                          <Link href={`/post/${n.aura_id}`} className="font-semibold underline-offset-2 hover:underline">
+                            {sub}
+                          </Link>
                         </>
                       )}
                     </p>
                     <p className="mt-0.5 text-[12px] text-[#9a9a9a]">{formatDate(n.created_at)}</p>
                   </div>
 
-                  {/* Type indicator dot */}
-                  <div className={`mt-2 size-2 shrink-0 rounded-full ${
-                    n.type === "follow" ? "bg-[#4285f4]" :
-                    n.type === "save" ? "bg-[#fa6460]" :
-                    "bg-[#34c759]"
-                  }`} />
+                  {/* Follow-back button for follow notifications */}
+                  {n.type === "follow" && (
+                    <button
+                      onClick={() => handleFollowBack(n)}
+                      disabled={followPending[n.id]}
+                      className={`shrink-0 rounded-full px-3 py-1 text-[12px] font-semibold transition-colors disabled:opacity-60 ${
+                        n.is_following
+                          ? "border border-[#d9d9d9] bg-white text-[#1e1e1e]"
+                          : "bg-[#fa6460] text-white"
+                      }`}
+                    >
+                      {n.is_following ? "Following" : "Follow back"}
+                    </button>
+                  )}
+
+                  {/* Unread dot for non-follow notifications */}
+                  {n.type !== "follow" && !n.read && (
+                    <div className="mt-2 size-2 shrink-0 rounded-full bg-[#fa6460]" />
+                  )}
                 </li>
               );
             })}

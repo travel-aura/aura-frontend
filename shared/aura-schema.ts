@@ -25,6 +25,8 @@ export interface Aura {
   created_at: string;     // ISO date (snake_case)
   lat: number;
   lng: number;
+  is_saved?: boolean;      // whether the requesting user has saved this post
+  perspectives?: Aura[];   // child posts embedded in GET /api/auras/:id response
 }
 
 // 2. For profile/feed display
@@ -125,4 +127,36 @@ export interface UserProfile {
 export interface ProfileUpdatePayload {
   name?: string;            // Max 10 chars
   bio?: string;             // Max 100 chars
+}
+
+// 10. Public profile (GET /api/users/:id)
+export interface PublicProfile {
+  user_id: string;
+  name: string;
+  bio: string | null;
+  avatar_url: string | null;
+  follower_count: number;
+  following_count: number;
+  is_following: boolean;
+  post_count: number;
+}
+
+export interface PublicProfileResponse {
+  profile: PublicProfile;
+  posts: Post[];
+  stats: ArchetypeStats;
+}
+
+// 11. Notification
+export interface Notification {
+  id: string;
+  type: "follow" | "save" | "perspective";
+  actor_id: string;
+  actor_name: string;
+  actor_avatar: string | null;
+  aura_id?: string;
+  aura_title?: string;
+  is_following?: boolean;
+  read: boolean;
+  created_at: string;
 }
