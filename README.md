@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Aura Frontend
 
-## Getting Started
+Mobile-first webapp for sharing location-verified photos. Users capture moments at real places; GPS EXIF data is extracted and verified on upload.
 
-First, run the development server:
+**Live**: https://aura-frontend-255644230597.us-central1.run.app
+**Backend**: https://aura-backend-255644230597.us-central1.run.app
+
+## Tech Stack
+
+- Next.js 16.1.6 (App Router) · React 19 · TypeScript
+- Tailwind CSS v4
+- `exifr` — EXIF/GPS extraction
+- `browser-image-compression` — WebP conversion & compression
+
+## Local Development
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev -- -H 0.0.0.0   # expose on network for mobile testing
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Create `.env.local`:
+```env
+NEXT_PUBLIC_API_URL=http://<your-local-ip>:8080
+NEXT_PUBLIC_MAPBOX_TOKEN=pk.your_token_here
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Pages
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Route | Description |
+|---|---|
+| `/` | Feed — two-column masonry, location filter, archetype chips |
+| `/upload` | Multi-photo upload (max 3), EXIF GPS extraction |
+| `/profile` | User profile, uploaded/saved tabs, archetype stats |
+| `/profile/edit` | Edit name & bio |
+| `/post/[id]` | Post detail — carousel, map, walking distance, perspectives |
+| `/friends` | Search users, follow/unfollow |
+| `/notifications` | Activity notifications |
+| `/login` | Email/password login |
+| `/register` | New user signup |
 
-## Learn More
+## Key Files
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+├── app/                        # Next.js App Router pages
+├── components/
+│   ├── TopBar.tsx              # Shared header (logo + friends + bell icons)
+│   └── PostGrid.tsx            # Shared post grid (empty / single / multi)
+├── lib/
+│   ├── api.ts                  # apiGet/apiPost with auto JWT headers
+│   ├── auth.ts                 # saveToken / getToken / removeToken
+│   └── geocoding.ts            # Mapbox token fetch + place search
+├── services/
+│   └── uploadService.ts        # EXIF extraction, compression, upload
+shared/
+└── aura-schema.ts              # Source of truth — all TypeScript types
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deploy to GCP
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+git push origin main
+gcloud builds submit --config cloudbuild.yaml
+```
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The Mapbox token is stored as a Cloud Run env var (not in source):
+```bash
+gcloud run services update aura-frontend --update-env-vars MAPBOX_TOKEN=pk.your_token
+```

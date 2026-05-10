@@ -25,6 +25,8 @@
 - `src/app/upload/page.tsx` - Upload UI (max 3 photos)
 - `src/lib/auth.ts` - JWT token management
 - `src/lib/api.ts` - API utilities
+- `src/components/TopBar.tsx` - Shared header (logo + friends + bell icons) used by feed and profile
+- `src/components/PostGrid.tsx` - Shared post grid used by Uploaded and Saved tabs on profile
 
 ### Upload Flow Summary
 ```
@@ -204,17 +206,54 @@ Angle    Path    Spot    Interior
 - Profile page: Shows **name** under profile picture (fallback to email prefix if no name)
 - Edit profile page: Shows **email** in Account section at bottom
 
-#### 6. Pages Implemented
+#### 6. Post Detail Page
+**Location**: `/post/[id]`
+
+**Features**:
+- Full image carousel with lightbox (tap to fullscreen, prev/next arrows)
+- Static Mapbox map showing post location pin (coral) + user location pin (blue)
+- Walking distance and time via Mapbox Directions API
+- Heart/save button — `POST /api/saves` to save, `DELETE /api/saves/:id` to unsave
+- Save state loaded on mount via `GET /api/saves/check?aura_id=`
+- Perspectives strip (linked thumbnails) via `GET /api/auras/:id/perspectives`
+- Back button goes to home if no browser history (direct link share)
+- Uses `Promise.allSettled()` so missing backend endpoints fail silently
+
+#### 7. Friends Page
+**Location**: `/friends`
+
+**Features**:
+- Debounced search input (300ms) → `GET /api/users/search?q=`
+- User cards: avatar, name, Follow / Following toggle button
+- `POST /api/follows` to follow, `DELETE /api/follows/:user_id` to unfollow
+- Empty state and no-results state
+- Gracefully shows nothing if backend endpoint not yet available
+
+#### 8. Notifications Page
+**Location**: `/notifications`
+
+**Features**:
+- Loads `GET /api/notifications` on mount
+- Notification types: `follow`, `save`, `perspective` — each with coloured dot indicator
+- Clickable post titles link to `/post/:id`
+- "All caught up" empty state
+- Silently shows empty state if backend endpoint not yet available
+
+#### 9. Shared Components
+- **`TopBar`** (`src/components/TopBar.tsx`) — logo + friends icon + bell icon. Used by feed (`/`) and profile (`/profile`). Change once, updates both pages.
+- **`PostGrid`** (`src/components/PostGrid.tsx`) — handles empty/single/multi post layout. Used by Uploaded and Saved tabs on profile page.
+
+#### 10. Pages Implemented
 
 - **Feed/Home** (`/`) - Two-column masonry feed with real backend data & pagination
 - **Upload** (`/upload`) - Multi-photo upload with EXIF processing
 - **Profile** (`/profile`) - User profile with name, bio, posts & archetype stats
 - **Edit Profile** (`/profile/edit`) - Name & bio editing with validation
+- **Post Detail** (`/post/[id]`) - Full post view with map, lightbox, perspectives
+- **Friends** (`/friends`) - Search users, follow/unfollow
+- **Notifications** (`/notifications`) - Activity feed
 - **Login** (`/login`) - Authentication
 - **Register** (`/register`) - User signup
-
-#### 7. Design Updates
-- **Removed mock phone status bars** - Cleaned up time, battery, signal indicators from all pages (these were design mockups, not needed in actual webapp)
 
 ## API Integration
 
@@ -233,14 +272,33 @@ POST /auth/login
 POST /auth/logout
 
 // User Profile
-GET /me                          // Get current user info
-PUT /api/profile/update          // Update user profile (name, bio)
+GET /me                                    // Get current user info
+PUT /api/profile/update                    // Update user profile (name, bio)
 
 // Auras/Posts
-GET /api/auras/feed              // Get all auras (paginated) ?limit=10&offset=0
-GET /api/auras/me                // Get current user's auras
-GET /api/auras/me/stats          // Get current user's archetype statistics
-POST /api/auras/upload           // Upload new aura with images
+GET /api/auras/feed                        // Get all auras (paginated) ?limit=10&offset=0&lat=&lng=&radius=&archetype=
+GET /api/auras/:id                         // Get single post by ID
+GET /api/auras/me                          // Get current user's auras
+GET /api/auras/me/stats                    // Get current user's archetype statistics
+POST /api/auras/upload                     // Upload new aura with images
+GET /api/auras/:id/perspectives            // Get perspectives (child posts) for an anchor
+
+// Saves / Hearts
+POST /api/saves                            // Save a post { aura_id }
+DELETE /api/saves/:aura_id                 // Unsave a post
+GET /api/saves                             // Get current user's saved posts
+GET /api/saves/check?aura_id=             // Check if post is saved → { saved: boolean }
+
+// Friends / Follows
+GET /api/users/search?q=                  // Search users by name/email → { users: [..., is_following] }
+POST /api/follows                          // Follow a user { user_id }
+DELETE /api/follows/:user_id              // Unfollow a user
+
+// Notifications
+GET /api/notifications                     // Get user notifications
+
+// Nearby check (for Anchor/Perspective prompt)
+GET /api/auras/check-nearby?lat=&lng=    // Check for nearby posts within radius
 ```
 
 ### Backend Responses
@@ -309,11 +367,20 @@ src/
 │   ├── profile/
 │   │   ├── page.tsx                # Profile view
 │   │   └── edit/page.tsx           # Edit profile
+│   ├── post/[id]/page.tsx          # Post detail (map, carousel, perspectives)
+│   ├── friends/page.tsx            # Search users, follow/unfollow
+│   ├── notifications/page.tsx      # Activity notifications
+│   ├── api/
+│   │   └── mapbox-token/route.ts   # Server-side Mapbox token endpoint
 │   ├── layout.tsx                  # Root layout
 │   └── globals.css                 # Tailwind imports
+├── components/
+│   ├── TopBar.tsx                  # Shared header (logo + friends + bell) — used by feed & profile
+│   └── PostGrid.tsx                # Shared post grid (empty/single/multi) — used by profile tabs
 ├── lib/
 │   ├── api.ts                      # API utilities (apiPost, apiGet)
-│   └── auth.ts                     # Token management (saveToken, getToken)
+│   ├── auth.ts                     # Token management (saveToken, getToken)
+│   └── geocoding.ts                # Mapbox token fetch + place search autocomplete
 ├── services/
 │   └── uploadService.ts            # Image upload with EXIF extraction
 └── shared/
@@ -1126,54 +1193,70 @@ FormData {
 
 ## Project Status Summary
 
-### ✅ Frontend - COMPLETE (100%)
+### ✅ Frontend - COMPLETE
 
 **Upload:**
-- [x] Multi-photo upload UI (max 3 photos)
+- [x] Multi-photo upload UI (max 3 photos), inline SVG icons (no external assets)
 - [x] GPS anchor photo selector
 - [x] Single request upload (all images in one POST)
 - [x] Upload progress tracking
 - [x] GPS optional handling (`is_verified: false` if no GPS)
-- [x] Yellow warning for uploads without GPS
-- [x] FormData with field name `images`
-- [x] Metadata with optional GPS fields (`altitude` not `alt`)
-
-**Profile:**
-- [x] Fetch and display user's posts from `/api/auras/me`
-- [x] Real archetype statistics from `/api/auras/me/stats`
-- [x] Dynamic percentage calculation
-- [x] Grid display with multi-image indicators
-- [x] Auto-redirect to login if not authenticated
-- [x] Display user name under profile picture
-- [x] Display bio if exists
-
-**Edit Profile:**
-- [x] Fetch user profile from `/me` endpoint
-- [x] Edit name (max 10 chars) with character counter
-- [x] Edit bio (max 100 chars) with character counter
-- [x] Save changes via `PUT /api/profile/update`
-- [x] Validation (name required)
-- [x] Error handling for rate limits
-- [x] Display email in Account section
+- [x] Nearby post prompt → Anchor or Perspective choice
 
 **Feed:**
-- [x] Fetch all users' posts from `/api/auras/feed`
-- [x] Two-column masonry layout
-- [x] Pagination (Load More button)
-- [x] Display first image from carousel
-- [x] Relative timestamps (5m ago, 2h ago)
-- [x] Verification indicators
+- [x] Two-column masonry layout with pagination
+- [x] Location filter (Near Me + city search via Mapbox)
+- [x] Archetype chip filters
+- [x] Following tab (UI ready — backend filter needed)
+- [x] `+N perspectives` badge on anchor posts
+- [x] Shared `<TopBar />` header
 
-**Shared:**
-- [x] Type-safe schema (`shared/aura-schema.ts`) with snake_case
-- [x] All interfaces match SQL structure exactly
+**Profile:**
+- [x] Archetype stats, uploaded/saved tabs via shared `<PostGrid />`
+- [x] Saved posts from `GET /api/saves`
+- [x] Shared `<TopBar />` header (identical to feed)
 
-### ⚠️ Backend - Required for Full Functionality
-- [ ] CORS configuration for local development
-- [ ] Change Multer to `upload.array('images', 5)`
-- [ ] Endpoints: `/api/auras/me`, `/api/auras/me/stats`, `/api/auras/feed`
-- [ ] Database: `image_urls TEXT[]` column
-- [ ] RPC functions: `get_user_auras`, `get_user_archetype_stats`, `get_all_auras`
+**Post Detail:**
+- [x] Lightbox carousel, static map, walking distance
+- [x] Heart/save button wired to backend
+- [x] Perspectives thumbnails strip
+- [x] Back button → home when no browser history
+
+**Friends:**
+- [x] Debounced user search, follow/unfollow toggle
+
+**Notifications:**
+- [x] Notification list with type indicators, empty state
+
+**Shared Components:**
+- [x] `src/components/TopBar.tsx` — single source for header
+- [x] `src/components/PostGrid.tsx` — single source for post grid layout
+
+### ⚠️ Backend - Pending for Full Functionality
+
+| Endpoint | Status | Notes |
+|---|---|---|
+| `POST /api/saves` | 500 error | Route exists, crashes — DB issue |
+| `GET /api/saves` | 500 error | Route exists, crashes — DB issue |
+| `GET /api/saves/check?aura_id=` | 404 | Not implemented |
+| `GET /api/auras/:id/perspectives` | 404 | Not implemented |
+| `GET /api/users/search?q=` | 404 | Not implemented |
+| `POST /api/follows` | 404 | Not implemented |
+| `DELETE /api/follows/:user_id` | 404 | Not implemented |
+| `GET /api/notifications` | 404 | Not implemented |
+| `GET /api/auras/feed?following=true` | — | Filter by followed users |
+
+**Follows DB table needed:**
+```sql
+CREATE TABLE follows (
+  follower_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  following_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (follower_id, following_id)
+);
+CREATE INDEX ON follows(follower_id);
+CREATE INDEX ON follows(following_id);
+```
 
 ### 📋 Data Contract
 **Frontend sends:** FormData with multiple files + metadata JSON (snake_case)
@@ -1183,7 +1266,6 @@ FormData {
 
 ---
 
-**Last Updated**: 2026-03-19
-**Current Status**: Core features complete - Upload, Profile, Edit Profile, Feed all implemented with real backend integration
-**Environment**: Configured for `http://10.124.57.22:8080` (network IP for mobile testing)
-**Next**: Backend profile update endpoint (`PUT /api/profile/update`) implementation
+**Last Updated**: 2026-05-10
+**Deployment**: GCP Cloud Run — `gcloud builds submit --config cloudbuild.yaml`
+**Mapbox token**: Set via `gcloud run services update aura-frontend --update-env-vars MAPBOX_TOKEN=pk.xxx` (not in source)
