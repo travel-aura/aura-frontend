@@ -25,6 +25,7 @@ export default function PublicProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [followPending, setFollowPending] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -133,18 +134,30 @@ export default function PublicProfilePage() {
           ))}
         </div>
 
-        {/* Follow button */}
-        <div className="mt-3 px-4">
+        {/* Follow + Share buttons */}
+        <div className="mt-3 flex gap-2 px-4">
           <button
             onClick={handleFollow}
             disabled={followPending}
-            className={`w-full rounded-lg py-[9px] text-[13px] font-semibold transition-colors disabled:opacity-60 ${
+            className={`flex-1 rounded-lg py-[9px] text-[13px] font-semibold transition-colors disabled:opacity-60 ${
               profile.is_following
                 ? "border border-[#d9d9d9] bg-white text-[#1e1e1e]"
                 : "bg-[#fa6460] text-white"
             }`}
           >
             {profile.is_following ? "Following" : "Follow"}
+          </button>
+          <button
+            onClick={() => {
+              const url = `${window.location.origin}/profile/${userId}`;
+              navigator.clipboard.writeText(url).then(() => {
+                setShareCopied(true);
+                setTimeout(() => setShareCopied(false), 2000);
+              });
+            }}
+            className="flex-1 rounded-lg border border-[#d9d9d9] bg-white py-[9px] text-[13px] font-medium text-[#1e1e1e] transition-colors"
+          >
+            {shareCopied ? "Copied!" : "Share profile"}
           </button>
         </div>
 

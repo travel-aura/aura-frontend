@@ -132,6 +132,8 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [userName, setUserName] = useState("User");
   const [userBio, setUserBio] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
   const [stats, setStats] = useState<ArchetypeStats>({
     angle: 0,
     path: 0,
@@ -162,6 +164,7 @@ export default function ProfilePage() {
 
         setUserName(displayName);
         setUserBio(userInfo.bio ?? null);
+        setUserId(userInfo.id ?? null);
 
         // Fetch current user's posts
         const aurasResponse = await apiGet<{ ok: boolean; auras: Post[] }>("/api/auras/me");
@@ -277,15 +280,25 @@ export default function ProfilePage() {
           </div>
 
           {/* Action buttons */}
-          <div className="mt-3 flex gap-4 px-4">
+          <div className="mt-3 flex gap-2 px-4">
             <Link
               href="/profile/edit"
               className="flex-1 rounded-lg bg-[#ededed] py-[9px] text-center text-[13px] font-medium text-[#1e1e1e]"
             >
               Edit profile
             </Link>
-            <button className="flex-1 rounded-lg bg-[#ededed] py-[9px] text-[13px] font-medium text-[#1e1e1e]">
-              Share profile
+            <button
+              onClick={() => {
+                if (!userId) return;
+                const url = `${window.location.origin}/profile/${userId}`;
+                navigator.clipboard.writeText(url).then(() => {
+                  setShareCopied(true);
+                  setTimeout(() => setShareCopied(false), 2000);
+                });
+              }}
+              className="flex-1 rounded-lg bg-[#ededed] py-[9px] text-[13px] font-medium text-[#1e1e1e] transition-colors"
+            >
+              {shareCopied ? "Copied!" : "Share profile"}
             </button>
           </div>
 
