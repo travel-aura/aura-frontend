@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { apiGet, API_BASE } from "@/lib/api";
-import { getToken } from "@/lib/auth";
+import { getToken, getUserId } from "@/lib/auth";
 import { getCityFromCoordinates } from "@/lib/geocoding";
 import type { Aura } from "../../../../shared/aura-schema";
 
@@ -221,7 +221,9 @@ export default function PostDetailPage() {
         </button>
 
         <Link
-          href={post.user?.id ? `/profile/${post.user.id}` : "#"}
+          href={post.user?.id
+            ? (post.user.id === getUserId() ? "/profile" : `/profile/${post.user.id}`)
+            : "#"}
           className="flex items-center gap-2"
         >
           <div className="size-8 overflow-hidden rounded-full">
@@ -237,32 +239,35 @@ export default function PostDetailPage() {
           </span>
         </Link>
 
-        <button
-          disabled={savePending}
-          onClick={async () => {
-            if (savePending || !post) return;
-            setSavePending(true);
-            const token = getToken();
-            const headers: Record<string, string> = { "Content-Type": "application/json" };
-            if (token) headers.Authorization = `Bearer ${token}`;
-            try {
-              if (isFavorited) {
-                await fetch(`${API_BASE}/api/saves/${post.id}`, { method: "DELETE", headers });
-                setIsFavorited(false);
-              } else {
-                await fetch(`${API_BASE}/api/saves`, { method: "POST", headers, body: JSON.stringify({ aura_id: post.id }) });
-                setIsFavorited(true);
-              }
-            } catch { /* keep optimistic state */ }
-            finally { setSavePending(false); }
-          }}
-          className="flex items-center"
-        >
-          <HeartIcon
-            className={`size-6 ${isFavorited ? "text-[#fa6460]" : "text-[#1e1e1e]"}`}
-            filled={isFavorited}
-          />
-        </button>
+        {post.user?.id !== getUserId() && (
+          <button
+            disabled={savePending}
+            onClick={async () => {
+              if (savePending || !post) return;
+              setSavePending(true);
+              const token = getToken();
+              const headers: Record<string, string> = { "Content-Type": "application/json" };
+              if (token) headers.Authorization = `Bearer ${token}`;
+              try {
+                if (isFavorited) {
+                  await fetch(`${API_BASE}/api/saves/${post.id}`, { method: "DELETE", headers });
+                  setIsFavorited(false);
+                } else {
+                  await fetch(`${API_BASE}/api/saves`, { method: "POST", headers, body: JSON.stringify({ aura_id: post.id }) });
+                  setIsFavorited(true);
+                }
+              } catch { /* keep optimistic state */ }
+              finally { setSavePending(false); }
+            }}
+            className="flex items-center"
+          >
+            <HeartIcon
+              className={`size-6 ${isFavorited ? "text-[#fa6460]" : "text-[#1e1e1e]"}`}
+              filled={isFavorited}
+            />
+          </button>
+        )}
+        {post.user?.id === getUserId() && <div className="size-6" />}
       </div>
 
       {/* Scrollable body */}

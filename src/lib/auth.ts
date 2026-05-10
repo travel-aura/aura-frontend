@@ -15,3 +15,11 @@ export const removeToken = () => {
 export const isAuthenticated = (): boolean => {
   return !!getToken();
 };
+
+export const saveUserId = (id: string) => {
+  localStorage.setItem('aura_user_id', id);
+};
+
+export const getUserId = (): string | null => {
+  return localStorage.getItem('aura_user_id');
+};

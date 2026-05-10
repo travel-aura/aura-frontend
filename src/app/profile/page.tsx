@@ -4,7 +4,7 @@ import { type ComponentType, useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiGet } from "@/lib/api";
-import { getToken } from "@/lib/auth";
+import { getToken, saveUserId } from "@/lib/auth";
 import TopBar from "@/components/TopBar";
 import PostGrid from "@/components/PostGrid";
 import type { Post, UserProfile } from "../../../shared/aura-schema";
@@ -164,7 +164,10 @@ export default function ProfilePage() {
 
         setUserName(displayName);
         setUserBio(userInfo.bio ?? null);
-        setUserId(userInfo.id ?? null);
+        if (userInfo.id) {
+          setUserId(userInfo.id);
+          saveUserId(userInfo.id);
+        }
 
         // Fetch current user's posts
         const aurasResponse = await apiGet<{ ok: boolean; auras: Post[] }>("/api/auras/me");
@@ -288,13 +291,22 @@ export default function ProfilePage() {
               Edit profile
             </Link>
             <button
-              onClick={() => {
-                if (!userId) return;
-                const url = `${window.location.origin}/profile/${userId}`;
-                navigator.clipboard.writeText(url).then(() => {
-                  setShareCopied(true);
-                  setTimeout(() => setShareCopied(false), 2000);
-                });
+              onClick={async () => {
+                const url = userId
+                  ? `${window.location.origin}/profile/${userId}`
+                  : window.location.href;
+                try {
+                  await navigator.clipboard.writeText(url);
+                } catch {
+                  const ta = document.createElement("textarea");
+                  ta.value = url;
+                  document.body.appendChild(ta);
+                  ta.select();
+                  document.execCommand("copy");
+                  document.body.removeChild(ta);
+                }
+                setShareCopied(true);
+                setTimeout(() => setShareCopied(false), 2000);
               }}
               className="flex-1 rounded-lg bg-[#ededed] py-[9px] text-[13px] font-medium text-[#1e1e1e] transition-colors"
             >

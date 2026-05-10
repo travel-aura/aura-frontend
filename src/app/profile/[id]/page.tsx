@@ -148,12 +148,20 @@ export default function PublicProfilePage() {
             {profile.is_following ? "Following" : "Follow"}
           </button>
           <button
-            onClick={() => {
+            onClick={async () => {
               const url = `${window.location.origin}/profile/${userId}`;
-              navigator.clipboard.writeText(url).then(() => {
-                setShareCopied(true);
-                setTimeout(() => setShareCopied(false), 2000);
-              });
+              try {
+                await navigator.clipboard.writeText(url);
+              } catch {
+                const ta = document.createElement("textarea");
+                ta.value = url;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand("copy");
+                document.body.removeChild(ta);
+              }
+              setShareCopied(true);
+              setTimeout(() => setShareCopied(false), 2000);
             }}
             className="flex-1 rounded-lg border border-[#d9d9d9] bg-white py-[9px] text-[13px] font-medium text-[#1e1e1e] transition-colors"
           >
