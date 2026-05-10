@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiPost } from "@/lib/api";
-import { saveToken } from "@/lib/auth";
+import { saveToken, saveUserId } from "@/lib/auth";
 
 // ── Register Page ──────────────────────────────────────────────────────────────
 
@@ -46,9 +46,9 @@ export default function RegisterPage() {
       // Store the JWT token from session
       if (response.session?.access_token) {
         saveToken(response.session.access_token);
-        console.log('Token saved successfully!');
-      } else {
-        console.warn('No access_token in response:', response);
+      }
+      if (response.user?.id) {
+        saveUserId(response.user.id);
       }
 
       router.push("/profile");
