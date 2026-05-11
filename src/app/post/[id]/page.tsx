@@ -8,23 +8,24 @@ import { getToken, getUserId } from "@/lib/auth";
 import { getCityFromCoordinates } from "@/lib/geocoding";
 import type { Aura } from "../../../../shared/aura-schema";
 
-
 const DEFAULT_AVATAR = "https://www.figma.com/api/mcp/asset/e4add399-8205-4c2a-8782-3da6c9f7bf60";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
 function ChevronLeftIcon({ className }: { className?: string }) {
   return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
       <polyline points="15 18 9 12 15 6" />
+    </svg>
+  );
+}
+
+function ShareIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+      <polyline points="16 6 12 2 8 6" />
+      <line x1="12" y1="2" x2="12" y2="15" />
     </svg>
   );
 }
@@ -38,16 +39,40 @@ function HeartIcon({ className, filled }: { className?: string; filled?: boolean
     );
   }
   return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
       <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+    </svg>
+  );
+}
+
+function CommentIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
+  );
+}
+
+function BookmarkIcon({ className, filled }: { className?: string; filled?: boolean }) {
+  if (filled) {
+    return (
+      <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+      </svg>
+    );
+  }
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+    </svg>
+  );
+}
+
+function PinIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
+      <circle cx="12" cy="9" r="2.5" />
     </svg>
   );
 }
@@ -66,8 +91,9 @@ export default function PostDetailPage() {
   const [routeInfo, setRouteInfo] = useState<{ distanceM: number; durationS: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isFavorited, setIsFavorited] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   const [savePending, setSavePending] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [perspectives, setPerspectives] = useState<Aura[]>([]);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -77,46 +103,26 @@ export default function PostDetailPage() {
     const fetchPost = async () => {
       try {
         setLoading(true);
-        console.log("Fetching post:", postId);
 
-        // Try to fetch the specific post by ID
-        // If backend has GET /api/auras/:id endpoint, use it
-        // Otherwise fallback to fetching from feed
         let foundPost: Aura | undefined;
 
         try {
-          // Try dedicated endpoint first
-          const directResponse = await apiGet<{ ok: boolean; aura: Aura }>(
-            `/api/auras/${postId}`
-          );
+          const directResponse = await apiGet<{ ok: boolean; aura: Aura }>(`/api/auras/${postId}`);
           foundPost = directResponse.aura;
-          console.log("Fetched post directly:", foundPost);
-        } catch (directError) {
-          console.log("Direct fetch failed, trying feed:", directError);
-
-          // Fallback: fetch from feed and find the post
-          const feedResponse = await apiGet<{ ok: boolean; auras: Aura[] }>(
-            "/api/auras/feed?limit=100&offset=0"
-          );
+        } catch {
+          const feedResponse = await apiGet<{ ok: boolean; auras: Aura[] }>("/api/auras/feed?limit=100&offset=0");
           foundPost = feedResponse.auras.find((p) => p.id === postId);
-          console.log("Found post from feed:", foundPost);
         }
 
-        if (!foundPost) {
-          setError("Post not found");
-          return;
-        }
+        if (!foundPost) { setError("Post not found"); return; }
 
         setPost(foundPost);
-
-        // Use is_saved and perspectives embedded in the post response if available
-        if (foundPost.is_saved !== undefined) setIsFavorited(foundPost.is_saved);
+        if (foundPost.is_saved !== undefined) setIsSaved(foundPost.is_saved);
         if (foundPost.perspectives) setPerspectives(foundPost.perspectives);
 
         const token = getToken();
         const authHeader: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
-        // Fetch city + map token; fall back to separate saves/perspectives calls if not embedded
         const requests: Promise<unknown>[] = [
           foundPost.lat && foundPost.lng
             ? Promise.all([
@@ -147,14 +153,13 @@ export default function PostDetailPage() {
           setMapToken(tokenData.token ?? "");
         }
         if (foundPost.is_saved === undefined && results[1]?.status === "fulfilled") {
-          setIsFavorited((results[1].value as { saved: boolean }).saved ?? false);
+          setIsSaved((results[1].value as { saved: boolean }).saved ?? false);
         }
         const perspResult = results[foundPost.is_saved === undefined ? 2 : 1];
         if (!foundPost.perspectives && perspResult?.status === "fulfilled") {
           setPerspectives((perspResult.value as { perspectives: Aura[] }).perspectives ?? []);
         }
       } catch (err) {
-        console.error("Failed to fetch post:", err);
         setError((err as Error).message || "Failed to load post");
       } finally {
         setLoading(false);
@@ -175,9 +180,7 @@ export default function PostDetailPage() {
   useEffect(() => {
     if (!userCoords || !post?.lat || !post?.lng || !mapToken) return;
     const coords = `${userCoords.lng},${userCoords.lat};${post.lng},${post.lat}`;
-    fetch(
-      `https://api.mapbox.com/directions/v5/mapbox/walking/${coords}?access_token=${mapToken}&overview=false`
-    )
+    fetch(`https://api.mapbox.com/directions/v5/mapbox/walking/${coords}?access_token=${mapToken}&overview=false`)
       .then((r) => r.json())
       .then((data) => {
         const route = data.routes?.[0];
@@ -185,6 +188,40 @@ export default function PostDetailPage() {
       })
       .catch(() => {});
   }, [userCoords, post, mapToken]);
+
+  const handleShare = async () => {
+    const url = `${window.location.origin}/post/${postId}`;
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = url;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
+    setShareCopied(true);
+    setTimeout(() => setShareCopied(false), 2000);
+  };
+
+  const handleSave = async () => {
+    if (savePending || !post) return;
+    setSavePending(true);
+    const token = getToken();
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (token) headers.Authorization = `Bearer ${token}`;
+    try {
+      if (isSaved) {
+        await fetch(`${API_BASE}/api/saves/${post.id}`, { method: "DELETE", headers });
+        setIsSaved(false);
+      } else {
+        await fetch(`${API_BASE}/api/saves`, { method: "POST", headers, body: JSON.stringify({ aura_id: post.id }) });
+        setIsSaved(true);
+      }
+    } catch { /* keep state */ }
+    finally { setSavePending(false); }
+  };
 
   if (loading) {
     return (
@@ -197,178 +234,156 @@ export default function PostDetailPage() {
   if (error || !post) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4">
-        <p className="text-[15px] font-semibold text-red-600">
-          {error || "Post not found"}
-        </p>
-        <button
-          onClick={() => router.back()}
-          className="mt-4 rounded-lg bg-[#ededed] px-4 py-2 text-[14px] font-medium text-[#1e1e1e]"
-        >
+        <p className="text-[15px] font-semibold text-red-600">{error || "Post not found"}</p>
+        <button onClick={() => router.back()} className="mt-4 rounded-lg bg-[#ededed] px-4 py-2 text-[14px] font-medium text-[#1e1e1e]">
           Go Back
         </button>
       </div>
     );
   }
 
+  const isOwnPost = post.user?.id === getUserId();
+
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-white">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-[#d9d9d9] px-4 py-3">
+      {/* Header: back | user | share */}
+      <div className="flex items-center justify-between px-4 py-3">
         <button
           onClick={() => window.history.length > 1 ? router.back() : router.push("/")}
-          className="flex items-center"
+          className="flex items-center justify-center"
         >
           <ChevronLeftIcon className="size-6 text-[#1e1e1e]" />
         </button>
 
         <Link
-          href={post.user?.id
-            ? (post.user.id === getUserId() ? "/profile" : `/profile/${post.user.id}`)
-            : "#"}
+          href={post.user?.id ? (isOwnPost ? "/profile" : `/profile/${post.user.id}`) : "#"}
           className="flex items-center gap-2"
         >
-          <div className="size-8 overflow-hidden rounded-full">
+          <div className="size-8 overflow-hidden rounded-full bg-[#f3f3f3]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={post.user?.avatar_url || DEFAULT_AVATAR}
-              alt={post.user?.name || "User"}
-              className="h-full w-full object-cover"
-            />
+            <img src={post.user?.avatar_url || DEFAULT_AVATAR} alt={post.user?.name || "User"} className="h-full w-full object-cover" />
           </div>
           <span className="text-[15px] font-semibold text-[#1e1e1e]">
             {post.user?.name || post.user?.email?.split("@")[0] || "User"}
           </span>
         </Link>
 
-        {post.user?.id !== getUserId() && (
-          <button
-            disabled={savePending}
-            onClick={async () => {
-              if (savePending || !post) return;
-              setSavePending(true);
-              const token = getToken();
-              const headers: Record<string, string> = { "Content-Type": "application/json" };
-              if (token) headers.Authorization = `Bearer ${token}`;
-              try {
-                if (isFavorited) {
-                  await fetch(`${API_BASE}/api/saves/${post.id}`, { method: "DELETE", headers });
-                  setIsFavorited(false);
-                } else {
-                  await fetch(`${API_BASE}/api/saves`, { method: "POST", headers, body: JSON.stringify({ aura_id: post.id }) });
-                  setIsFavorited(true);
-                }
-              } catch { /* keep optimistic state */ }
-              finally { setSavePending(false); }
-            }}
-            className="flex items-center"
-          >
-            <HeartIcon
-              className={`size-6 ${isFavorited ? "text-[#fa6460]" : "text-[#1e1e1e]"}`}
-              filled={isFavorited}
-            />
-          </button>
-        )}
-        {post.user?.id === getUserId() && <div className="size-6" />}
+        <button onClick={handleShare} className="flex items-center justify-center">
+          {shareCopied
+            ? <span className="text-[12px] font-semibold text-[#fa6460]">Copied!</span>
+            : <ShareIcon className="size-6 text-[#1e1e1e]" />
+          }
+        </button>
       </div>
 
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto pb-safe">
+
         {/* Image carousel */}
-        <div className="relative bg-white px-4 pt-4">
+        <div className="relative">
           <div
-            className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide"
+            className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide px-4"
             onScroll={(e) => {
-              const scrollLeft = e.currentTarget.scrollLeft;
-              const itemWidth = e.currentTarget.scrollWidth / post.image_urls.length;
-              const index = Math.round(scrollLeft / itemWidth);
-              setActiveImageIndex(index);
+              const el = e.currentTarget;
+              const itemWidth = el.scrollWidth / post.image_urls.length;
+              setActiveImageIndex(Math.round(el.scrollLeft / itemWidth));
             }}
           >
             {post.image_urls.map((url, index) => (
               <div
                 key={index}
-                className="aspect-[3/4] w-[60%] shrink-0 snap-start overflow-hidden rounded-2xl cursor-zoom-in"
+                className="aspect-[3/4] w-[72%] shrink-0 snap-start overflow-hidden rounded-2xl cursor-zoom-in"
                 onClick={() => setLightboxIndex(index)}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={url}
-                  alt={`${post.title} - Image ${index + 1}`}
-                  className="h-full w-full object-cover"
-                />
+                <img src={url} alt={`${post.title} ${index + 1}`} className="h-full w-full object-cover" />
               </div>
             ))}
           </div>
 
-          {/* Image indicator dots */}
           {post.image_urls.length > 1 && (
             <div className="mt-3 flex justify-center gap-1.5">
               {post.image_urls.map((_, index) => (
                 <div
                   key={index}
-                  className={`h-1.5 rounded-full transition-all ${
-                    index === activeImageIndex
-                      ? "w-6 bg-[#1e1e1e]"
-                      : "w-1.5 bg-[#d9d9d9]"
-                  }`}
+                  className={`h-1.5 rounded-full transition-all ${index === activeImageIndex ? "w-6 bg-[#1e1e1e]" : "w-1.5 bg-[#d9d9d9]"}`}
                 />
               ))}
             </div>
           )}
         </div>
 
-        {/* Post details */}
-        <div className="px-4 py-4">
+        {/* Action row: like | comment | ... | save */}
+        <div className="flex items-center gap-4 px-4 pt-3 pb-1">
+          <button
+            onClick={() => setIsLiked((v) => !v)}
+            className="flex items-center gap-1.5"
+          >
+            <HeartIcon
+              className={`size-6 ${isLiked ? "text-[#fa6460]" : "text-[#1e1e1e]"}`}
+              filled={isLiked}
+            />
+          </button>
+
+          <button className="flex items-center gap-1.5">
+            <CommentIcon className="size-6 text-[#1e1e1e]" />
+          </button>
+
+          <div className="flex-1" />
+
+          {!isOwnPost && (
+            <button onClick={handleSave} disabled={savePending} className="flex items-center">
+              <BookmarkIcon
+                className={`size-6 ${isSaved ? "text-[#fa6460]" : "text-[#1e1e1e]"}`}
+                filled={isSaved}
+              />
+            </button>
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="px-4 pt-3 pb-6">
+
+          {/* Tags */}
+          <div className="flex flex-wrap gap-2">
+            <span className="inline-block rounded-full bg-[#2c2c2c] px-3 py-1 text-[12px] font-medium text-[#f3f3f3]">
+              {post.archetype_tag}
+            </span>
+            {post.is_verified && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-[#f0faf0] px-3 py-1 text-[12px] font-medium text-[#2e7d32]">
+                📍 Verified
+              </span>
+            )}
+          </div>
+
           {/* Title */}
-          <h1 className="text-[24px] font-bold leading-tight text-[#1e1e1e]">
+          <h1 className="mt-3 text-[22px] font-bold leading-tight text-[#1e1e1e]">
             {post.title}
           </h1>
 
-          {/* Location + action buttons */}
-          <div className="mt-2 flex items-start justify-between">
-            {cityLocation && (
-              <span className="text-[15px] text-[#757575]">{cityLocation}</span>
-            )}
-            <div className="flex flex-col items-end gap-2 ml-3 shrink-0">
-              {post.lat && post.lng && (
-                <a
-                  href={`https://www.google.com/maps?q=${post.lat},${post.lng}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded-lg bg-[#ededed] px-3 py-1.5 text-[13px] font-medium text-[#1e1e1e] transition-colors hover:bg-[#e0e0e0]"
-                >
-                  Open in Google Maps
-                </a>
-              )}
-              <button
-                onClick={async () => {
-                  const url = `${window.location.origin}/post/${post.id}`;
-                  try {
-                    await navigator.clipboard.writeText(url);
-                  } catch {
-                    const ta = document.createElement("textarea");
-                    ta.value = url;
-                    document.body.appendChild(ta);
-                    ta.select();
-                    document.execCommand("copy");
-                    document.body.removeChild(ta);
-                  }
-                  setShareCopied(true);
-                  setTimeout(() => setShareCopied(false), 2000);
-                }}
-                className="rounded-lg bg-[#ededed] px-3 py-1.5 text-[13px] font-medium text-[#1e1e1e] transition-colors hover:bg-[#e0e0e0]"
-              >
-                {shareCopied ? "✓ Copied!" : "Send to friend"}
-              </button>
+          {/* Location */}
+          {cityLocation && (
+            <div className="mt-1.5 flex items-center gap-1">
+              <PinIcon className="size-4 shrink-0 text-[#757575]" />
+              <span className="text-[14px] text-[#757575]">{cityLocation}</span>
             </div>
-          </div>
+          )}
 
-          {/* Archetype badge */}
-          <div className="mt-3">
-            <span className="inline-block rounded-full bg-[#2c2c2c] px-3 py-1.5 text-[13px] font-medium text-[#f3f3f3]">
-              {post.archetype_tag}
-            </span>
-          </div>
+          {/* Open in Google Maps */}
+          {post.lat && post.lng && (
+            <a
+              href={`https://www.google.com/maps?q=${post.lat},${post.lng}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-[#f3f3f3] px-4 py-2 text-[13px] font-medium text-[#1e1e1e] transition-colors hover:bg-[#e8e8e8]"
+            >
+              <svg className="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
+                <circle cx="12" cy="9" r="2.5" />
+              </svg>
+              Open in Google Maps
+            </a>
+          )}
 
           {/* Description */}
           {post.description && (
@@ -380,12 +395,8 @@ export default function PostDetailPage() {
           {/* Static map */}
           {post.lat && post.lng && mapToken && (() => {
             const postPin = `pin-l+fa6460(${post.lng},${post.lat})`;
-            const userPin = userCoords
-              ? `,pin-s+4285f4(${userCoords.lng},${userCoords.lat})`
-              : "";
-            const viewport = userCoords
-              ? `auto`
-              : `${post.lng},${post.lat},14,0`;
+            const userPin = userCoords ? `,pin-s+4285f4(${userCoords.lng},${userCoords.lat})` : "";
+            const viewport = userCoords ? `auto` : `${post.lng},${post.lat},14,0`;
             const padding = userCoords ? "&padding=60" : "";
             const src = `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/${postPin}${userPin}/${viewport}/600x320@2x?access_token=${mapToken}${padding}`;
             return (
@@ -435,11 +446,7 @@ export default function PostDetailPage() {
                 {perspectives.map((p) => (
                   <Link key={p.id} href={`/post/${p.id}`} className="relative shrink-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={p.image_urls[0]}
-                      alt={p.title}
-                      className="size-24 rounded-xl object-cover"
-                    />
+                    <img src={p.image_urls[0]} alt={p.title} className="size-24 rounded-xl object-cover" />
                     {p.image_urls.length > 1 && (
                       <span className="absolute right-1.5 top-1.5 text-white text-[10px] drop-shadow">⊞</span>
                     )}
@@ -448,38 +455,12 @@ export default function PostDetailPage() {
               </div>
             </div>
           )}
-
-          {/* Metadata */}
-          {post.is_verified && (
-            <div className="mt-6 border-t border-[#f3f3f3] pt-4">
-              <p className="text-[13px] font-medium text-[#1e1e1e]">
-                Location Verified
-              </p>
-              <div className="mt-2 flex flex-col gap-1 text-[13px] text-[#757575]">
-                {post.lat && post.lng && (
-                  <p>
-                    Coordinates: {post.lat.toFixed(6)}, {post.lng.toFixed(6)}
-                  </p>
-                )}
-                {post.altitude !== undefined && post.altitude > 0 && (
-                  <p>Altitude: {post.altitude.toFixed(1)}m</p>
-                )}
-                {post.heading !== undefined && post.heading > 0 && (
-                  <p>Heading: {post.heading.toFixed(0)}°</p>
-                )}
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
       {/* Lightbox */}
       {lightboxIndex !== null && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black"
-          onClick={() => setLightboxIndex(null)}
-        >
-          {/* Close button */}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black" onClick={() => setLightboxIndex(null)}>
           <button
             className="absolute right-4 top-4 flex size-9 items-center justify-center rounded-full bg-white/20 text-white"
             onClick={() => setLightboxIndex(null)}
@@ -490,14 +471,12 @@ export default function PostDetailPage() {
             </svg>
           </button>
 
-          {/* Image counter */}
           {post.image_urls.length > 1 && (
             <span className="absolute left-4 top-5 text-[13px] font-medium text-white/70">
               {lightboxIndex + 1} / {post.image_urls.length}
             </span>
           )}
 
-          {/* Image */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={post.image_urls[lightboxIndex]}
@@ -506,7 +485,6 @@ export default function PostDetailPage() {
             onClick={(e) => e.stopPropagation()}
           />
 
-          {/* Prev / Next arrows */}
           {lightboxIndex > 0 && (
             <button
               className="absolute left-3 top-1/2 -translate-y-1/2 flex size-10 items-center justify-center rounded-full bg-white/20 text-white"
