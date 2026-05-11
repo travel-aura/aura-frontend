@@ -98,6 +98,7 @@ export default function PostDetailPage() {
   const [perspectives, setPerspectives] = useState<Aura[]>([]);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [authToast, setAuthToast] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -189,6 +190,13 @@ export default function PostDetailPage() {
       .catch(() => {});
   }, [userCoords, post, mapToken]);
 
+  const requireAuth = (msg: string) => {
+    if (getToken()) return true;
+    setAuthToast(msg);
+    setTimeout(() => setAuthToast(null), 2500);
+    return false;
+  };
+
   const handleShare = async () => {
     const url = `${window.location.origin}/post/${postId}`;
     try {
@@ -249,7 +257,10 @@ export default function PostDetailPage() {
       {/* Header: back | user | share */}
       <div className="flex items-center justify-between px-4 py-3">
         <button
-          onClick={() => window.history.length > 1 ? router.back() : router.push("/")}
+          onClick={() => {
+            const fromSameApp = document.referrer && new URL(document.referrer).origin === window.location.origin;
+            fromSameApp ? router.back() : router.push("/");
+          }}
           className="flex items-center justify-center"
         >
           <ChevronLeftIcon className="size-6 text-[#1e1e1e]" />
@@ -282,7 +293,7 @@ export default function PostDetailPage() {
         {/* Image carousel */}
         <div className="relative">
           <div
-            className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide px-4"
+            className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide px-4 pt-4"
             onScroll={(e) => {
               const el = e.currentTarget;
               const itemWidth = el.scrollWidth / post.image_urls.length;
@@ -292,7 +303,7 @@ export default function PostDetailPage() {
             {post.image_urls.map((url, index) => (
               <div
                 key={index}
-                className="aspect-[3/4] w-[72%] shrink-0 snap-start overflow-hidden rounded-2xl cursor-zoom-in"
+                className="aspect-[3/4] w-[60%] shrink-0 snap-start overflow-hidden rounded-2xl cursor-zoom-in"
                 onClick={() => setLightboxIndex(index)}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -316,7 +327,7 @@ export default function PostDetailPage() {
         {/* Action row: like | comment | ... | save */}
         <div className="flex items-center gap-4 px-4 pt-3 pb-1">
           <button
-            onClick={() => setIsLiked((v) => !v)}
+            onClick={() => { if (requireAuth("Log in to like")) setIsLiked((v) => !v); }}
             className="flex items-center gap-1.5"
           >
             <HeartIcon
@@ -325,14 +336,17 @@ export default function PostDetailPage() {
             />
           </button>
 
-          <button className="flex items-center gap-1.5">
+          <button
+            onClick={() => requireAuth("Log in to comment")}
+            className="flex items-center gap-1.5"
+          >
             <CommentIcon className="size-6 text-[#1e1e1e]" />
           </button>
 
           <div className="flex-1" />
 
           {!isOwnPost && (
-            <button onClick={handleSave} disabled={savePending} className="flex items-center">
+            <button onClick={() => requireAuth("Log in to save") && handleSave()} disabled={savePending} className="flex items-center">
               <BookmarkIcon
                 className={`size-6 ${isSaved ? "text-[#fa6460]" : "text-[#1e1e1e]"}`}
                 filled={isSaved}
@@ -457,6 +471,13 @@ export default function PostDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Auth toast */}
+      {authToast && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 rounded-full bg-[#1e1e1e] px-5 py-2.5 text-[13px] font-medium text-white shadow-lg">
+          {authToast}
+        </div>
+      )}
 
       {/* Lightbox */}
       {lightboxIndex !== null && (
