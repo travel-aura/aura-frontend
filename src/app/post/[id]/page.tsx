@@ -293,13 +293,14 @@ export default function PostDetailPage() {
         {/* Image carousel */}
         <div className="relative">
           <div
-            className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide px-4 pt-4"
+            className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide pt-4"
             onScroll={(e) => {
               const el = e.currentTarget;
               const itemWidth = el.scrollWidth / post.image_urls.length;
               setActiveImageIndex(Math.round(el.scrollLeft / itemWidth));
             }}
           >
+            <div className="w-4 shrink-0" />
             {post.image_urls.map((url, index) => (
               <div
                 key={index}
@@ -310,6 +311,7 @@ export default function PostDetailPage() {
                 <img src={url} alt={`${post.title} ${index + 1}`} className="h-full w-full object-cover" />
               </div>
             ))}
+            <div className="w-4 shrink-0" />
           </div>
 
           {post.image_urls.length > 1 && (
