@@ -28,6 +28,7 @@ export interface Aura {
   is_saved?: boolean;      // whether the requesting user has saved this post
   is_liked: boolean;       // whether the requesting user has liked this post
   like_count: number;      // total likes (always 0+)
+  tags?: string[];         // user-selected tags (e.g. ["Hiking", "GoldenHour"])
   perspectives?: Aura[];   // child posts embedded in GET /api/auras/:id response
 }
 
@@ -48,6 +49,7 @@ export interface Post {
   perspectives_count?: number; // enriched by backend on feed queries
   like_count?: number;         // total likes
   is_liked?: boolean;          // whether the requesting user has liked this post
+  tags?: string[];             // user-selected tags
 }
 
 // 3. What frontend sends in upload metadata
@@ -61,6 +63,7 @@ export interface AuraUploadMetadata {
   altitude?: number;           // Optional - only if GPS found (formerly alt)
   is_verified: boolean;        // true if GPS, false if no GPS
   parent_id?: string | null;   // null = new Anchor, string = Perspective of that post
+  tags?: string[];             // up to 5 user-selected tags
 }
 
 // 4. Profile page response

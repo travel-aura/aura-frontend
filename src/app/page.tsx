@@ -143,9 +143,6 @@ function FeedCard({ post }: { post: Post }) {
           {(post.perspectives_count ?? 0) > 0 && (
             <p className="text-[11px] font-medium text-[#757575]">+{post.perspectives_count} perspectives</p>
           )}
-          {(post.like_count ?? 0) > 0 && (
-            <p className="text-[11px] font-medium text-[#757575]">♥ {post.like_count}</p>
-          )}
         </div>
       </div>
     </Link>

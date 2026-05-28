@@ -10,8 +10,26 @@ import type { Archetype } from "../../../shared/aura-schema";
 
 interface NearbyPost { id: string; title: string; distance_meters: number; }
 
-
 const CATEGORIES: readonly Archetype[] = ["The Angle", "The Path", "The Spot", "The Interior"];
+
+const MAX_TAGS = 5;
+
+const ALL_TAGS = [
+  "Rooftops", "Skylines", "Markets", "Downtown",
+  "Mountains", "Forests", "Deserts", "Jungles", "Waterfalls", "Lakes", "Caves", "Glaciers", "Canyons", "Cliffs",
+  "Beaches", "Islands", "Reefs", "Harbors", "Boardwalks",
+  "Vineyards", "Hills", "Farm", "RuralLife",
+  "GoldenHour", "BlueHour", "Summer", "Autumn", "Winter", "Spring",
+  "AncientRuins", "Gothic", "Temples", "Churches", "Castles", "Palaces", "Bridges",
+  "Artisans", "StreetPerformers", "Festivals", "Religious",
+  "StreetFood", "FineDining", "MarketEats", "Cafes",
+  "Hiking", "Snorkeling", "Skiing", "Cycling", "RoadTrip", "Camping", "Swimming",
+  "Museums", "Galleries", "Bookshops",
+  "NightMarkets", "LiveMusic", "Speakeasies",
+  "Romantic", "Moody", "Dreamy", "Mystical", "Nostalgic", "Cinematic", "Quiet", "Bustling",
+  "Hotels",
+  "Sunrise", "Sunset", "Stargazing",
+];
 
 // ── Icons ────────────────────────────────────────────────────────────────────
 
@@ -117,6 +135,7 @@ export default function UploadPage() {
   const [error, setError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
   const [gpsWarning, setGpsWarning] = useState<string | null>(null);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [nearbyPosts, setNearbyPosts] = useState<NearbyPost[]>([]);
   const [showNearbyPrompt, setShowNearbyPrompt] = useState(false);
 
@@ -172,6 +191,7 @@ export default function UploadPage() {
         archetype_tag: activeCategory,
         description: description.trim() || undefined,
         parent_id: parentId ?? null,
+        tags: selectedTags.length > 0 ? selectedTags : undefined,
       };
       const result: UploadResult = await processAndUploadMultipleAuras(
         allFiles, gpsPhoto.file, metadata,
@@ -368,6 +388,44 @@ export default function UploadPage() {
                   {cat}
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* Tags */}
+          <div className="mt-5 px-3">
+            <div className="flex items-center justify-between">
+              <p className="text-[16px] font-medium text-black">Tags</p>
+              <p className="text-[12px] text-[#9a9a9a]">{selectedTags.length}/{MAX_TAGS}</p>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {ALL_TAGS.map((tag) => {
+                const selected = selectedTags.includes(tag);
+                const disabled = !selected && selectedTags.length >= MAX_TAGS;
+                return (
+                  <button
+                    key={tag}
+                    disabled={disabled}
+                    onClick={() =>
+                      setSelectedTags((prev) =>
+                        selected ? prev.filter((t) => t !== tag) : [...prev, tag]
+                      )
+                    }
+                    className={`flex items-center gap-1 rounded-full px-[10px] py-[4px] text-[12px] transition-colors ${
+                      selected
+                        ? "bg-[#fef9c3] text-[#713f12]"
+                        : disabled
+                        ? "border border-[#eee] text-[#ccc]"
+                        : "border border-[#eee] text-[#7a7a7a]"
+                    }`}
+                  >
+                    <svg className="size-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                      <line x1="7" y1="7" x2="7.01" y2="7" />
+                    </svg>
+                    {tag}
+                  </button>
+                );
+              })}
             </div>
           </div>
 

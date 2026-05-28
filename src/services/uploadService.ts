@@ -9,6 +9,7 @@ export interface AuraMetadata {
   archetype_tag: Archetype;
   description?: string;
   parent_id?: string | null;
+  tags?: string[];
 }
 
 export interface UploadProgress {
