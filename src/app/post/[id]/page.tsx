@@ -94,6 +94,8 @@ export default function PostDetailPage() {
   const [isSaved, setIsSaved] = useState(false);
   const [savePending, setSavePending] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
+  const [likePending, setLikePending] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
   const [shareCopied, setShareCopied] = useState(false);
   const [perspectives, setPerspectives] = useState<Aura[]>([]);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -119,6 +121,8 @@ export default function PostDetailPage() {
 
         setPost(foundPost);
         if (foundPost.is_saved !== undefined) setIsSaved(foundPost.is_saved);
+        setIsLiked(foundPost.is_liked);
+        setLikeCount(foundPost.like_count);
         if (foundPost.perspectives) setPerspectives(foundPost.perspectives);
 
         const token = getToken();
@@ -231,6 +235,34 @@ export default function PostDetailPage() {
     finally { setSavePending(false); }
   };
 
+  const handleLike = async () => {
+    if (likePending || !post) return;
+    setLikePending(true);
+    const prev = { isLiked, likeCount };
+    const token = getToken();
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (token) headers.Authorization = `Bearer ${token}`;
+    if (isLiked) {
+      setIsLiked(false);
+      setLikeCount((c) => Math.max(0, c - 1));
+    } else {
+      setIsLiked(true);
+      setLikeCount((c) => c + 1);
+    }
+    try {
+      if (prev.isLiked) {
+        await fetch(`${API_BASE}/api/likes/${post.id}`, { method: "DELETE", headers });
+      } else {
+        await fetch(`${API_BASE}/api/likes`, { method: "POST", headers, body: JSON.stringify({ aura_id: post.id }) });
+      }
+    } catch {
+      setIsLiked(prev.isLiked);
+      setLikeCount(prev.likeCount);
+    } finally {
+      setLikePending(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white">
@@ -254,30 +286,32 @@ export default function PostDetailPage() {
 
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-white">
-      {/* Header: back | user | share */}
+      {/* Header: back + user (left) | share (right) */}
       <div className="flex items-center justify-between px-4 py-3">
-        <button
-          onClick={() => {
-            const fromSameApp = document.referrer && new URL(document.referrer).origin === window.location.origin;
-            fromSameApp ? router.back() : router.push("/");
-          }}
-          className="flex items-center justify-center"
-        >
-          <ChevronLeftIcon className="size-6 text-[#1e1e1e]" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              const fromSameApp = document.referrer && new URL(document.referrer).origin === window.location.origin;
+              fromSameApp ? router.back() : router.push("/");
+            }}
+            className="flex items-center justify-center"
+          >
+            <ChevronLeftIcon className="size-6 text-[#1e1e1e]" />
+          </button>
 
-        <Link
-          href={post.user?.id ? (isOwnPost ? "/profile" : `/profile/${post.user.id}`) : "#"}
-          className="flex items-center gap-2"
-        >
-          <div className="size-8 overflow-hidden rounded-full bg-[#f3f3f3]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={post.user?.avatar_url || DEFAULT_AVATAR} alt={post.user?.name || "User"} className="h-full w-full object-cover" />
-          </div>
-          <span className="text-[15px] font-semibold text-[#1e1e1e]">
-            {post.user?.name || post.user?.email?.split("@")[0] || "User"}
-          </span>
-        </Link>
+          <Link
+            href={post.user?.id ? (isOwnPost ? "/profile" : `/profile/${post.user.id}`) : "#"}
+            className="flex items-center gap-2"
+          >
+            <div className="size-8 overflow-hidden rounded-full bg-[#f3f3f3]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={post.user?.avatar_url || DEFAULT_AVATAR} alt={post.user?.name || "User"} className="h-full w-full object-cover" />
+            </div>
+            <span className="text-[15px] font-semibold text-[#1e1e1e]">
+              {post.user?.name || post.user?.email?.split("@")[0] || "User"}
+            </span>
+          </Link>
+        </div>
 
         <button onClick={handleShare} className="flex items-center justify-center">
           {shareCopied
@@ -328,13 +362,19 @@ export default function PostDetailPage() {
         {/* Action row: like | comment | ... | save */}
         <div className="flex items-center gap-4 px-4 pt-3 pb-1">
           <button
-            onClick={() => { if (requireAuth("Log in to like")) setIsLiked((v) => !v); }}
+            onClick={() => { if (requireAuth("Log in to like")) handleLike(); }}
+            disabled={likePending}
             className="flex items-center gap-1.5"
           >
             <HeartIcon
               className={`size-6 ${isLiked ? "text-[#fa6460]" : "text-[#1e1e1e]"}`}
               filled={isLiked}
             />
+            {likeCount > 0 && (
+              <span className={`text-[14px] font-medium ${isLiked ? "text-[#fa6460]" : "text-[#1e1e1e]"}`}>
+                {likeCount}
+              </span>
+            )}
           </button>
 
           <button

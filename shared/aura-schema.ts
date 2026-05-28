@@ -26,6 +26,8 @@ export interface Aura {
   lat: number;
   lng: number;
   is_saved?: boolean;      // whether the requesting user has saved this post
+  is_liked: boolean;       // whether the requesting user has liked this post
+  like_count: number;      // total likes (always 0+)
   perspectives?: Aura[];   // child posts embedded in GET /api/auras/:id response
 }
 
@@ -44,6 +46,8 @@ export interface Post {
   distance_meters?: number | null; // only present when feed called with lat/lng
   parent_id?: string | null;   // null = Anchor, string = Perspective
   perspectives_count?: number; // enriched by backend on feed queries
+  like_count?: number;         // total likes
+  is_liked?: boolean;          // whether the requesting user has liked this post
 }
 
 // 3. What frontend sends in upload metadata
