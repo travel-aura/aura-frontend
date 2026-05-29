@@ -172,10 +172,9 @@ export default function PublicProfilePage() {
         {/* Archetype stats */}
         <div className="mx-4 mt-5 flex">
           {[
-            { label: "Angle", count: stats.angle },
-            { label: "Path", count: stats.path },
-            { label: "Spot", count: stats.spot },
-            { label: "Interior", count: stats.interior },
+            { label: "Photo Spots", count: stats.angle },
+            { label: "Wanderings", count: stats.spot },
+            { label: "Indoor Vibes", count: stats.interior },
           ].map((stat, i) => (
             <div key={i} className="flex flex-1">
               {i > 0 && <div className="w-px self-stretch bg-[#d9d9d9]" />}

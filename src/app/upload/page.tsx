@@ -10,25 +10,23 @@ import type { Archetype } from "../../../shared/aura-schema";
 
 interface NearbyPost { id: string; title: string; distance_meters: number; }
 
-const CATEGORIES: readonly Archetype[] = ["The Angle", "The Path", "The Spot", "The Interior"];
+const CATEGORIES: readonly Archetype[] = ["Photo Spots", "Wanderings", "Indoor Vibes"];
 
 const MAX_TAGS = 5;
 
 const ALL_TAGS = [
-  "Rooftops", "Skylines", "Markets", "Downtown",
-  "Mountains", "Forests", "Deserts", "Jungles", "Waterfalls", "Lakes", "Caves", "Glaciers", "Canyons", "Cliffs",
-  "Beaches", "Islands", "Reefs", "Harbors", "Boardwalks",
-  "Vineyards", "Hills", "Farm", "RuralLife",
-  "GoldenHour", "BlueHour", "Summer", "Autumn", "Winter", "Spring",
-  "AncientRuins", "Gothic", "Temples", "Churches", "Castles", "Palaces", "Bridges",
-  "Artisans", "StreetPerformers", "Festivals", "Religious",
-  "StreetFood", "FineDining", "MarketEats", "Cafes",
-  "Hiking", "Snorkeling", "Skiing", "Cycling", "RoadTrip", "Camping", "Swimming",
-  "Museums", "Galleries", "Bookshops",
-  "NightMarkets", "LiveMusic", "Speakeasies",
-  "Romantic", "Moody", "Dreamy", "Mystical", "Nostalgic", "Cinematic", "Quiet", "Bustling",
-  "Hotels",
-  "Sunrise", "Sunset", "Stargazing",
+  "Downtown", "Neighborhoods", "Alleyways", "Courtyards",
+  "LocalMarkets", "NightMarkets", "StreetArt", "Bridges",
+  "Waterfront", "Rooftops & Skylines", "Architecture",
+  "Mountains", "Forests", "Deserts", "Waterfalls", "Lakes", "Caves",
+  "Beaches", "Islands", "Canyons", "Parks & Gardens", "Countryside",
+  "Cafes", "Speakeasies", "Bookshops", "Libraries", "Boutiques",
+  "Museums", "Galleries", "Hotels & Stays", "HistoricSites", "PopCulture",
+  "StreetFood", "FineDining", "LiveMusic", "JazzBars", "LocalEats",
+  "Hiking", "Cycling", "RoadTrip", "Camping", "WaterSports",
+  "GoldenHour", "BlueHour", "Sunrise", "Sunset", "Stargazing",
+  "Cinematic", "Cozy", "Vibrant", "Quiet", "Bustling", "Vintage",
+  "Romantic", "Moody",
 ];
 
 // ── Icons ────────────────────────────────────────────────────────────────────
@@ -128,7 +126,7 @@ export default function UploadPage() {
 
   const [photos, setPhotos] = useState<PhotoFile[]>([]);
   const [gpsPhotoIndex, setGpsPhotoIndex] = useState(0);
-  const [activeCategory, setActiveCategory] = useState<Archetype>("The Path");
+  const [activeCategory, setActiveCategory] = useState<Archetype>("Photo Spots");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isUploading, setIsUploading] = useState(false);

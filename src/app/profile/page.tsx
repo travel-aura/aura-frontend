@@ -252,10 +252,9 @@ export default function ProfilePage() {
           {/* Stats row */}
           <div className="mx-4 mt-4 flex">
             {[
-              { label: "Angle", count: stats.angle },
-              { label: "Path", count: stats.path },
-              { label: "Spot", count: stats.spot },
-              { label: "Interior", count: stats.interior },
+              { label: "Photo Spots", count: stats.angle },
+              { label: "Wanderings", count: stats.spot },
+              { label: "Indoor Vibes", count: stats.interior },
             ].map((stat, i) => {
               const totalPosts = stats.angle + stats.path + stats.spot + stats.interior;
               const percentage = calculatePercentage(stat.count, totalPosts);
