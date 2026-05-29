@@ -9,8 +9,8 @@ export type Archetype = 'Photo Spots' | 'Wanderings' | 'Indoor Vibes';
 export interface Aura {
   id: string;
   user_id: string;
-  user_name: string;              // flat field joined from users table
-  user_avatar_url: string | null; // flat field joined from users table
+  user_name?: string;              // flat field joined from users table (present on some endpoints)
+  user_avatar_url?: string | null; // flat field joined from users table (present on some endpoints)
   title: string;
   description: string;
   image_urls: string[];
@@ -136,7 +136,7 @@ export interface Perspective {
 export interface AuraWithUser extends Aura {
   is_saved: boolean;
   perspectives: Perspective[];
-  user: {
+  user?: {
     id: string;
     name: string;
     email: string;

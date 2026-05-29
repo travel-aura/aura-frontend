@@ -119,6 +119,21 @@ export default function PostDetailPage() {
 
         if (!foundPost) { setError("Post not found"); return; }
 
+        // If we got the post but have no user info, fetch the public profile to get the name
+        if (!foundPost.user?.name && !foundPost.user_name && foundPost.user_id) {
+          try {
+            const token = getToken();
+            const h: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+            const profileRes = await fetch(`${API_BASE}/api/users/${foundPost.user_id}`, { headers: h });
+            if (profileRes.ok) {
+              const profileData = await profileRes.json();
+              const name = profileData.profile?.name;
+              const avatar = profileData.profile?.avatar_url ?? null;
+              if (name) foundPost = { ...foundPost, user: { id: foundPost.user_id, name, email: "", avatar_url: avatar } };
+            }
+          } catch { /* leave user info absent */ }
+        }
+
         setPost(foundPost);
         if (foundPost.is_saved !== undefined) setIsSaved(foundPost.is_saved);
         setIsLiked(foundPost.is_liked);
@@ -305,10 +320,14 @@ export default function PostDetailPage() {
           >
             <div className="size-8 overflow-hidden rounded-full bg-[#f3f3f3]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={post.user_avatar_url || DEFAULT_AVATAR} alt={post.user_name} className="h-full w-full object-cover" />
+              <img
+                src={post.user?.avatar_url || post.user_avatar_url || DEFAULT_AVATAR}
+                alt={post.user?.name || post.user_name || "User"}
+                className="h-full w-full object-cover"
+              />
             </div>
             <span className="text-[15px] font-semibold text-[#1e1e1e]">
-              {post.user_name}
+              {post.user?.name || post.user_name || post.user?.email?.split("@")[0]}
             </span>
           </Link>
         </div>
