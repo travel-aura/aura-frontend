@@ -477,7 +477,7 @@ export default function AuraFeed() {
         </div>
       )}
 
-      {/* Archetype chips */}
+      {/* Archetype chips + Advanced Search */}
       <div className="mt-2 flex gap-2 overflow-x-auto px-4 pb-1 scrollbar-hide">
         <button
           onClick={() => handleArchetype(null)}
@@ -498,13 +498,9 @@ export default function AuraFeed() {
             {a}
           </button>
         ))}
-      </div>
-
-      {/* Advanced Search button */}
-      <div className="px-4 pt-2">
         <button
           onClick={() => setShowTagFilter(true)}
-          className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-[13px] font-medium transition-colors ${
+          className={`shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1 text-[13px] font-medium transition-colors ${
             activeTag ? "bg-[#fff1c2] text-[#595959]" : "bg-[#f3f3f3] text-[#757575]"
           }`}
         >
