@@ -410,9 +410,9 @@ export default function UploadPage() {
                         selected ? prev.filter((t) => t !== tag) : [...prev, tag]
                       )
                     }
-                    className={`flex items-center gap-1 rounded-full px-[10px] py-[4px] text-[12px] transition-colors ${
+                    className={`flex items-center gap-1 rounded-[6px] px-[10px] py-[4px] text-[12px] transition-colors ${
                       selected
-                        ? "bg-[#fef9c3] text-[#713f12]"
+                        ? "bg-[#fff1c2] text-[#595959]"
                         : disabled
                         ? "border border-[#eee] text-[#ccc]"
                         : "border border-[#eee] text-[#7a7a7a]"

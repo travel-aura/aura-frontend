@@ -11,6 +11,23 @@ const RADIUS = 5000;
 const LIMIT = 10;
 const ARCHETYPES: Archetype[] = ["The Angle", "The Path", "The Spot", "The Interior"];
 
+const ALL_TAGS = [
+  "Rooftops", "Skylines", "Markets", "Downtown",
+  "Mountains", "Forests", "Deserts", "Jungles", "Waterfalls", "Lakes", "Caves", "Glaciers", "Canyons", "Cliffs",
+  "Beaches", "Islands", "Reefs", "Harbors", "Boardwalks",
+  "Vineyards", "Hills", "Farm", "RuralLife",
+  "GoldenHour", "BlueHour", "Summer", "Autumn", "Winter", "Spring",
+  "AncientRuins", "Gothic", "Temples", "Churches", "Castles", "Palaces", "Bridges",
+  "Artisans", "StreetPerformers", "Festivals", "Religious",
+  "StreetFood", "FineDining", "MarketEats", "Cafes",
+  "Hiking", "Snorkeling", "Skiing", "Cycling", "RoadTrip", "Camping", "Swimming",
+  "Museums", "Galleries", "Bookshops",
+  "NightMarkets", "LiveMusic", "Speakeasies",
+  "Romantic", "Moody", "Dreamy", "Mystical", "Nostalgic", "Cinematic", "Quiet", "Bustling",
+  "Hotels",
+  "Sunrise", "Sunset", "Stargazing",
+];
+
 function archetypeParam(a: Archetype) {
   return a.replace(/\s+/g, ""); // "The Path" → "ThePath"
 }
@@ -58,6 +75,15 @@ function NearMeIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor">
       <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z" />
+    </svg>
+  );
+}
+
+function SlidersIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <line x1="4" y1="6" x2="20" y2="6" /><line x1="4" y1="12" x2="20" y2="12" /><line x1="4" y1="18" x2="20" y2="18" />
+      <circle cx="8" cy="6" r="2" fill="currentColor" stroke="none" /><circle cx="16" cy="12" r="2" fill="currentColor" stroke="none" /><circle cx="10" cy="18" r="2" fill="currentColor" stroke="none" />
     </svg>
   );
 }
@@ -175,6 +201,10 @@ export default function AuraFeed() {
   // Archetype filter
   const [activeArchetype, setActiveArchetype] = useState<Archetype | null>(null);
 
+  // Tag filter
+  const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [showTagFilter, setShowTagFilter] = useState(false);
+
   // Feed state
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -219,11 +249,12 @@ export default function AuraFeed() {
     }, 300);
   }, [searchQuery]);
 
-  const buildUrl = useCallback((currentOffset: number, coords: Coords | null, archetype: Archetype | null, following: boolean) => {
+  const buildUrl = useCallback((currentOffset: number, coords: Coords | null, archetype: Archetype | null, following: boolean, tag: string | null) => {
     let url = `/api/auras/feed?limit=${LIMIT}&offset=${currentOffset}`;
     if (coords) url += `&lat=${coords.lat}&lng=${coords.lng}&radius=${RADIUS}`;
     if (archetype) url += `&archetype=${archetypeParam(archetype)}`;
     if (following) url += `&following=true`;
+    if (tag) url += `&tag=${encodeURIComponent(tag)}`;
     return url;
   }, []);
 
@@ -233,8 +264,9 @@ export default function AuraFeed() {
     archetype?: Archetype | null;
     currentOffset?: number;
     following?: boolean;
+    tag?: string | null;
   }) => {
-    const { loadMore = false, coords = null, archetype = null, currentOffset, following = false } = opts;
+    const { loadMore = false, coords = null, archetype = null, currentOffset, following = false, tag = null } = opts;
     const off = currentOffset ?? (loadMore ? offset : 0);
     try {
       setLoading(true);
@@ -242,7 +274,7 @@ export default function AuraFeed() {
         ok: boolean;
         auras: Post[];
         pagination: { limit: number; offset: number; count: number };
-      }>(buildUrl(off, coords, archetype, following));
+      }>(buildUrl(off, coords, archetype, following, tag));
 
       if (loadMore) {
         setPosts(prev => [...prev, ...response.auras]);
@@ -270,7 +302,8 @@ export default function AuraFeed() {
     setUserCoords(null);
     setSelectedCity(null);
     setActiveArchetype(null);
-    fetchPosts({ coords: null, archetype: null, currentOffset: 0, following: tab === "following" });
+    setActiveTag(null);
+    fetchPosts({ coords: null, archetype: null, currentOffset: 0, following: tab === "following", tag: null });
   };
 
   const isFollowing = activeTab === "following";
@@ -281,7 +314,7 @@ export default function AuraFeed() {
       setUserCoords(null);
       setSelectedCity(null);
       setOffset(0);
-      fetchPosts({ coords: null, archetype: activeArchetype, currentOffset: 0, following: isFollowing });
+      fetchPosts({ coords: null, archetype: activeArchetype, currentOffset: 0, following: isFollowing, tag: activeTag });
       return;
     }
     setNearMeLoading(true);
@@ -294,7 +327,7 @@ export default function AuraFeed() {
         setSuggestions([]);
         setLocationMode("nearby");
         setOffset(0);
-        fetchPosts({ coords, archetype: activeArchetype, currentOffset: 0, following: isFollowing });
+        fetchPosts({ coords, archetype: activeArchetype, currentOffset: 0, following: isFollowing, tag: activeTag });
         setNearMeLoading(false);
       },
       () => {
@@ -314,7 +347,7 @@ export default function AuraFeed() {
     setSuggestions([]);
     setShowSuggestions(false);
     setOffset(0);
-    fetchPosts({ coords: city, archetype: activeArchetype, currentOffset: 0, following: isFollowing });
+    fetchPosts({ coords: city, archetype: activeArchetype, currentOffset: 0, following: isFollowing, tag: activeTag });
   };
 
   const handleClearLocation = () => {
@@ -323,14 +356,29 @@ export default function AuraFeed() {
     setSelectedCity(null);
     setSearchQuery("");
     setOffset(0);
-    fetchPosts({ coords: null, archetype: activeArchetype, currentOffset: 0, following: isFollowing });
+    fetchPosts({ coords: null, archetype: activeArchetype, currentOffset: 0, following: isFollowing, tag: activeTag });
   };
 
   const handleArchetype = (a: Archetype | null) => {
     setActiveArchetype(a);
     const coords = locationMode === "nearby" ? userCoords : locationMode === "city" ? selectedCity : null;
     setOffset(0);
-    fetchPosts({ coords, archetype: a, currentOffset: 0, following: isFollowing });
+    fetchPosts({ coords, archetype: a, currentOffset: 0, following: isFollowing, tag: activeTag });
+  };
+
+  const handleTag = (t: string) => {
+    setActiveTag(t);
+    setShowTagFilter(false);
+    const coords = locationMode === "nearby" ? userCoords : locationMode === "city" ? selectedCity : null;
+    setOffset(0);
+    fetchPosts({ coords, archetype: activeArchetype, currentOffset: 0, following: isFollowing, tag: t });
+  };
+
+  const handleClearTag = () => {
+    setActiveTag(null);
+    const coords = locationMode === "nearby" ? userCoords : locationMode === "city" ? selectedCity : null;
+    setOffset(0);
+    fetchPosts({ coords, archetype: activeArchetype, currentOffset: 0, following: isFollowing, tag: null });
   };
 
   const activeCoords = locationMode === "nearby" ? userCoords : locationMode === "city" ? selectedCity : null;
@@ -454,6 +502,27 @@ export default function AuraFeed() {
         ))}
       </div>
 
+      {/* Advanced Search button */}
+      <div className="px-4 pt-2">
+        <button
+          onClick={() => setShowTagFilter(true)}
+          className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-[13px] font-medium transition-colors ${
+            activeTag ? "bg-[#fff1c2] text-[#595959]" : "bg-[#f3f3f3] text-[#757575]"
+          }`}
+        >
+          <SlidersIcon className="size-3.5" />
+          {activeTag ? `#${activeTag}` : "Advanced Search"}
+          {activeTag && (
+            <span
+              onClick={(e) => { e.stopPropagation(); handleClearTag(); }}
+              className="ml-0.5 flex size-4 items-center justify-center rounded-full bg-[#d4a800]/20 text-[#595959]"
+            >
+              <XIcon className="size-2.5" />
+            </span>
+          )}
+        </button>
+      </div>
+
       {/* Feed */}
       <div className="mt-3 flex-1 overflow-y-auto px-[7px] pb-20">
         {loading && posts.length === 0 && (
@@ -479,7 +548,7 @@ export default function AuraFeed() {
             {hasMore && (
               <div className="mt-6 flex justify-center">
                 <button
-                  onClick={() => fetchPosts({ loadMore: true, coords: activeCoords, archetype: activeArchetype, following: isFollowing })}
+                  onClick={() => fetchPosts({ loadMore: true, coords: activeCoords, archetype: activeArchetype, following: isFollowing, tag: activeTag })}
                   disabled={loading}
                   className="rounded-lg bg-[#ededed] px-6 py-2.5 text-[14px] font-medium text-[#1e1e1e] disabled:opacity-50"
                 >
@@ -508,6 +577,51 @@ export default function AuraFeed() {
           </div>
         )}
       </div>
+
+      {/* Tag filter bottom sheet */}
+      {showTagFilter && (
+        <div className="fixed inset-0 z-50 flex items-end" onClick={() => setShowTagFilter(false)}>
+          <div className="absolute inset-0 bg-black/40" />
+          <div
+            className="relative w-full rounded-t-2xl bg-white pb-10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Handle */}
+            <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-[#d9d9d9]" />
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 pt-4 pb-3">
+              <p className="text-[17px] font-bold text-[#1e1e1e]">Filter by Tag</p>
+              <button onClick={() => setShowTagFilter(false)} className="flex size-8 items-center justify-center rounded-full bg-[#f3f3f3]">
+                <XIcon className="size-4 text-[#757575]" />
+              </button>
+            </div>
+
+            {/* Tags — scrollable */}
+            <div className="max-h-[60vh] overflow-y-auto px-5 pb-2">
+              <div className="flex flex-wrap gap-2">
+                {ALL_TAGS.map((tag) => (
+                  <button
+                    key={tag}
+                    onClick={() => handleTag(tag)}
+                    className={`flex items-center gap-1 rounded-[6px] px-3 py-1.5 text-[13px] font-medium transition-colors ${
+                      activeTag === tag
+                        ? "bg-[#fff1c2] text-[#595959]"
+                        : "border border-[#e8e8e8] text-[#757575]"
+                    }`}
+                  >
+                    <svg className="size-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                      <line x1="7" y1="7" x2="7.01" y2="7" />
+                    </svg>
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Bottom nav */}
       <div className="fixed bottom-0 left-0 right-0 flex h-16 items-center justify-center border-t border-[#d9d9d9] bg-white shadow-[0px_-2px_4px_0px_rgba(0,0,0,0.12)]">

@@ -401,7 +401,7 @@ export default function PostDetailPage() {
 
           {/* Tags */}
           <div className="flex flex-wrap gap-2">
-            <span className="inline-block rounded-full bg-[#2c2c2c] px-3 py-1 text-[12px] font-medium text-[#f3f3f3]">
+            <span className="inline-block rounded-full bg-[#e3e3e3] px-3 py-1 text-[12px] font-medium text-[#1e1e1e]">
               {post.archetype_tag}
             </span>
             {post.is_verified && (
@@ -410,7 +410,7 @@ export default function PostDetailPage() {
               </span>
             )}
             {(post.tags ?? []).map((tag) => (
-              <span key={tag} className="inline-flex items-center gap-1 rounded-full bg-[#fef9c3] px-3 py-1 text-[12px] font-medium text-[#713f12]">
+              <span key={tag} className="inline-flex items-center gap-1 rounded-[6px] bg-[#fff1c2] px-3 py-1 text-[12px] font-medium text-[#595959]">
                 <svg className="size-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                   <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
                   <line x1="7" y1="7" x2="7.01" y2="7" />
