@@ -248,7 +248,7 @@ export default function UploadPage() {
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-white">
       {/* Scrollable body */}
-      <div className="flex-1 overflow-y-auto pb-safe">
+      <div className="flex-1 overflow-y-auto pb-24">
           {/* Hidden file input - always present for ref */}
           <input
             ref={fileInputRef}

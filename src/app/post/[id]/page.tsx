@@ -282,7 +282,7 @@ export default function PostDetailPage() {
     );
   }
 
-  const isOwnPost = post.user?.id === getUserId();
+  const isOwnPost = post.user_id === getUserId();
 
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-white">
@@ -300,15 +300,15 @@ export default function PostDetailPage() {
           </button>
 
           <Link
-            href={post.user?.id ? (isOwnPost ? "/profile" : `/profile/${post.user.id}`) : "#"}
+            href={isOwnPost ? "/profile" : `/profile/${post.user_id}`}
             className="flex items-center gap-2"
           >
             <div className="size-8 overflow-hidden rounded-full bg-[#f3f3f3]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={post.user?.avatar_url || DEFAULT_AVATAR} alt={post.user?.name || "User"} className="h-full w-full object-cover" />
+              <img src={post.user_avatar_url || DEFAULT_AVATAR} alt={post.user_name} className="h-full w-full object-cover" />
             </div>
             <span className="text-[15px] font-semibold text-[#1e1e1e]">
-              {post.user?.name || post.user?.email?.split("@")[0] || "User"}
+              {post.user_name}
             </span>
           </Link>
         </div>
