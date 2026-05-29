@@ -23,14 +23,9 @@ function formatDate(d: string) {
 
 function notificationText(n: Notification) {
   switch (n.type) {
-    case "follow":
-      return { main: `${n.actor_name} started following you` };
-    case "save":
-      return { main: `${n.actor_name} saved your post`, sub: n.aura_title };
-    case "perspective":
-      return { main: `${n.actor_name} added a perspective to`, sub: n.aura_title };
-    default:
-      return { main: "New notification" };
+    case "follow": return "started following you";
+    case "like":   return "liked your post";
+    default:       return "interacted with you";
   }
 }
 
@@ -110,60 +105,48 @@ export default function NotificationsPage() {
 
         {!loading && notifications.length > 0 && (
           <ul className="divide-y divide-[#f3f3f3]">
-            {notifications.map((n) => {
-              const { main, sub } = notificationText(n);
-              return (
-                <li key={n.id} className={`flex items-start gap-3 px-4 py-3 ${!n.read ? "bg-[#fff8f8]" : ""}`}>
-                  {/* Avatar — taps to public profile */}
-                  <Link href={`/profile/${n.actor_id}`} className="mt-0.5 shrink-0">
-                    <div className="size-10 overflow-hidden rounded-full bg-[#f3f3f3]">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={n.actor_avatar || DEFAULT_AVATAR} alt={n.actor_name} className="h-full w-full object-cover" />
-                    </div>
-                  </Link>
-
-                  {/* Text */}
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[14px] leading-snug text-[#1e1e1e]">
-                      <Link href={`/profile/${n.actor_id}`} className="font-semibold">
-                        {n.actor_name}
-                      </Link>
-                      {" "}
-                      {n.type === "follow" ? "started following you" : n.type === "save" ? "saved your post" : "added a perspective to"}
-                      {sub && n.aura_id && (
-                        <>
-                          {" "}
-                          <Link href={`/post/${n.aura_id}`} className="font-semibold underline-offset-2 hover:underline">
-                            {sub}
-                          </Link>
-                        </>
-                      )}
-                    </p>
-                    <p className="mt-0.5 text-[12px] text-[#9a9a9a]">{formatDate(n.created_at)}</p>
+            {notifications.map((n) => (
+              <li key={n.id} className={`flex items-start gap-3 px-4 py-3 ${!n.read ? "bg-[#fff8f8]" : ""}`}>
+                {/* Avatar */}
+                <Link href={`/profile/${n.actor_id}`} className="mt-0.5 shrink-0">
+                  <div className="size-10 overflow-hidden rounded-full bg-[#f3f3f3]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={n.actor_avatar || DEFAULT_AVATAR} alt={n.actor_name} className="h-full w-full object-cover" />
                   </div>
+                </Link>
 
-                  {/* Follow-back button for follow notifications */}
-                  {n.type === "follow" && (
-                    <button
-                      onClick={() => handleFollowBack(n)}
-                      disabled={followPending[n.id]}
-                      className={`shrink-0 rounded-full px-3 py-1 text-[12px] font-semibold transition-colors disabled:opacity-60 ${
-                        n.is_following
-                          ? "border border-[#d9d9d9] bg-white text-[#1e1e1e]"
-                          : "bg-[#fa6460] text-white"
-                      }`}
-                    >
-                      {n.is_following ? "Following" : "Follow back"}
-                    </button>
-                  )}
+                {/* Text */}
+                <div className="min-w-0 flex-1">
+                  <p className="text-[14px] leading-snug text-[#1e1e1e]">
+                    <Link href={`/profile/${n.actor_id}`} className="font-semibold">
+                      {n.actor_name}
+                    </Link>
+                    {" "}{notificationText(n)}
+                  </p>
+                  <p className="mt-0.5 text-[12px] text-[#9a9a9a]">{formatDate(n.created_at)}</p>
+                </div>
 
-                  {/* Unread dot for non-follow notifications */}
-                  {n.type !== "follow" && !n.read && (
-                    <div className="mt-2 size-2 shrink-0 rounded-full bg-[#fa6460]" />
-                  )}
-                </li>
-              );
-            })}
+                {/* Follow-back button */}
+                {n.type === "follow" && (
+                  <button
+                    onClick={() => handleFollowBack(n)}
+                    disabled={followPending[n.id]}
+                    className={`shrink-0 rounded-full px-3 py-1 text-[12px] font-semibold transition-colors disabled:opacity-60 ${
+                      n.is_following
+                        ? "border border-[#d9d9d9] bg-white text-[#1e1e1e]"
+                        : "bg-[#fa6460] text-white"
+                    }`}
+                  >
+                    {n.is_following ? "Following" : "Follow back"}
+                  </button>
+                )}
+
+                {/* Unread dot for like notifications */}
+                {n.type === "like" && !n.read && (
+                  <div className="mt-2 size-2 shrink-0 rounded-full bg-[#fa6460]" />
+                )}
+              </li>
+            ))}
           </ul>
         )}
       </div>

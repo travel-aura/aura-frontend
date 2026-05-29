@@ -7,7 +7,7 @@ import { apiGet } from "@/lib/api";
 import { getToken, saveUserId } from "@/lib/auth";
 import TopBar from "@/components/TopBar";
 import PostGrid from "@/components/PostGrid";
-import type { Post, UserProfile } from "../../../shared/aura-schema";
+import type { Post, UserProfile, ArchetypeStats } from "../../../shared/aura-schema";
 
 const AVATAR =
   "https://www.figma.com/api/mcp/asset/e4add399-8205-4c2a-8782-3da6c9f7bf60";
@@ -102,15 +102,6 @@ function BottomNav({ active }: { active: NavItem }) {
   );
 }
 
-// ── Stats ──────────────────────────────────────────────────────────────────────
-
-interface ArchetypeStats {
-  angle: number;
-  path: number;
-  spot: number;
-  interior: number;
-}
-
 // Helper to calculate percentage
 function calculatePercentage(count: number, total: number): string {
   if (total === 0) return "0.00%";
@@ -135,10 +126,9 @@ export default function ProfilePage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [shareCopied, setShareCopied] = useState(false);
   const [stats, setStats] = useState<ArchetypeStats>({
-    angle: 0,
-    path: 0,
-    spot: 0,
-    interior: 0,
+    photo_spots: 0,
+    wanderings: 0,
+    indoor_vibes: 0,
   });
 
   useEffect(() => {
@@ -156,17 +146,13 @@ export default function ProfilePage() {
         // Fetch user info
         const userResponse = await apiGet<{ ok: boolean; user: UserProfile }>("/me");
         const userInfo = userResponse.user;
-        console.log('User info from backend:', userInfo);
 
-        // Use name if available, otherwise fallback to email prefix
         const displayName = userInfo.name || userInfo.email?.split('@')[0] || 'User';
-        console.log('Display name:', displayName);
-
         setUserName(displayName);
         setUserBio(userInfo.bio ?? null);
-        if (userInfo.id) {
-          setUserId(userInfo.id);
-          saveUserId(userInfo.id);
+        if (userInfo.user_id) {
+          setUserId(userInfo.user_id);
+          saveUserId(userInfo.user_id);
         }
 
         // Fetch current user's posts
@@ -252,11 +238,11 @@ export default function ProfilePage() {
           {/* Stats row */}
           <div className="mx-4 mt-4 flex">
             {[
-              { label: "Photo Spots", count: stats.angle },
-              { label: "Wanderings", count: stats.spot },
-              { label: "Indoor Vibes", count: stats.interior },
+              { label: "Photo Spots", count: stats.photo_spots },
+              { label: "Wanderings", count: stats.wanderings },
+              { label: "Indoor Vibes", count: stats.indoor_vibes },
             ].map((stat, i) => {
-              const totalPosts = stats.angle + stats.path + stats.spot + stats.interior;
+              const totalPosts = stats.photo_spots + stats.wanderings + stats.indoor_vibes;
               const percentage = calculatePercentage(stat.count, totalPosts);
 
               return (

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { apiGet } from "@/lib/api";
 import { searchPlaces } from "@/lib/geocoding";
 import TopBar from "@/components/TopBar";
-import type { Post, Archetype } from "../../shared/aura-schema";
+import type { Aura, Archetype } from "../../shared/aura-schema";
 
 const RADIUS = 5000;
 const LIMIT = 10;
@@ -127,7 +127,7 @@ type LocationMode = "global" | "nearby" | "city";
 
 // ── Feed Card ─────────────────────────────────────────────────────────────────
 
-function FeedCard({ post }: { post: Post }) {
+function FeedCard({ post }: { post: Aura }) {
   const formatDate = (d: string) => {
     const diff = Date.now() - new Date(d).getTime();
     const m = Math.floor(diff / 60000);
@@ -164,8 +164,8 @@ function FeedCard({ post }: { post: Post }) {
           {post.distance_meters != null && (
             <p className="text-[11px] font-medium text-[#fa6460]">{formatDistance(post.distance_meters)}</p>
           )}
-          {(post.perspectives_count ?? 0) > 0 && (
-            <p className="text-[11px] font-medium text-[#757575]">+{post.perspectives_count} perspectives</p>
+          {(post.perspective_count ?? 0) > 0 && (
+            <p className="text-[11px] font-medium text-[#757575]">+{post.perspective_count} perspectives</p>
           )}
         </div>
       </div>
@@ -204,7 +204,7 @@ export default function AuraFeed() {
   const [showTagFilter, setShowTagFilter] = useState(false);
 
   // Feed state
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [posts, setPosts] = useState<Aura[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
@@ -270,7 +270,7 @@ export default function AuraFeed() {
       setLoading(true);
       const response = await apiGet<{
         ok: boolean;
-        auras: Post[];
+        auras: Aura[];
         pagination: { limit: number; offset: number; count: number };
       }>(buildUrl(off, coords, archetype, following, tag));
 

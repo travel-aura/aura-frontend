@@ -1,5 +1,10 @@
 import Link from "next/link";
-import type { Post } from "../../shared/aura-schema";
+
+interface GridItem {
+  id: string;
+  title: string;
+  image_urls: string[];
+}
 
 function LayersIcon({ className }: { className?: string }) {
   return (
@@ -21,7 +26,7 @@ function ImageEmptyIcon({ className }: { className?: string }) {
 }
 
 interface PostGridProps {
-  posts: Post[];
+  posts: GridItem[];
   emptyTitle: string;
   emptyMessage: string;
 }

@@ -11,8 +11,8 @@
 - **Framework**: Next.js 16.1.6 (App Router)
 - **React**: 19
 - **Language**: TypeScript
-- **Styling**: Tailwind CSS v4
-- **Font**: Geist Sans
+- **Styling**: Tailwind CSS v4 (`@import "tailwindcss"` in globals.css, `@tailwindcss/postcss` in postcss.config.mjs)
+- **Font**: Geist Sans via `next/font/google`
 - **Image Processing**:
   - `exifr` - EXIF metadata extraction
   - `browser-image-compression` - Image optimization & WebP conversion
@@ -20,29 +20,46 @@
 ## Quick Reference
 
 ### Key Files
-- `shared/aura-schema.ts` - Source of truth for data contracts
+- `shared/aura-schema.ts` - Source of truth for data contracts & types
 - `src/services/uploadService.ts` - Upload logic with EXIF extraction
-- `src/app/upload/page.tsx` - Upload UI (max 3 photos)
-- `src/lib/auth.ts` - JWT token management
-- `src/lib/api.ts` - API utilities
-- `src/components/TopBar.tsx` - Shared header (logo + friends + bell icons) used by feed and profile
-- `src/components/PostGrid.tsx` - Shared post grid used by Uploaded and Saved tabs on profile
+- `src/app/upload/page.tsx` - Upload UI (max 3 photos, Anchor/Perspective prompt)
+- `src/lib/auth.ts` - JWT token management (`getToken`, `saveToken`, `getUserId`, `saveUserId`)
+- `src/lib/api.ts` - API utilities (`apiGet`, `apiPost`, `apiPut`, `API_BASE`)
+- `src/lib/geocoding.ts` - Mapbox reverse geocoding + place search autocomplete
+- `src/components/TopBar.tsx` - Shared header (logo + friends + bell icons) used by feed and own profile
+- `src/components/PostGrid.tsx` - Shared post grid (empty/single/multi) used by own profile and public profile
+
+### Archetypes (CURRENT — 3 categories)
+```typescript
+export type Archetype = 'Photo Spots' | 'Wanderings' | 'Indoor Vibes';
+```
+These are sent as `archetype_tag` in all upload and filter requests.
+
+### Stats Field Mapping
+The backend `ArchetypeStats` response uses legacy DB field names. Frontend maps them as:
+| DB field | Displayed label |
+|---|---|
+| `stats.angle` | Photo Spots |
+| `stats.spot` | Wanderings |
+| `stats.interior` | Indoor Vibes |
+| `stats.path` | *(unused — not displayed)* |
 
 ### Upload Flow Summary
 ```
-User selects 1-3 photos → Pick GPS anchor photo → Fill title/category
+User selects 1-3 photos → Pick GPS anchor photo → Fill title/category/tags
+→ Frontend checks nearby posts (GPS required) → Anchor or Perspective prompt
 → Frontend extracts EXIF from anchor (if exists)
-→ Compress all to WebP
+→ Compress all to WebP (max 400KB, 1440px each)
 → Single POST with FormData:
   - 'images': [file1, file2, file3]  // Same field name
-  - 'metadata': { title, archetype_tag, lat?, lng?, is_verified }
+  - 'metadata': { title, archetype_tag, tags?, lat?, lng?, is_verified, parent_id? }
 → Backend: upload.array('images', 5)
 → Database: image_urls TEXT[] + nullable GPS
 ```
 
 ### GPS Handling
 - **With GPS**: `is_verified: true`, includes `lat`, `lng`, `altitude`, `heading`
-- **Without GPS**: `is_verified: false`, GPS fields omitted
+- **Without GPS**: `is_verified: false`, GPS fields omitted entirely
 
 ### Critical Naming
 - FormData field: `images`
@@ -57,21 +74,23 @@ User selects 1-3 photos → Pick GPS anchor photo → Fill title/category
 #### 1. Authentication System
 - **Login** (`/login`) - Email/password authentication
 - **Register** (`/register`) - New user signup with name, email, password
-- **JWT Token Management** - Tokens stored in localStorage
+- **JWT Token Management** - Tokens stored in localStorage as `aura_token`
+- **User ID** - Stored in localStorage as `aura_user_id` (used to detect own posts)
 - **Auto-redirect** - After login/register → redirects to `/profile`
 
 **Flow**:
 ```
-User logs in → Backend returns { session: { access_token } }
-→ Frontend saves token to localStorage as 'aura_token'
+User logs in → Backend returns { session: { access_token }, user: { id } }
+→ Frontend saves token via saveToken() → localStorage 'aura_token'
+→ Frontend saves user ID via saveUserId() → localStorage 'aura_user_id'
 → Token automatically included in all authenticated API requests
 ```
 
 #### 2. Multi-Photo Upload with EXIF Processing (Carousel Support)
 **Location**: `/upload`
 
-**"Magic" 4-Step Process**:
-1. **Extract** - Reads GPS (lat/lng), altitudeitude, heading from EXIF before compression (from anchor photo)
+**"Magic" 4-Step Process** (implemented in `src/services/uploadService.ts`):
+1. **Extract** - Reads GPS (lat/lng), altitude, heading from EXIF before compression (from anchor photo)
    - If GPS found → `is_verified: true` + GPS data included
    - If NO GPS → `is_verified: false` + GPS data omitted (not sent to backend)
 2. **Compress** - Converts any image format (JPG, PNG, HEIC) → WebP (max 400KB, 1440px) for all photos
@@ -82,33 +101,31 @@ User logs in → Backend returns { session: { access_token } }
 - **Multi-photo carousel** (max 3 photos per upload)
 - Single request with all photos for atomic operation
 - **GPS optional** - Upload works with or without location data
-- GPS photo selector (choose which photo to use for location data - applied to all)
+- GPS anchor photo selector (blue ring indicator) — GPS from anchor applied to all photos
+- **Nearby post check** — before upload, fetches `GET /api/auras/check-nearby?lat=&lng=`; if nearby posts exist, shows bottom sheet prompting user to add as **Perspective** (sets `parent_id`) or create a new **Anchor** (`parent_id: null`)
+- **Tags** — up to 5 tags selectable from a full tag list; included in `metadata.tags`
 - Upload progress tracking with visual progress bar
-- Category selection: "The Angle", "The Path", "The Spot", "The Interior"
+- Category selection: `"Photo Spots"`, `"Wanderings"`, `"Indoor Vibes"`
 - Title & description input (shared across all photos in carousel)
 - Loading states & error handling
 - Auto-redirect to feed after successful upload
-- "Change" button to reselect photos
+- "Change" button to reselect all photos
 - Yellow warning banner if no GPS data found
 
 **Supported Formats**: JPG, PNG, HEIC (iPhone), WebP, etc.
 
 **Upload Limit**: Maximum 3 photos per post (enforced at selection)
 
-**Carousel Structure**:
-- All photos share same GPS coordinates (from anchor photo) if GPS exists
-- All photos share same title, description, category
-- Stored in database as single row with `image_urls` array (TEXT[])
-- `is_verified: false` if no GPS data found
-
 **GPS Optional Behavior**:
 ```
 Photos WITH GPS (original camera photos):
+→ Check nearby → Anchor/Perspective prompt if nearby exists
 → Extract GPS → Upload with lat/lng/altitude/heading → is_verified: true
 → Redirect to feed immediately
 
 Photos WITHOUT GPS (screenshots, downloads, edited photos):
-→ No GPS found → Upload WITHOUT GPS fields → is_verified: false
+→ Skip nearby check (no coords available)
+→ Upload WITHOUT GPS fields → is_verified: false
 → Show warning: "⚠️ No location data found. Upload completed as unverified."
 → Auto-dismiss after 3 seconds → Redirect to feed
 ```
@@ -117,151 +134,129 @@ Photos WITHOUT GPS (screenshots, downloads, edited photos):
 **Location**: `/` (Home)
 
 **Features**:
-- Fetches all users' posts from `GET /api/auras/feed?limit=10&offset=0`
-- Two-column masonry layout
-- Shows latest 10 posts by default (sorted by `created_at` DESC)
-- "Load More" pagination button
-- Displays first image from carousel (`image_urls[0]`)
-- Multi-image indicator (layers icon) for carousels
-- Shows archetype badge, title, description
-- Relative timestamps (5m ago, 2h ago, 3d ago)
-- Verification pin 📍 for GPS-verified posts
+- Fetches posts from `GET /api/auras/feed?limit=10&offset=0[&lat&lng&radius&archetype&tag&following]`
+- Two-column masonry layout with "Load More" pagination
+- **All / Following** tab toggle (`?following=true` param — backend filter needed for Following tab)
+- **Location filter**: Near Me button (geolocation) + city search autocomplete via Mapbox
+- **Archetype chip filters**: All, Photo Spots, Wanderings, Indoor Vibes
+- **Tag filter** via "Advanced Search" button → bottom sheet with full tag list; selected tag shown as `#tag` chip
+- Displays `image_urls[0]`, layers icon for multi-image posts, archetype badge, title, timestamp, distance (if location active), `+N perspectives` count
+- 📍 pin for GPS-verified posts
+- "Be a Pioneer" CTA when no posts found in a location-filtered view
 
-**Data Flow**:
-```typescript
-GET /api/auras/feed?limit=10&offset=0
-→ Returns: { ok: true, auras: Post[], pagination: {...} }
-→ Display in two-column grid
-→ Load More → offset=10, offset=20, etc.
-```
-
-#### 4. Profile Page
+#### 4. Own Profile Page
 **Location**: `/profile`
 
 **Features**:
-- Fetches current user's posts from `GET /api/auras/me`
-- Fetches archetype statistics from `GET /api/auras/me/stats`
-- Real-time stats calculation (count & percentage per archetype)
-- Grid display of user's uploaded posts (3 columns)
-- Shows first image from carousel with multi-image indicator
-- Tabs: Uploaded / Saved (Saved not yet implemented)
-- Edit profile button
-- Auto-redirect to login if not authenticated
+- Fetches `GET /me` → displays name (fallback: email prefix) + bio
+- Fetches `GET /api/auras/me` → uploaded posts (sorted newest first)
+- Fetches `GET /api/auras/me/stats` → archetype stats with count & percentage
+- Fetches `GET /api/saves` → saved posts
+- Tabs: **Uploaded** / **Saved** — both use shared `<PostGrid />`
+- **Edit profile** button → `/profile/edit`
+- **Share profile** button → copies `/profile/{userId}` URL to clipboard
+- Auto-redirect to `/login` if no token
 
-**Archetype Stats Display**:
+**Stats displayed** (3 columns):
 ```
-Angle    Path    Spot    Interior
-  5       3       12        2
-22.73%  13.64%  54.55%   9.09%
+Photo Spots   Wanderings   Indoor Vibes
+    5             12            2
+  22.73%        54.55%        9.09%
 ```
 
-#### 5. Profile & Edit Profile Pages
-**Locations**: `/profile`, `/profile/edit`
+#### 5. Edit Profile Page
+**Location**: `/profile/edit`
 
-**Profile Page Features**:
-- Displays user's **name** under profile picture
-- Shows user bio (if exists)
-- Fetches current user's posts from `GET /api/auras/me`
-- Fetches archetype statistics from `GET /api/auras/me/stats`
-- Real-time stats calculation (count & percentage per archetype)
-- Grid display of user's uploaded posts (3 columns)
-- Shows first image from carousel with multi-image indicator
-- Tabs: Uploaded / Saved (Saved not yet implemented)
-- Edit profile button
-- Auto-redirect to login if not authenticated
-
-**Edit Profile Features**:
-- Fetches current user profile from `GET /me`
-- Edit name (max 10 characters)
-- Edit bio (max 100 characters)
-- Character counters for name and bio
-- **Account section**: Shows user's email
-- Saves changes via `PUT /api/profile/update`
+**Features**:
+- Fetches `GET /me` → pre-fills name + bio
+- Edit name (max 10 characters) with character counter
+- Edit bio (max 100 characters) with character counter
+- **Account section**: Shows user's email (read-only)
+- Saves via `PUT /api/profile/update`
 - Validation: name is required
 - Error handling for rate limits and failed saves
-- Auto-redirect to profile after successful save
+- Auto-redirect to `/profile` after successful save
 
-**Backend Response Format**:
-```typescript
-// GET /me returns
-{
-  ok: true,
-  user: {
-    id: string;               // UUID (note: "id", not "user_id")
-    email: string;
-    name?: string;            // May not exist for new users
-    bio?: string | null;
-    avatar_url?: string | null;
-  }
-}
+#### 6. Public Profile Page
+**Location**: `/profile/[id]`
 
-// PUT /api/profile/update payload
-{
-  name?: string;              // Max 10 chars
-  bio?: string;               // Max 100 chars
-}
-```
+**Features**:
+- Fetches `GET /api/users/:id` → `{ profile: PublicProfile, posts: Post[], stats: ArchetypeStats }`
+- Shows avatar, name, bio, follower/following/post counts
+- **Follow / Following** toggle: `POST /api/follows` / `DELETE /api/follows/:user_id`
+- **Share profile** button → copies URL to clipboard
+- Archetype stats (3 columns, same mapping as own profile)
+- Posts grid via shared `<PostGrid />`
+- Back button → previous page or home
 
-**Display Logic**:
-- Profile page: Shows **name** under profile picture (fallback to email prefix if no name)
-- Edit profile page: Shows **email** in Account section at bottom
-
-#### 6. Post Detail Page
+#### 7. Post Detail Page
 **Location**: `/post/[id]`
 
 **Features**:
-- Full image carousel with lightbox (tap to fullscreen, prev/next arrows)
-- Static Mapbox map showing post location pin (coral) + user location pin (blue)
+- Fetches `GET /api/auras/:id` (falls back to feed search if endpoint unavailable)
+- **Horizontal image carousel** with scroll + dot indicators; tap any image to open lightbox (fullscreen, prev/next arrows)
+- **Like button** with optimistic UI and count: `POST /api/likes` / `DELETE /api/likes/:id`
+- **Comment button** — shows auth toast if not logged in (UI only, no backend yet)
+- **Save button** (hidden on own posts): `POST /api/saves` / `DELETE /api/saves/:id`; save state loaded via `GET /api/saves/check?aura_id=`
+- **Share button** → copies `/post/:id` URL to clipboard
+- Archetype tag + Verified badge + user-selected tags display
+- Static Mapbox map with post location pin (coral) + user location pin (blue)
 - Walking distance and time via Mapbox Directions API
-- Heart/save button — `POST /api/saves` to save, `DELETE /api/saves/:id` to unsave
-- Save state loaded on mount via `GET /api/saves/check?aura_id=`
-- Perspectives strip (linked thumbnails) via `GET /api/auras/:id/perspectives`
-- Back button goes to home if no browser history (direct link share)
-- Uses `Promise.allSettled()` so missing backend endpoints fail silently
+- "Open in Google Maps" link for GPS-verified posts
+- City/neighborhood label via Mapbox reverse geocoding
+- **Perspectives strip** (linked thumbnails) via `GET /api/auras/:id/perspectives`
+- Header: back button (→ home if no history) + user avatar/name link → `/profile/:id` (or `/profile` if own post)
+- Auth toast for unauthenticated actions ("Log in to like", etc.)
+- `Promise.allSettled()` so missing backend endpoints fail silently
 
-#### 7. Friends Page
+#### 8. Friends Page
 **Location**: `/friends`
 
 **Features**:
 - Debounced search input (300ms) → `GET /api/users/search?q=`
-- User cards: avatar, name, Follow / Following toggle button
-- `POST /api/follows` to follow, `DELETE /api/follows/:user_id` to unfollow
-- Empty state and no-results state
-- Gracefully shows nothing if backend endpoint not yet available
+- User cards with avatar, name, Follow / Following toggle
+- `POST /api/follows { user_id }` to follow, `DELETE /api/follows/:user_id` to unfollow
+- Empty state, no-results state, graceful 404 handling
 
-#### 8. Notifications Page
+#### 9. Notifications Page
 **Location**: `/notifications`
 
 **Features**:
 - Loads `GET /api/notifications` on mount
-- Notification types: `follow`, `save`, `perspective` — each with coloured dot indicator
-- Clickable post titles link to `/post/:id`
+- Calls `PATCH /api/notifications/read` to mark all as read
+- Notification types: `follow`, `save`, `perspective`
+- **Follow notifications**: shows Follow back / Following toggle button
+- **Save/Perspective notifications**: shows post title linked to `/post/:id`
+- Unread notifications highlighted in `#fff8f8`
 - "All caught up" empty state
-- Silently shows empty state if backend endpoint not yet available
 
-#### 9. Shared Components
-- **`TopBar`** (`src/components/TopBar.tsx`) — logo + friends icon + bell icon. Used by feed (`/`) and profile (`/profile`). Change once, updates both pages.
-- **`PostGrid`** (`src/components/PostGrid.tsx`) — handles empty/single/multi post layout. Used by Uploaded and Saved tabs on profile page.
+#### 10. Shared Components
+- **`TopBar`** (`src/components/TopBar.tsx`) — "Aura" wordmark + friends icon + bell icon with unread badge. Fetches unread notification count on mount. Used by feed (`/`) and own profile (`/profile`).
+- **`PostGrid`** (`src/components/PostGrid.tsx`) — handles empty / single / multi-post layout. Used by own profile tabs and public profile page.
 
-#### 10. Pages Implemented
+**Note**: Upload, post detail, friends, and notifications pages define their own inline bottom nav / back navigation — `BottomNav` is not a shared component.
 
-- **Feed/Home** (`/`) - Two-column masonry feed with real backend data & pagination
-- **Upload** (`/upload`) - Multi-photo upload with EXIF processing
-- **Profile** (`/profile`) - User profile with name, bio, posts & archetype stats
-- **Edit Profile** (`/profile/edit`) - Name & bio editing with validation
-- **Post Detail** (`/post/[id]`) - Full post view with map, lightbox, perspectives
-- **Friends** (`/friends`) - Search users, follow/unfollow
-- **Notifications** (`/notifications`) - Activity feed
-- **Login** (`/login`) - Authentication
-- **Register** (`/register`) - User signup
+#### 11. Pages Implemented
+
+| Page | Route | Notes |
+|---|---|---|
+| Feed/Home | `/` | Masonry feed, filters, location search |
+| Upload | `/upload` | Multi-photo, EXIF, Anchor/Perspective |
+| Own Profile | `/profile` | Stats, tabs, edit/share |
+| Edit Profile | `/profile/edit` | Name/bio |
+| Public Profile | `/profile/[id]` | Follow/unfollow, posts grid |
+| Post Detail | `/post/[id]` | Lightbox, map, likes, perspectives |
+| Friends | `/friends` | Search, follow/unfollow |
+| Notifications | `/notifications` | Follow-back, mark-read |
+| Login | `/login` | JWT auth |
+| Register | `/register` | Signup |
 
 ## API Integration
 
 ### Backend URL
-**Local Development**: `http://localhost:8080`
+**Local Development**: Set via `NEXT_PUBLIC_API_URL` in `.env.local` (typically a network IP for mobile testing)
 **Production**: `https://aura-backend-255644230597.us-central1.run.app`
-
-Currently configured for **localhost** (local development).
+**Fallback** (if env not set): `http://localhost:5000` (hardcoded in `src/lib/api.ts`)
 
 ### Endpoints Used
 
@@ -272,33 +267,37 @@ POST /auth/login
 POST /auth/logout
 
 // User Profile
-GET /me                                    // Get current user info
-PUT /api/profile/update                    // Update user profile (name, bio)
+GET /me                                    // Get current user info → { ok, user: UserProfile }
+PUT /api/profile/update                    // Update name/bio → { name?, bio? }
+GET /api/users/:id                         // Public profile → { profile: PublicProfile, posts, stats }
+GET /api/users/search?q=                   // Search users → { users: [..., is_following] }
 
 // Auras/Posts
-GET /api/auras/feed                        // Get all auras (paginated) ?limit=10&offset=0&lat=&lng=&radius=&archetype=
-GET /api/auras/:id                         // Get single post by ID
-GET /api/auras/me                          // Get current user's auras
-GET /api/auras/me/stats                    // Get current user's archetype statistics
-POST /api/auras/upload                     // Upload new aura with images
-GET /api/auras/:id/perspectives            // Get perspectives (child posts) for an anchor
+GET /api/auras/feed                        // Paginated feed ?limit&offset&lat&lng&radius&archetype&tag&following
+GET /api/auras/:id                         // Single post → { ok, aura: Aura } (with perspectives embedded)
+GET /api/auras/me                          // Current user's posts → { ok, auras: Post[] }
+GET /api/auras/me/stats                    // Archetype stats → { ok, stats: ArchetypeStats }
+POST /api/auras/upload                     // Upload new aura (multipart/form-data)
+GET /api/auras/:id/perspectives            // Child posts → { perspectives: Aura[] }
+GET /api/auras/check-nearby?lat=&lng=      // Nearby posts for Anchor/Perspective prompt
 
-// Saves / Hearts
+// Likes
+POST /api/likes                            // Like a post { aura_id }
+DELETE /api/likes/:aura_id                 // Unlike a post
+
+// Saves
 POST /api/saves                            // Save a post { aura_id }
 DELETE /api/saves/:aura_id                 // Unsave a post
-GET /api/saves                             // Get current user's saved posts
-GET /api/saves/check?aura_id=             // Check if post is saved → { saved: boolean }
+GET /api/saves                             // Current user's saved posts → { ok, auras: Post[] }
+GET /api/saves/check?aura_id=              // Check if saved → { saved: boolean }
 
-// Friends / Follows
-GET /api/users/search?q=                  // Search users by name/email → { users: [..., is_following] }
+// Follows
 POST /api/follows                          // Follow a user { user_id }
-DELETE /api/follows/:user_id              // Unfollow a user
+DELETE /api/follows/:user_id               // Unfollow a user
 
 // Notifications
-GET /api/notifications                     // Get user notifications
-
-// Nearby check (for Anchor/Perspective prompt)
-GET /api/auras/check-nearby?lat=&lng=    // Check for nearby posts within radius
+GET /api/notifications                     // User notifications → { notifications: Notification[] }
+PATCH /api/notifications/read              // Mark all notifications as read
 ```
 
 ### Backend Responses
@@ -312,17 +311,17 @@ GET /api/auras/check-nearby?lat=&lng=    // Check for nearby posts within radius
       "id": "uuid",
       "title": "Beach Sunset",
       "image_urls": ["url1", "url2"],
-      "archetype_tag": "The Path",
-      "created_at": "2026-03-18T...",
+      "archetype_tag": "Photo Spots",
+      "tags": ["GoldenHour", "Beaches"],
+      "created_at": "2026-05-10T...",
       "is_verified": true,
-      ...
+      "is_liked": false,
+      "like_count": 3,
+      "perspectives_count": 2,
+      "distance_meters": 450
     }
   ],
-  "pagination": {
-    "limit": 10,
-    "offset": 0,
-    "count": 10
-  }
+  "pagination": { "limit": 10, "offset": 0, "count": 10 }
 }
 ```
 
@@ -330,30 +329,34 @@ GET /api/auras/check-nearby?lat=&lng=    // Check for nearby posts within radius
 ```json
 {
   "ok": true,
-  "stats": {
-    "angle": 5,
-    "path": 3,
-    "spot": 12,
-    "interior": 2
-  }
+  "stats": { "angle": 5, "path": 0, "spot": 12, "interior": 2 }
 }
 ```
 
-**User's Posts Response:**
+**Public Profile Response:**
 ```json
 {
-  "ok": true,
-  "auras": [...]
+  "profile": {
+    "user_id": "uuid",
+    "name": "Alice",
+    "bio": "...",
+    "avatar_url": null,
+    "follower_count": 10,
+    "following_count": 5,
+    "is_following": false,
+    "post_count": 22
+  },
+  "posts": [...],
+  "stats": { "angle": 5, "path": 0, "spot": 12, "interior": 2 }
 }
 ```
 
 ### Authentication Headers
 All authenticated requests include:
 ```typescript
-headers: {
-  'Authorization': `Bearer ${token}`
-}
+headers: { 'Authorization': `Bearer ${token}` }
 ```
+`apiGet` / `apiPost` / `apiPut` in `src/lib/api.ts` add this header automatically from localStorage.
 
 ## File Structure
 
@@ -363,92 +366,90 @@ src/
 │   ├── page.tsx                    # Feed/Home
 │   ├── login/page.tsx              # Login
 │   ├── register/page.tsx           # Register
-│   ├── upload/page.tsx             # Upload with EXIF processing
+│   ├── upload/page.tsx             # Upload (multi-photo, EXIF, Anchor/Perspective)
 │   ├── profile/
-│   │   ├── page.tsx                # Profile view
-│   │   └── edit/page.tsx           # Edit profile
-│   ├── post/[id]/page.tsx          # Post detail (map, carousel, perspectives)
+│   │   ├── page.tsx                # Own profile (stats, tabs, edit/share)
+│   │   ├── [id]/page.tsx           # Public profile (follow/unfollow, posts)
+│   │   └── edit/page.tsx           # Edit name & bio
+│   ├── post/[id]/page.tsx          # Post detail (carousel, map, likes, perspectives)
 │   ├── friends/page.tsx            # Search users, follow/unfollow
-│   ├── notifications/page.tsx      # Activity notifications
+│   ├── notifications/page.tsx      # Activity notifications, follow-back
 │   ├── api/
 │   │   └── mapbox-token/route.ts   # Server-side Mapbox token endpoint
-│   ├── layout.tsx                  # Root layout
-│   └── globals.css                 # Tailwind imports
+│   ├── layout.tsx                  # Root layout (Geist Sans font)
+│   └── globals.css                 # Tailwind v4 import
 ├── components/
-│   ├── TopBar.tsx                  # Shared header (logo + friends + bell) — used by feed & profile
-│   └── PostGrid.tsx                # Shared post grid (empty/single/multi) — used by profile tabs
+│   ├── TopBar.tsx                  # Shared header — used by feed & own profile only
+│   └── PostGrid.tsx                # Shared post grid — used by own & public profile
 ├── lib/
-│   ├── api.ts                      # API utilities (apiPost, apiGet)
-│   ├── auth.ts                     # Token management (saveToken, getToken)
-│   └── geocoding.ts                # Mapbox token fetch + place search autocomplete
+│   ├── api.ts                      # apiGet, apiPost, apiPut + API_BASE
+│   ├── auth.ts                     # getToken, saveToken, getUserId, saveUserId
+│   └── geocoding.ts                # Mapbox reverse geocoding + place search
 ├── services/
-│   └── uploadService.ts            # Image upload with EXIF extraction
+│   └── uploadService.ts            # 4-step upload: EXIF → WebP → FormData → POST
 └── shared/
-    └── aura-schema.ts              # SOURCE OF TRUTH: Data contracts & types
+    └── aura-schema.ts              # SOURCE OF TRUTH: all TypeScript data contracts
 ```
 
 ## Shared Schema (Source of Truth)
 
 **Location**: `shared/aura-schema.ts`
 
-This file contains TypeScript interfaces that define the data contract between frontend and backend. All code should reference these types to ensure consistency.
+**CRITICAL**: Uses **snake_case** to match SQL exactly. All frontend code must import types from here.
 
-**CRITICAL**: Uses **snake_case** to match SQL exactly (`image_urls`, `archetype_tag`, `created_at`, `is_verified`).
-
-**Key Types**:
-1. `Archetype` - Union type for category tags
-2. `Aura` - Complete database object with all fields
-3. `Post` - Simplified for profile/feed display
-4. `AuraUploadMetadata` - What frontend sends in upload
-5. `ProfileData` - Profile page response structure
-6. `InsertAuraParams` - Backend RPC function parameters
-7. `FeedResponse` - Feed response with pagination
-8. `ArchetypeStats` - Archetype statistics
-9. `UserProfile` - User profile from GET /me endpoint
-10. `ProfileUpdatePayload` - Profile update request body
-
-**Usage**:
-```typescript
-import type { Post, ArchetypeStats } from '@/shared/aura-schema';
-
-// Feed posts
-const posts: Post[] = feedResponse.auras;
-
-// Stats
-const stats: ArchetypeStats = {
-  angle: 5,
-  path: 3,
-  spot: 12,
-  interior: 2
-};
-```
+**Current Types**:
+1. `Archetype` — `'Photo Spots' | 'Wanderings' | 'Indoor Vibes'`
+2. `Aura` — Complete DB object (includes `is_liked`, `like_count`, `tags`, `perspectives`)
+3. `Post` — Simplified for feed/profile display
+4. `AuraUploadMetadata` — What frontend sends as metadata JSON in upload
+5. `ProfileData` — Profile page response structure
+6. `InsertAuraParams` — Backend RPC parameters
+7. `FeedResponse` — Feed response with pagination
+8. `ArchetypeStats` — `{ angle, path, spot, interior }` (DB field names, not display labels)
+9. `UserProfile` — From `GET /me`
+10. `ProfileUpdatePayload` — `PUT /api/profile/update` body
+11. `PublicProfile` — From `GET /api/users/:id`
+12. `PublicProfileResponse` — Full public profile response
+13. `Notification` — Notification object (`follow | save | perspective`)
 
 **Key Fields**:
-- `image_urls` (NOT `imageUrls`) - Array of image URLs for carousel
-- `archetype_tag` (NOT `archetypeTag`) - Category tag
-- `created_at` (NOT `createdAt`) - Timestamp
-- `is_verified` (NOT `isVerified`) - GPS verification flag
+- `image_urls` (NOT `imageUrls`) — array of image URLs for carousel
+- `archetype_tag` (NOT `archetypeTag`) — category tag string
+- `created_at` (NOT `createdAt`) — ISO timestamp
+- `is_verified` (NOT `isVerified`) — GPS verification flag
+- `is_liked` — whether the requesting user has liked this post
+- `like_count` — total likes on the post
+- `tags` — optional string array of user-selected tags
+- `parent_id` — `null` = Anchor post, `string` = Perspective of that Anchor
 
-**UserProfile Schema**:
+**UserProfile**:
 ```typescript
 export interface UserProfile {
-  id: string;               // UUID (backend sends "id", not "user_id")
+  id: string;               // UUID — "id" not "user_id"
   email: string;
-  name?: string;            // Max 10 chars, may not exist for new users
-  bio?: string | null;      // Max 100 chars, optional
-  avatar_url?: string | null; // Optional
+  name?: string;            // Max 10 chars; may be absent on new users
+  bio?: string | null;
+  avatar_url?: string | null;
 }
+```
 
-export interface ProfileUpdatePayload {
-  name?: string;            // Max 10 chars
-  bio?: string;             // Max 100 chars
+**PublicProfile**:
+```typescript
+export interface PublicProfile {
+  user_id: string;          // Note: "user_id" not "id" on public profile
+  name: string;
+  bio: string | null;
+  avatar_url: string | null;
+  follower_count: number;
+  following_count: number;
+  is_following: boolean;
+  post_count: number;
 }
 ```
 
 **Important Notes**:
-- Backend returns `{ ok: true, user: UserProfile }` - user data is nested
-- Field `id` (not `user_id`) matches Supabase auth response
-- `name`, `bio`, `avatar_url` are optional - new users may not have them set
+- `GET /me` returns `{ ok: true, user: UserProfile }` — user data is nested under `user`
+- `GET /api/users/:id` returns `{ profile: PublicProfile, posts: Post[], stats: ArchetypeStats }`
 - Frontend falls back to email prefix if `name` is missing
 
 ## Configuration
@@ -457,11 +458,10 @@ export interface ProfileUpdatePayload {
 
 **`.env.local`** (local development):
 ```env
-NEXT_PUBLIC_API_URL=http://10.124.57.22:8080
+NEXT_PUBLIC_API_URL=http://<your-network-ip>:8080
 NEXT_PUBLIC_MAPBOX_TOKEN=pk.your_mapbox_public_token_here
 ```
-*(Using network IP for mobile device testing)*
-*(Actual Mapbox token stored in .env.local - not committed to git)*
+*(Use network IP, not localhost, for mobile device testing)*
 
 **`Dockerfile`** (production):
 ```dockerfile
@@ -469,31 +469,11 @@ ENV NEXT_PUBLIC_API_URL=https://aura-backend-255644230597.us-central1.run.app
 ARG NEXT_PUBLIC_MAPBOX_TOKEN
 ENV NEXT_PUBLIC_MAPBOX_TOKEN=${NEXT_PUBLIC_MAPBOX_TOKEN}
 ```
-*(Mapbox token passed as build argument during deployment)*
 
-**Deployment with Cloud Build:**
+**Deployment:**
 ```bash
 gcloud run deploy aura-frontend --source . \
   --build-arg NEXT_PUBLIC_MAPBOX_TOKEN=pk.your_actual_token_here
-```
-
-### CORS Configuration (Backend Required)
-
-For local development, backend must have CORS configured:
-
-```typescript
-import cors from 'cors';
-
-app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'http://localhost:3006',
-    'http://10.124.57.22:3006',  // Your local network
-  ],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
 ```
 
 ### Deployment URLs
@@ -504,41 +484,36 @@ app.use(cors({
 
 ### Local Testing
 
-1. **Start Backend** (in backend directory):
+1. **Start Frontend**:
    ```bash
-   # Make sure backend runs on network IP
-   node server.js
-   # Should be accessible at http://192.168.1.30:8080
+   npm run dev -- -H 0.0.0.0
+   # Binds to all interfaces so phone on same WiFi can connect
    ```
 
-2. **Start Frontend**:
-   ```bash
-   npm run dev
-   # Runs at http://192.168.1.30:3003 (or available port)
-   ```
-
-3. **Test on Phone**:
+2. **Test on Phone**:
    - Ensure phone is on same WiFi network
-   - Navigate to `http://192.168.1.30:3003`
-   - Works with actual device camera photos (HEIC with GPS)
+   - Navigate to `http://<your-network-ip>:<port>`
 
 ### Important Notes
 
-- **Mobile-first**: All layouts use full-width responsive design (`min-h-screen`, `w-full`)
-- **No mock data in upload**: Real file input, actual EXIF extraction, live uploads
+- **Mobile-first**: All layouts use `min-h-screen w-full flex flex-col bg-white`
+- **No mock status bar**: Do not add time/battery/signal bars to any page
 - **Token persistence**: JWT stored in localStorage (survives page refreshes)
-- **HEIC support**: iPhone photos automatically converted to WebP
+- **HEIC support**: iPhone photos automatically converted to WebP by `browser-image-compression`
 
 ## Design Tokens (from Figma)
 
-```typescript
-// Colors
-Active nav / accent: #fa6460 (coral/red)
-Brand dark: #2c2c2c
-Filter pill active bg: #5a5a5a, text: #f5f5f5
-Body text: #1e1e1e, secondary: #757575
-Username text: rgba(17,17,17,0.8)
-Card badge: bg #2c2c2c, text #f3f3f3
+```
+Active nav / accent:     #fa6460  (coral/red)
+Brand dark:              #2c2c2c
+Filter pill active:      bg #5a5a5a, text #f5f5f5
+Body text:               #1e1e1e
+Secondary text:          #757575
+Card badge:              bg #2c2c2c, text #f3f3f3
+Tag selected:            bg #fff1c2, text #595959
+Background:              #ffffff
+Light bg / input:        #f3f3f3
+Border:                  #d9d9d9
 ```
 
 ## Figma Reference
@@ -554,642 +529,135 @@ Card badge: bg #2c2c2c, text #f3f3f3
 
 ### 1. Authentication Flow
 ```typescript
-// Login/Register saves token
+// Login/Register saves token AND user ID
 const response = await apiPost('/auth/login', { email, password });
-if (response.session?.access_token) {
-  saveToken(response.session.access_token);
-}
+if (response.session?.access_token) saveToken(response.session.access_token);
+if (response.user?.id) saveUserId(response.user.id);
 
 // Upload reads token
 const token = getToken();
-fetch('/api/auras/upload', {
+fetch(`${API_BASE}/api/auras/upload`, {
   headers: { 'Authorization': `Bearer ${token}` },
-  body: formData
+  body: formData,  // DO NOT set Content-Type — browser sets multipart boundary
 });
 ```
 
-### 2. Multi-Photo Upload Flow (with GPS Optional)
+### 2. Multi-Photo Upload Flow
 ```typescript
-// 1. Extract EXIF from anchor photo (before compression strips it)
-const exifData = await exifr.parse(gpsAnchorFile, {
-  gps: true,
-  altitudeitude: true,
-  imgDirection: true
-});
+// STEP 1: Extract EXIF from anchor photo (BEFORE compression strips it)
+const exifData = await exifr.parse(gpsAnchorFile, { gps: true });
 
-// Check if GPS data exists
 let sharedGPS = {};
-let isVerified = true;
-
-if (!exifData?.latitude || !exifData?.longitude) {
-  // No GPS found - upload as unverified
-  console.warn('⚠️ No GPS data found. Upload will proceed as unverified.');
-  isVerified = false;
-  // sharedGPS remains empty - fields will not be sent to backend
-} else {
-  // GPS found - include coordinates
+let isVerified = false;
+if (exifData?.latitude && exifData?.longitude) {
   sharedGPS = {
-    lat: exifData.latitude,
-    lng: exifData.longitude,
-    altitude: exifData.altitudeitude || 0,
-    heading: exifData.GPSImgDirection || 0
+    lat: exifData.latitude, lng: exifData.longitude,
+    altitude: exifData.altitude || 0, heading: exifData.GPSImgDirection || 0,
   };
   isVerified = true;
 }
 
-// 2. Compress & convert ALL photos to WebP
-const optimizedImages = [];
-for (const file of files) {
-  const optimized = await imageCompression(file, {
-    maxSizeMB: 0.4,
-    maxWidthOrHeight: 1440,
-    fileType: 'image/webp'
-  });
-  optimizedImages.push(optimized);
-}
+// STEP 2: Compress ALL photos to WebP
+const optimized = await imageCompression(file, {
+  maxSizeMB: 0.4, maxWidthOrHeight: 1440, fileType: 'image/webp'
+});
 
-// 3. Pack ALL images into single FormData with 'images' field
+// STEP 3: Build single FormData
 const formData = new FormData();
+optimizedImages.forEach((blob, i) => formData.append('images', blob, `aura_${i+1}.webp`));
+formData.append('metadata', JSON.stringify({
+  title, archetype_tag, description, tags, parent_id,
+  ...sharedGPS, is_verified: isVerified,
+}));
 
-// Append multiple files with SAME field name
-optimizedImages.forEach((blob, index) => {
-  formData.append('images', blob, `aura_${index + 1}.webp`);
-});
-
-// Append metadata once
-const metadata = {
-  title,
-  archetype_tag,
-  description,
-  ...sharedGPS,        // Empty object {} if no GPS, or { lat, lng, altitude, heading }
-  is_verified: isVerified  // false if no GPS, true if GPS found
-};
-
-formData.append('metadata', JSON.stringify(metadata));
-
-// 4. Ship with auth - ONE request for all photos
-fetch('/api/auras/upload', {
-  headers: { 'Authorization': `Bearer ${token}` },
-  body: formData
-});
-
-// Backend receives: req.files array (Multer: upload.array('images', 5))
-// Database stores: image_urls TEXT[] = ['url1', 'url2', 'url3']
+// STEP 4: One request
+fetch(`${API_BASE}/api/auras/upload`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formData });
 ```
 
-### 3. Multi-Photo Upload: Naming Convention (CRITICAL)
+### 3. Naming Convention (CRITICAL — Must Match Across Stack)
 
-**Single Source of Truth** - Use plural naming across entire stack:
+| Layer | Field/Variable | Type |
+|---|---|---|
+| Frontend FormData | `images` | File[] (same field name repeated) |
+| Backend Multer | `upload.array('images', 5)` | — |
+| Backend RPC Call | `p_image_urls` | string[] |
+| Database Column | `image_urls` | TEXT[] |
 
-| Layer | Field/Variable Name | Type | Notes |
-|-------|-------------------|------|-------|
-| **Frontend FormData** | `images` | File[] | Multiple files, same field name |
-| **Backend Multer** | `upload.array('images', 5)` | - | Must match FormData field |
-| **Backend RPC Call** | `p_image_urls` | string[] | Plural parameter name |
-| **Database Column** | `image_urls` | TEXT[] | Plural, array type |
-| **Database Function** | `p_image_urls` | TEXT[] | Plural parameter |
+### 4. Anchor vs Perspective
+Posts have a `parent_id` field:
+- `parent_id: null` = **Anchor** (independent post)
+- `parent_id: "<uuid>"` = **Perspective** (linked to an anchor at the same location)
 
-**Frontend (Already Implemented)**:
+Upload flow checks nearby posts (`GET /api/auras/check-nearby`) and shows a bottom sheet letting the user choose. The user's selection is passed as `parent_id` in the upload metadata.
+
+### 5. Like System (Optimistic UI)
 ```typescript
-// Append multiple files with SAME field name 'images'
-formData.append('images', blob1, 'aura_1.webp');
-formData.append('images', blob2, 'aura_2.webp');
-formData.append('images', blob3, 'aura_3.webp');
+// Optimistic update first, then API call, revert on error
+const prev = { isLiked, likeCount };
+setIsLiked(!isLiked); setLikeCount(c => isLiked ? c - 1 : c + 1);
+try {
+  if (prev.isLiked) await fetch(`${API_BASE}/api/likes/${post.id}`, { method: 'DELETE', headers });
+  else await fetch(`${API_BASE}/api/likes`, { method: 'POST', headers, body: JSON.stringify({ aura_id: post.id }) });
+} catch {
+  setIsLiked(prev.isLiked); setLikeCount(prev.likeCount);
+}
 ```
 
-**Backend Required Changes**:
-```typescript
-// Change from upload.single('image') to upload.array('images', 5)
-app.post('/api/auras/upload',
-  authenticateToken,
-  upload.array('images', 5),  // Max 5 files
-  async (req, res) => {
-    const files = req.files;  // Array of files
-    const metadata = JSON.parse(req.body.metadata);
-
-    // Upload files to storage
-    const imageUrls = await Promise.all(
-      files.map(file => uploadToStorage(file))
-    );
-
-    // Insert into database - GPS fields may be undefined
-    await supabase.rpc('insert_aura', {
-      p_user_id: req.user.id,
-      p_title: metadata.title,
-      p_image_urls: imageUrls,  // Array: ['url1', 'url2', 'url3']
-      p_archetype_tag: metadata.archetype_tag,
-      p_description: metadata.description || null,
-      p_lat: metadata.lat || null,        // NULL if no GPS
-      p_lng: metadata.lng || null,        // NULL if no GPS
-      p_altitude: metadata.altitude || 0,           // Default 0
-      p_heading: metadata.heading || 0,   // Default 0
-      p_is_verified: metadata.is_verified // false if no GPS
-    });
-  }
-);
-```
-
-**Database Required Changes**:
-```sql
--- Rename column to plural
-ALTER TABLE auras RENAME COLUMN image_url TO image_urls;
-
--- Or create fresh with complete schema
-CREATE TABLE auras (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-
-  -- Content
-  title TEXT NOT NULL,
-  description TEXT,
-  archetype_tag TEXT NOT NULL CHECK (archetype_tag IN ('The Angle', 'The Path', 'The Spot', 'The Interior')),
-  image_urls TEXT[] NOT NULL,  -- Array type for carousel
-
-  -- GPS fields - NULLABLE (may be NULL if no GPS data)
-  lat DOUBLE PRECISION,        -- NULL if no GPS
-  lng DOUBLE PRECISION,        -- NULL if no GPS
-  altitude DOUBLE PRECISION DEFAULT 0,
-  heading DOUBLE PRECISION DEFAULT 0,
-  is_verified BOOLEAN DEFAULT false,
-
-  -- Timestamps
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Update RPC function to handle nullable GPS
-CREATE OR REPLACE FUNCTION insert_aura(
-  p_user_id UUID,
-  p_title TEXT,
-  p_image_urls TEXT[],              -- Array parameter (plural)
-  p_archetype_tag TEXT,
-  p_description TEXT DEFAULT NULL,
-  p_lat DOUBLE PRECISION DEFAULT NULL,     -- Nullable GPS fields
-  p_lng DOUBLE PRECISION DEFAULT NULL,     -- Nullable GPS fields
-  p_altitude DOUBLE PRECISION DEFAULT 0,
-  p_heading DOUBLE PRECISION DEFAULT 0,
-  p_is_verified BOOLEAN DEFAULT false
-)
-RETURNS TABLE (
-  id UUID,
-  user_id UUID,
-  title TEXT,
-  image_urls TEXT[],
-  archetype_tag TEXT,
-  lat DOUBLE PRECISION,
-  lng DOUBLE PRECISION,
-  is_verified BOOLEAN,
-  created_at TIMESTAMPTZ
-)
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  RETURN QUERY
-  INSERT INTO auras (
-    user_id, title, image_urls, archetype_tag, description,
-    lat, lng, altitude, heading, is_verified
-  )
-  VALUES (
-    p_user_id, p_title, p_image_urls, p_archetype_tag, p_description,
-    p_lat, p_lng, p_altitude, p_heading, p_is_verified
-  )
-  RETURNING *;
-END;
-$$;
-```
-
-### 4. Mobile-First Responsive Design
-```typescript
-// Always use full-width containers
-className="relative flex min-h-screen w-full flex-col bg-white"
-
-// Account for mobile keyboard
-className="flex-1 overflow-y-auto pb-safe"
-
-// Touch-friendly UI
-className="py-3"  // Larger touch targets
-```
+### 6. Own Post Detection
+`getUserId()` (from localStorage `aura_user_id`) is compared against `post.user?.id` to determine if the current user owns a post. Own posts hide the save button on the detail page and link the username header to `/profile` instead of `/profile/:id`.
 
 ## Known Issues & Solutions
 
 ### Issue: "Please log in first to upload photos"
-**Cause**: Token not saved properly
-**Solution**: Backend returns `session.access_token`, not `access_token` directly
-**Fix Applied**: Updated to use `response.session?.access_token`
-
-### Issue: Port conflicts (3000, 3001 in use)
-**Solution**: Next.js auto-selects available port (e.g., 3003)
-**To force specific port**: `npm run dev -- -p 3000`
+**Cause**: Token not saved properly after login
+**Fix**: Backend returns `session.access_token` (nested under `session`), not top-level `access_token`
 
 ### Issue: Can't access on phone
-**Solution**: Start dev server with network access:
-```bash
-npm run dev -- -H 0.0.0.0
-```
+**Fix**: `npm run dev -- -H 0.0.0.0` to bind to all interfaces
 
-## Testing Checklist
-
-### Authentication
-- [ ] Register new user → token saved → redirected to profile
-- [ ] Login existing user → token saved → redirected to profile
-- [ ] Logout → token cleared
-- [ ] Check console: `localStorage.getItem('aura_token')` returns JWT
-
-### Single Photo Upload
-- [ ] Upload 1 photo with GPS data → EXIF extracted → image compressed → upload successful → `is_verified: true`
-- [ ] Upload 1 photo without GPS → upload successful → warning shown → `is_verified: false`
-- [ ] Image converted to WebP format
-- [ ] Check metadata: GPS fields present when photo has EXIF, omitted when no EXIF
-
-### Multi-Photo Upload (Carousel)
-- [ ] Select 3 photos → all display in preview strip
-- [ ] Select more than 3 photos → only first 3 taken, warning shown
-- [ ] Tap GPS selector on different photos → blue ring moves correctly
-- [ ] Remove photo → remaining photos adjust, GPS selector updates
-- [ ] Upload 3 photos with GPS → progress bar shows "Uploading photo X of 3"
-- [ ] Upload 3 photos without GPS → warning shown → upload completes → `is_verified: false`
-- [ ] Backend receives single request with 3 files (check Network tab)
-- [ ] Database stores array of URLs in `image_urls` column
-- [ ] Verify GPS fields in metadata:
-  - [ ] With GPS: `lat`, `lng`, `altitude`, `heading` present, `is_verified: true`
-  - [ ] Without GPS: GPS fields omitted, `is_verified: false`
-
-### UI/UX
-- [ ] All pages load without mock status bar
-- [ ] Mobile responsive on actual device
-- [ ] "Change" button replaces all selected photos
-- [ ] Upload button shows "Upload 3 Photos" when multiple selected
-
-## Next Steps
-
-### Backend (Required for Multi-Photo Upload) ⚠️ CRITICAL
-
-#### 1. Multer Configuration Update
-```typescript
-// BEFORE
-upload.single('image')
-
-// AFTER
-upload.array('images', 5)  // Max 5 files, field name 'images'
-```
-
-#### 2. Database Schema Migration
-```sql
--- Step 1: Rename column
-ALTER TABLE auras RENAME COLUMN image_url TO image_urls;
-
--- Step 2: Change column type to array
-ALTER TABLE auras ALTER COLUMN image_urls TYPE TEXT[] USING ARRAY[image_urls];
-
--- Step 3: Make GPS fields nullable
-ALTER TABLE auras ALTER COLUMN lat DROP NOT NULL;
-ALTER TABLE auras ALTER COLUMN lng DROP NOT NULL;
-```
-
-#### 3. RPC Function Update
-```sql
--- Update parameter name and type
-CREATE OR REPLACE FUNCTION insert_aura(
-  p_image_urls TEXT[],              -- Changed from p_image_url TEXT
-  p_lat DOUBLE PRECISION DEFAULT NULL,     -- Now nullable
-  p_lng DOUBLE PRECISION DEFAULT NULL,     -- Now nullable
-  p_is_verified BOOLEAN DEFAULT false,
-  -- ... other params
-)
-```
-
-#### 4. Upload Endpoint Handler
-```typescript
-app.post('/api/auras/upload',
-  authenticateToken,
-  upload.array('images', 5),  // Handle multiple files
-  async (req, res) => {
-    const files = req.files;  // Array instead of single file
-    const metadata = JSON.parse(req.body.metadata);
-
-    // Upload all files to storage
-    const imageUrls = await Promise.all(
-      files.map(file => uploadFileToStorage(file))
-    );
-
-    // Insert with nullable GPS fields
-    await supabase.rpc('insert_aura', {
-      p_image_urls: imageUrls,
-      p_lat: metadata.lat || null,
-      p_lng: metadata.lng || null,
-      p_is_verified: metadata.is_verified
-    });
-  }
-);
-```
-
-#### 5. Testing Checklist
-- [ ] Test single photo upload
-- [ ] Test multi-photo upload (2-3 photos)
-- [ ] Test upload with GPS data
-- [ ] Test upload without GPS data (screenshot)
-- [ ] Verify `image_urls` array stored correctly
-- [ ] Verify nullable GPS fields work
-- [ ] Check `is_verified` flag correctness
-
-### Frontend (Potential Enhancements)
-- [ ] Implement logout functionality (clear token + redirect to login)
-- [ ] Add protected route middleware (redirect to login if no token)
-- [ ] Fetch and display user's uploaded photos on profile (carousel display)
-- [ ] Fetch and display feed posts from backend (carousel support)
-- [ ] Add photo detail page with carousel navigation
-- [ ] Implement "save" functionality
-- [ ] Add loading skeletons for better UX
-- [ ] Error boundary for better error handling
-- [ ] Token refresh mechanism
-- [ ] Deploy frontend updates to GCP
-
-## Backend Integration Reference
-
-### What Backend Receives
-
-**Request Object:**
-```typescript
-// Using upload.array('images', 5)
-req.files = [
-  {
-    fieldname: 'images',
-    originalname: 'photo1.webp',
-    mimetype: 'image/webp',
-    size: 389472,
-    buffer: <Buffer...>,
-    path: 'uploads/xyz123.webp'  // If using disk storage
-  },
-  {
-    fieldname: 'images',
-    originalname: 'photo2.webp',
-    mimetype: 'image/webp',
-    size: 412348,
-    buffer: <Buffer...>,
-    path: 'uploads/abc456.webp'
-  },
-  // ... up to 3 files
-]
-
-req.body.metadata = '{"title":"Beach Day","archetype_tag":"The Path",...}'
-```
-
-**Parsed Metadata (with GPS):**
-```typescript
-const metadata = JSON.parse(req.body.metadata);
-// {
-//   title: "Beach Day",
-//   archetype_tag: "The Path",
-//   description: "Sunset walk",
-//   lat: 37.7749,
-//   lng: -122.4194,
-//   altitude: 15.5,
-//   heading: 270.0,
-//   is_verified: true
-// }
-```
-
-**Parsed Metadata (without GPS):**
-```typescript
-const metadata = JSON.parse(req.body.metadata);
-// {
-//   title: "Cafe Interior",
-//   archetype_tag: "The Interior",
-//   description: "Cozy space",
-//   is_verified: false
-//   // Note: lat, lng, altitude, heading NOT present
-// }
-```
-
-### Current Upload Request Format
-
-**Single Request with Multiple Files:**
-
-```http
-POST /api/auras/upload
-Authorization: Bearer <JWT_TOKEN>
-Content-Type: multipart/form-data; boundary=----WebKitFormBoundary...
-
-------WebKitFormBoundary...
-Content-Disposition: form-data; name="images"; filename="aura_1.webp"
-Content-Type: image/webp
-
-<binary data>
-------WebKitFormBoundary...
-Content-Disposition: form-data; name="images"; filename="aura_2.webp"
-Content-Type: image/webp
-
-<binary data>
-------WebKitFormBoundary...
-Content-Disposition: form-data; name="images"; filename="aura_3.webp"
-Content-Type: image/webp
-
-<binary data>
-------WebKitFormBoundary...
-Content-Disposition: form-data; name="metadata"
-
-{"title":"Beach Day","archetype_tag":"The Path","description":"Sunset","lat":37.77,"lng":-122.41,"altitude":10,"heading":180,"is_verified":true}
-------WebKitFormBoundary...
-```
-
-**Metadata JSON Schema:**
-```typescript
-interface AuraUploadMetadata {
-  // Always required
-  title: string;
-  archetype_tag: 'The Angle' | 'The Path' | 'The Spot' | 'The Interior';
-  description?: string;       // Optional user input
-  is_verified: boolean;       // true if GPS exists, false if no GPS
-
-  // GPS fields - ONLY included if EXIF data found
-  lat?: number;               // From anchor photo (omitted if no GPS)
-  lng?: number;               // From anchor photo (omitted if no GPS)
-  altitude?: number;               // From anchor photo (omitted if no GPS, default: 0)
-  heading?: number;           // From anchor photo (omitted if no GPS, default: 0)
-}
-```
-
-**Example: With GPS Data**
-```json
-{
-  "title": "Beach Sunset",
-  "archetype_tag": "The Path",
-  "description": "Beautiful evening",
-  "lat": 37.7749,
-  "lng": -122.4194,
-  "altitude": 15.5,
-  "heading": 270.0,
-  "is_verified": true
-}
-```
-
-**Example: Without GPS Data** (screenshot, downloaded image, edited photo)
-```json
-{
-  "title": "Cafe Interior",
-  "archetype_tag": "The Interior",
-  "description": "Cozy atmosphere",
-  "is_verified": false
-}
-```
-Note: `lat`, `lng`, `altitude`, `heading` fields are **not sent** when GPS is missing.
-
-**Key Points:**
-- All images use the SAME FormData field name: `images`
-- Metadata sent once, applies to all images
-- All images share GPS coordinates from anchor photo (if GPS exists)
-- Backend receives `req.files` array (not `req.file`)
-- GPS fields are **optional** - presence determined by EXIF data availability
-
-## Deployment
-
-### To Deploy Updated Frontend to GCP:
-
-```bash
-# 1. Commit changes
-git add .
-git commit -m "feat: implement authentication and upload with EXIF"
-git push origin main
-
-# 2. Deploy to Cloud Run
-gcloud run deploy aura-frontend --source .
-
-# Note: Production uses env var from Dockerfile
-# ENV NEXT_PUBLIC_API_URL=https://aura-backend-255644230597.us-central1.run.app
-```
-
-## Debug Commands
-
-```bash
-# Check token in browser console
-localStorage.getItem('aura_token')
-
-# Clear token
-localStorage.clear()
-
-# Check all localStorage
-console.log(localStorage)
-
-# Network tab filter
-# Filter by: /api/auras/upload or /auth/
-
-# Inspect upload payload in Network tab
-# Look for FormData with multiple 'images' entries
-# Check metadata JSON for GPS fields (present/absent)
-```
+### Issue: Port conflicts
+**Fix**: Next.js auto-selects available port; force with `npm run dev -- -p 3000`
 
 ## Important Implementation Notes
 
 ### 🔴 Critical Points
 
 1. **GPS Fields Are Optional**
-   - Frontend checks if EXIF data exists
-   - If GPS found: sends `lat`, `lng`, `altitude`, `heading` + `is_verified: true`
-   - If NO GPS: omits GPS fields entirely + `is_verified: false`
-   - Backend MUST handle nullable GPS columns
+   - `sharedGPS` object is empty `{}` if no EXIF data found
+   - Only when GPS exists: `lat`, `lng`, `altitude`, `heading` are spread into metadata
+   - `is_verified: false` + no GPS fields if no EXIF
 
-2. **Naming Convention (Must Match Exactly)**
-   - Frontend FormData field: `images` (plural)
-   - Backend Multer: `upload.array('images', 5)`
-   - Database column: `image_urls` (plural, TEXT[] type)
-   - RPC parameter: `p_image_urls` (plural, TEXT[] type)
+2. **Single Request Architecture**
+   - ONE POST with ALL images — not separate requests per photo
+   - Backend receives `req.files` array (not `req.file`)
+   - Database stores ONE row with `image_urls TEXT[]`
 
-3. **Single Request Architecture**
-   - Frontend sends ONE POST with all files
-   - NOT 3 separate requests
-   - Backend receives `req.files` array
-   - Database stores one row with `image_urls` array
+3. **EXIF Extraction Timing**
+   - MUST extract EXIF BEFORE compression — compression strips metadata
 
-4. **EXIF Extraction Timing**
-   - MUST extract EXIF BEFORE compression
-   - Compression strips all metadata
-   - GPS data applied to ALL photos in upload
+4. **Do NOT set Content-Type on FormData requests**
+   - Browser must set it automatically to include the multipart boundary
 
-5. **Type Safety**
-   - All code imports types from `shared/aura-schema.ts`
-   - Changes to schema must update shared file
-   - Backend should match TypeScript interfaces
+5. **Archetypes are 3 values only**
+   - `'Photo Spots' | 'Wanderings' | 'Indoor Vibes'`
+   - Old values (`The Angle`, `The Path`, `The Spot`, `The Interior`) are OBSOLETE
 
 ### ⚠️ Common Pitfalls
 
-- ❌ Don't add `Content-Type` header (breaks multipart boundary)
+- ❌ Don't add `Content-Type` header to FormData fetch (breaks multipart boundary)
 - ❌ Don't assume GPS fields always exist (they're optional)
-- ❌ Don't use `upload.single()` - must be `upload.array()`
-- ❌ Don't store as single URL - must be TEXT[] array
-- ❌ Don't block uploads without GPS - allow with `is_verified: false`
+- ❌ Don't use `upload.single()` — must be `upload.array('images', 5)`
+- ❌ Don't store as single URL — must be `TEXT[]` array
+- ❌ Don't block uploads without GPS — allow with `is_verified: false`
+- ❌ Don't use old archetype names (The Angle, The Path, etc.)
 
 ### ✅ Best Practices
 
-- ✓ Always check `is_verified` flag to determine GPS presence
-- ✓ Use shared schema types for consistency
-- ✓ Handle nullable GPS in database queries
-- ✓ Show clear warnings when GPS is missing
-- ✓ Test with both GPS and non-GPS photos
-
-## Complete Feature Overview
-
-### Multi-Photo Carousel Upload
-
-**What It Does:**
-Upload 1-3 photos as a single "aura" post with shared metadata and optional GPS location.
-
-**User Flow:**
-1. Select 1-3 photos (max enforced)
-2. Pick GPS anchor photo (blue ring indicator)
-3. Enter title, description, category
-4. Click "Upload X Photos"
-5. See progress bar during upload
-6. If no GPS: yellow warning shown
-7. Redirect to feed
-
-**Technical Flow:**
-1. Extract EXIF from anchor photo (if available)
-2. Optimize all photos to WebP (<400KB each)
-3. Bundle into single FormData request
-4. Send to `/api/auras/upload` with JWT auth
-5. Backend processes files array
-6. Store as one row with `image_urls` array
-
-**Data Model:**
-```typescript
-// Frontend sends
-FormData {
-  images: [File, File, File],    // 1-3 WebP files
-  metadata: JSON {
-    title: string,
-    archetype_tag: Archetype,
-    description?: string,
-    lat?: number,                // Only if GPS found
-    lng?: number,                // Only if GPS found
-    altitude?: number,                // Only if GPS found
-    heading?: number,            // Only if GPS found
-    is_verified: boolean         // false if no GPS
-  }
-}
-
-// Database stores
-{
-  id: UUID,
-  user_id: UUID,
-  title: string,
-  image_urls: string[],          // ['url1', 'url2', 'url3']
-  archetype_tag: Archetype,
-  lat: number | null,            // NULL if no GPS
-  lng: number | null,            // NULL if no GPS
-  is_verified: boolean,          // false if no GPS
-  created_at: timestamp
-}
-```
-
-**Key Features:**
-- ✅ Atomic operation (all photos or none)
-- ✅ GPS optional (works with screenshots, downloads)
-- ✅ Single database row per post
-- ✅ Automatic carousel structure
-- ✅ Type-safe with shared schema
-- ✅ Progress tracking
-- ✅ Error handling
-
----
+- ✓ Import all types from `shared/aura-schema.ts`
+- ✓ Use `API_BASE` from `src/lib/api.ts` for all backend URLs
+- ✓ Use `getToken()` / `saveToken()` from `src/lib/auth.ts` for token management
+- ✓ Use `Promise.allSettled()` when calling endpoints that may not exist yet
+- ✓ Use `getUserId()` to detect own posts (hide save button, link to own profile)
 
 ## Project Status Summary
 
@@ -1197,75 +665,92 @@ FormData {
 
 **Upload:**
 - [x] Multi-photo upload UI (max 3 photos), inline SVG icons (no external assets)
-- [x] GPS anchor photo selector
+- [x] GPS anchor photo selector with blue ring indicator
 - [x] Single request upload (all images in one POST)
-- [x] Upload progress tracking
-- [x] GPS optional handling (`is_verified: false` if no GPS)
-- [x] Nearby post prompt → Anchor or Perspective choice
+- [x] Upload progress bar
+- [x] GPS optional handling (`is_verified: false` if no GPS, yellow warning)
+- [x] Nearby post prompt → Anchor or Perspective choice (`parent_id`)
+- [x] Tag selection (up to 5 from full tag list)
 
 **Feed:**
 - [x] Two-column masonry layout with pagination
-- [x] Location filter (Near Me + city search via Mapbox)
-- [x] Archetype chip filters
-- [x] Following tab (UI ready — backend filter needed)
+- [x] All / Following tab toggle
+- [x] Location filter (Near Me + city search via Mapbox geocoding)
+- [x] Archetype chip filters (Photo Spots, Wanderings, Indoor Vibes)
+- [x] Tag filter via Advanced Search bottom sheet
 - [x] `+N perspectives` badge on anchor posts
+- [x] Distance display when location filter active
 - [x] Shared `<TopBar />` header
 
-**Profile:**
-- [x] Archetype stats, uploaded/saved tabs via shared `<PostGrid />`
+**Profile (Own):**
+- [x] Name, bio, avatar display
+- [x] Archetype stats with count & percentage (3 columns)
+- [x] Uploaded/Saved tabs via shared `<PostGrid />`
+- [x] Edit profile + Share profile buttons
 - [x] Saved posts from `GET /api/saves`
-- [x] Shared `<TopBar />` header (identical to feed)
+- [x] Shared `<TopBar />` header
+
+**Profile (Public `/profile/[id]`):**
+- [x] Follower/following/post counts
+- [x] Follow / Following toggle
+- [x] Archetype stats
+- [x] Posts grid via shared `<PostGrid />`
+- [x] Share profile button
 
 **Post Detail:**
-- [x] Lightbox carousel, static map, walking distance
-- [x] Heart/save button wired to backend
+- [x] Horizontal image carousel + dot indicators
+- [x] Lightbox (fullscreen, prev/next arrows, image count)
+- [x] Like button with optimistic UI + count
+- [x] Save button (hidden on own posts)
+- [x] Share button (copies URL to clipboard)
+- [x] Tags display
+- [x] Static Mapbox map + walking distance/time
+- [x] "Open in Google Maps" link
+- [x] City/neighborhood label from reverse geocoding
 - [x] Perspectives thumbnails strip
-- [x] Back button → home when no browser history
+- [x] Auth toasts for unauthenticated actions
+- [x] Back button → home fallback
 
 **Friends:**
 - [x] Debounced user search, follow/unfollow toggle
 
 **Notifications:**
-- [x] Notification list with type indicators, empty state
+- [x] Notification list (follow, save, perspective types)
+- [x] Follow-back button on follow notifications
+- [x] Mark-all-read on page open
 
 **Shared Components:**
-- [x] `src/components/TopBar.tsx` — single source for header
-- [x] `src/components/PostGrid.tsx` — single source for post grid layout
+- [x] `src/components/TopBar.tsx` — header (feed + own profile)
+- [x] `src/components/PostGrid.tsx` — post grid (own + public profile)
 
-### ⚠️ Backend - Pending for Full Functionality
+### ⚠️ Backend Endpoints — Status
 
 | Endpoint | Status | Notes |
 |---|---|---|
-| `POST /api/saves` | 500 error | Route exists, crashes — DB issue |
-| `GET /api/saves` | 500 error | Route exists, crashes — DB issue |
-| `GET /api/saves/check?aura_id=` | 404 | Not implemented |
-| `GET /api/auras/:id/perspectives` | 404 | Not implemented |
-| `GET /api/users/search?q=` | 404 | Not implemented |
-| `POST /api/follows` | 404 | Not implemented |
-| `DELETE /api/follows/:user_id` | 404 | Not implemented |
-| `GET /api/notifications` | 404 | Not implemented |
-| `GET /api/auras/feed?following=true` | — | Filter by followed users |
+| `POST /api/saves` | May have DB issues | Frontend wired up |
+| `GET /api/saves` | May have DB issues | Frontend wired up |
+| `GET /api/saves/check?aura_id=` | May not exist | Frontend handles 404 silently |
+| `GET /api/auras/:id/perspectives` | May not exist | Frontend handles 404 silently |
+| `GET /api/users/search?q=` | May not exist | Friends page handles gracefully |
+| `POST /api/follows` | May not exist | Friends/Public profile handle gracefully |
+| `DELETE /api/follows/:user_id` | May not exist | Friends/Public profile handle gracefully |
+| `GET /api/notifications` | May not exist | Notifications page handles gracefully |
+| `PATCH /api/notifications/read` | May not exist | Called fire-and-forget |
+| `GET /api/auras/check-nearby` | May not exist | Upload handles gracefully |
+| `GET /api/users/:id` | May not exist | Public profile shows error state |
+| `POST /api/likes` | May not exist | Like button handles gracefully |
+| `DELETE /api/likes/:id` | May not exist | Like button handles gracefully |
+| `GET /api/auras/feed?following=true` | Partial | Following tab sends param; backend filter may not be implemented |
 
-**Follows DB table needed:**
-```sql
-CREATE TABLE follows (
-  follower_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  following_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  PRIMARY KEY (follower_id, following_id)
-);
-CREATE INDEX ON follows(follower_id);
-CREATE INDEX ON follows(following_id);
-```
-
-### 📋 Data Contract
-**Frontend sends:** FormData with multiple files + metadata JSON (snake_case)
-**Backend expects:** `req.files` array + snake_case fields
-**Database stores:** `image_urls TEXT[]` + nullable `lat`/`lng`
-**All fields:** snake_case (`image_urls`, `archetype_tag`, `created_at`, `is_verified`)
+### 📋 Data Contract Summary
+- **Frontend sends**: FormData with multiple files + metadata JSON (all snake_case)
+- **Backend expects**: `req.files` array + `req.body.metadata` JSON string
+- **Database stores**: `image_urls TEXT[]` + nullable `lat`/`lng` + `tags TEXT[]`
+- **All fields**: snake_case (`image_urls`, `archetype_tag`, `created_at`, `is_verified`)
+- **Archetypes**: `'Photo Spots' | 'Wanderings' | 'Indoor Vibes'` (3 values)
 
 ---
 
-**Last Updated**: 2026-05-10
+**Last Updated**: 2026-05-29
 **Deployment**: GCP Cloud Run — `gcloud builds submit --config cloudbuild.yaml`
-**Mapbox token**: Set via `gcloud run services update aura-frontend --update-env-vars MAPBOX_TOKEN=pk.xxx` (not in source)
+**Mapbox token**: Set via env var at build time (not committed to git)

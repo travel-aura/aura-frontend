@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { API_BASE } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import PostGrid from "@/components/PostGrid";
-import type { PublicProfileResponse, ArchetypeStats, Post } from "../../../../shared/aura-schema";
+import type { PublicProfileResponse, ArchetypeStats, Aura } from "../../../../shared/aura-schema";
 
 const DEFAULT_AVATAR = "https://www.figma.com/api/mcp/asset/e4add399-8205-4c2a-8782-3da6c9f7bf60";
 
@@ -20,8 +20,8 @@ export default function PublicProfilePage() {
   const userId = params.id as string;
 
   const [profile, setProfile] = useState<PublicProfileResponse["profile"] | null>(null);
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [stats, setStats] = useState<ArchetypeStats>({ angle: 0, path: 0, spot: 0, interior: 0 });
+  const [posts, setPosts] = useState<Aura[]>([]);
+  const [stats, setStats] = useState<ArchetypeStats>({ photo_spots: 0, wanderings: 0, indoor_vibes: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [followPending, setFollowPending] = useState(false);
@@ -39,7 +39,7 @@ export default function PublicProfilePage() {
         const data: PublicProfileResponse = await res.json();
         setProfile(data.profile);
         setPosts(data.posts ?? []);
-        setStats(data.stats ?? { angle: 0, path: 0, spot: 0, interior: 0 });
+        setStats(data.stats ?? { photo_spots: 0, wanderings: 0, indoor_vibes: 0 });
       } catch (err) {
         setError((err as Error).message);
       } finally {
@@ -86,7 +86,7 @@ export default function PublicProfilePage() {
     );
   }
 
-  const totalPosts = stats.angle + stats.path + stats.spot + stats.interior;
+  const totalPosts = stats.photo_spots + stats.wanderings + stats.indoor_vibes;
 
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-white">
@@ -172,9 +172,9 @@ export default function PublicProfilePage() {
         {/* Archetype stats */}
         <div className="mx-4 mt-5 flex">
           {[
-            { label: "Photo Spots", count: stats.angle },
-            { label: "Wanderings", count: stats.spot },
-            { label: "Indoor Vibes", count: stats.interior },
+            { label: "Photo Spots", count: stats.photo_spots },
+            { label: "Wanderings", count: stats.wanderings },
+            { label: "Indoor Vibes", count: stats.indoor_vibes },
           ].map((stat, i) => (
             <div key={i} className="flex flex-1">
               {i > 0 && <div className="w-px self-stretch bg-[#d9d9d9]" />}

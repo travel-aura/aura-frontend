@@ -6,7 +6,7 @@ import Link from "next/link";
 import { apiGet, API_BASE } from "@/lib/api";
 import { getToken, getUserId } from "@/lib/auth";
 import { getCityFromCoordinates } from "@/lib/geocoding";
-import type { Aura } from "../../../../shared/aura-schema";
+import type { AuraWithUser, Perspective } from "../../../../shared/aura-schema";
 
 const DEFAULT_AVATAR = "https://www.figma.com/api/mcp/asset/e4add399-8205-4c2a-8782-3da6c9f7bf60";
 
@@ -84,7 +84,7 @@ export default function PostDetailPage() {
   const router = useRouter();
   const postId = params.id as string;
 
-  const [post, setPost] = useState<Aura | null>(null);
+  const [post, setPost] = useState<AuraWithUser | null>(null);
   const [cityLocation, setCityLocation] = useState<string | null>(null);
   const [mapToken, setMapToken] = useState<string>("");
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -97,7 +97,7 @@ export default function PostDetailPage() {
   const [likePending, setLikePending] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [shareCopied, setShareCopied] = useState(false);
-  const [perspectives, setPerspectives] = useState<Aura[]>([]);
+  const [perspectives, setPerspectives] = useState<Perspective[]>([]);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [authToast, setAuthToast] = useState<string | null>(null);
@@ -107,13 +107,13 @@ export default function PostDetailPage() {
       try {
         setLoading(true);
 
-        let foundPost: Aura | undefined;
+        let foundPost: AuraWithUser | undefined;
 
         try {
-          const directResponse = await apiGet<{ ok: boolean; aura: Aura }>(`/api/auras/${postId}`);
+          const directResponse = await apiGet<{ ok: boolean; aura: AuraWithUser }>(`/api/auras/${postId}`);
           foundPost = directResponse.aura;
         } catch {
-          const feedResponse = await apiGet<{ ok: boolean; auras: Aura[] }>("/api/auras/feed?limit=100&offset=0");
+          const feedResponse = await apiGet<{ ok: boolean; auras: AuraWithUser[] }>("/api/auras/feed?limit=100&offset=0");
           foundPost = feedResponse.auras.find((p) => p.id === postId);
         }
 
@@ -162,7 +162,7 @@ export default function PostDetailPage() {
         }
         const perspResult = results[foundPost.is_saved === undefined ? 2 : 1];
         if (!foundPost.perspectives && perspResult?.status === "fulfilled") {
-          setPerspectives((perspResult.value as { perspectives: Aura[] }).perspectives ?? []);
+          setPerspectives((perspResult.value as { perspectives: Perspective[] }).perspectives ?? []);
         }
       } catch (err) {
         setError((err as Error).message || "Failed to load post");
@@ -510,7 +510,7 @@ export default function PostDetailPage() {
                 {perspectives.map((p) => (
                   <Link key={p.id} href={`/post/${p.id}`} className="relative shrink-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={p.image_urls[0]} alt={p.title} className="size-24 rounded-xl object-cover" />
+                    <img src={p.image_urls[0]} alt={p.archetype_tag} className="size-24 rounded-xl object-cover" />
                     {p.image_urls.length > 1 && (
                       <span className="absolute right-1.5 top-1.5 text-white text-[10px] drop-shadow">⊞</span>
                     )}
