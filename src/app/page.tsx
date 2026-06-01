@@ -1,6 +1,6 @@
 "use client";
 
-import { type ComponentType, useState, useEffect, useRef, useCallback } from "react";
+import { type ComponentType, useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { apiGet } from "@/lib/api";
 import { searchPlaces } from "@/lib/geocoding";
@@ -210,6 +210,15 @@ export default function AuraFeed() {
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
 
+  // Scroll-based header animation
+  const feedRef = useRef<HTMLDivElement>(null);
+  const topGroupRef = useRef<HTMLDivElement>(null);
+  const searchGroupRef = useRef<HTMLDivElement>(null);
+  const lastScrollY = useRef(0);
+  const [scrollDir, setScrollDir] = useState<'top' | 'down' | 'up'>('top');
+  const [topGroupH, setTopGroupH] = useState(88);
+  const [searchGroupH, setSearchGroupH] = useState(96);
+
   // Click outside to close suggestions
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -246,6 +255,31 @@ export default function AuraFeed() {
       finally { setSuggestionsLoading(false); }
     }, 300);
   }, [searchQuery]);
+
+  // Measure group heights (remeasure when context label appears/disappears)
+  useLayoutEffect(() => {
+    if (topGroupRef.current) setTopGroupH(topGroupRef.current.offsetHeight);
+    if (searchGroupRef.current) setSearchGroupH(searchGroupRef.current.offsetHeight);
+  }, [locationMode]);
+
+  // Scroll listener — drives header animation
+  useEffect(() => {
+    const el = feedRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const y = el.scrollTop;
+      if (y <= 0) {
+        setScrollDir('top');
+      } else if (y > lastScrollY.current) {
+        setScrollDir('down');
+      } else {
+        setScrollDir('up');
+      }
+      lastScrollY.current = y;
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, []);
 
   const buildUrl = useCallback((currentOffset: number, coords: Coords | null, archetype: Archetype | null, following: boolean, tag: string | null) => {
     let url = `/api/auras/feed?limit=${LIMIT}&offset=${currentOffset}`;
@@ -389,136 +423,157 @@ export default function AuraFeed() {
     locationMode === "city" ? `📍 Showing Auras in ${selectedCity?.name}` :
     null;
 
+  // State A: at top → 0; State B: scrolling down → fully hidden; State C: scrolling up → only topGroup hidden
+  const headerY =
+    scrollDir === 'top' ? 0 :
+    scrollDir === 'down' ? -(topGroupH + searchGroupH + 4) :
+    -topGroupH;
+
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-white">
-      <TopBar />
 
-      {/* Tabs */}
-      <div className="mt-2 flex items-center justify-center gap-2">
-        {(["all", "following"] as Tab[]).map((t) => (
-          <button
-            key={t}
-            onClick={() => handleTabChange(t)}
-            className={`rounded-full px-3 py-0.5 text-[15px] font-medium transition-colors capitalize ${
-              activeTab === t ? "bg-[#5a5a5a] text-[#f5f5f5]" : "text-[#1e1e1e]"
-            }`}
-          >
-            {t === "all" ? "All" : "Following"}
-          </button>
-        ))}
-      </div>
+      {/* Spacer — preserves flex layout height while header is fixed */}
+      <div style={{ height: topGroupH + searchGroupH }} className="shrink-0" />
 
-      {/* Search + Near Me */}
-      <div className="flex items-center gap-2 px-4 pt-3" ref={searchRef}>
-        <div className="relative flex-1">
-          <div className="flex items-center gap-2 rounded-xl bg-[#f3f3f3] px-3 py-2">
-            <SearchIcon className="size-4 shrink-0 text-[#757575]" />
-            <input
-              type="text"
-              placeholder="Search a location…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-              className="flex-1 bg-transparent text-[14px] text-[#1e1e1e] placeholder-[#757575] outline-none"
-            />
-            {suggestionsLoading && <span className="text-[11px] text-[#757575]">…</span>}
-            {searchQuery && !suggestionsLoading && (
-              <button onClick={() => { setSearchQuery(""); setSuggestions([]); setShowSuggestions(false); }}>
-                <XIcon className="size-4 text-[#757575]" />
+      {/* ── Animated fixed header ── */}
+      <div
+        className="fixed top-0 left-0 right-0 z-40 bg-white transition-transform duration-300 ease-in-out"
+        style={{ transform: `translateY(${headerY}px)` }}
+      >
+        {/* Group 1: TopBar + Tabs — hides on scroll, stays hidden on scroll-up */}
+        <div ref={topGroupRef}>
+          <TopBar />
+          <div className="mt-2 flex items-center justify-center gap-2">
+            {(["all", "following"] as Tab[]).map((t) => (
+              <button
+                key={t}
+                onClick={() => handleTabChange(t)}
+                className={`rounded-full px-3 py-0.5 text-[15px] font-medium transition-colors capitalize ${
+                  activeTab === t ? "bg-[#5a5a5a] text-[#f5f5f5]" : "text-[#1e1e1e]"
+                }`}
+              >
+                {t === "all" ? "All" : "Following"}
               </button>
-            )}
+            ))}
+          </div>
+        </div>
+
+        {/* Group 2: Search + Filters — slides back into view on scroll-up */}
+        <div
+          ref={searchGroupRef}
+          className={`pb-2 transition-shadow duration-300 ${scrollDir !== 'top' ? 'shadow-sm' : ''}`}
+        >
+          {/* Search + Near Me */}
+          <div className="flex items-center gap-2 px-4 pt-3" ref={searchRef}>
+            <div className="relative flex-1">
+              <div className="flex items-center gap-2 rounded-xl bg-[#f3f3f3] px-3 py-2">
+                <SearchIcon className="size-4 shrink-0 text-[#757575]" />
+                <input
+                  type="text"
+                  placeholder="Search a location…"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                  className="flex-1 bg-transparent text-[14px] text-[#1e1e1e] placeholder-[#757575] outline-none"
+                />
+                {suggestionsLoading && <span className="text-[11px] text-[#757575]">…</span>}
+                {searchQuery && !suggestionsLoading && (
+                  <button onClick={() => { setSearchQuery(""); setSuggestions([]); setShowSuggestions(false); }}>
+                    <XIcon className="size-4 text-[#757575]" />
+                  </button>
+                )}
+              </div>
+
+              {/* Suggestions dropdown */}
+              {showSuggestions && (
+                <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-xl border border-[#e8e8e8] bg-white shadow-lg">
+                  {suggestions.map((s) => (
+                    <button
+                      key={s.id}
+                      onMouseDown={(e) => { e.preventDefault(); handleSelectCity(s); }}
+                      className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-[#f9f9f9]"
+                    >
+                      <PinIcon className="mt-0.5 size-4 shrink-0 text-[#fa6460]" />
+                      <div className="min-w-0">
+                        <p className="text-[14px] font-medium text-[#1e1e1e]">{s.name}</p>
+                        <p className="truncate text-[12px] text-[#757575]">{s.place_name}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Near Me button */}
+            <button
+              onClick={handleNearMe}
+              disabled={nearMeLoading}
+              className={`flex size-[42px] shrink-0 items-center justify-center rounded-xl transition-colors ${
+                locationMode === "nearby"
+                  ? "bg-[#fa6460] text-white"
+                  : "bg-[#f3f3f3] text-[#757575]"
+              }`}
+            >
+              {nearMeLoading
+                ? <span className="text-[11px]">…</span>
+                : <NearMeIcon className="size-5" />}
+            </button>
           </div>
 
-          {/* Suggestions dropdown */}
-          {showSuggestions && (
-            <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-xl border border-[#e8e8e8] bg-white shadow-lg">
-              {suggestions.map((s) => (
-                <button
-                  key={s.id}
-                  onMouseDown={(e) => { e.preventDefault(); handleSelectCity(s); }}
-                  className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-[#f9f9f9]"
-                >
-                  <PinIcon className="mt-0.5 size-4 shrink-0 text-[#fa6460]" />
-                  <div className="min-w-0">
-                    <p className="text-[14px] font-medium text-[#1e1e1e]">{s.name}</p>
-                    <p className="truncate text-[12px] text-[#757575]">{s.place_name}</p>
-                  </div>
-                </button>
-              ))}
+          {/* Context label */}
+          {contextLabel && (
+            <div className="mx-4 mt-2 flex items-center justify-between rounded-lg bg-[#fff3f3] px-3 py-2">
+              <span className="text-[13px] font-medium text-[#1e1e1e]">{contextLabel}</span>
+              <button onClick={handleClearLocation}>
+                <XIcon className="size-4 text-[#757575]" />
+              </button>
             </div>
           )}
-        </div>
 
-        {/* Near Me button */}
-        <button
-          onClick={handleNearMe}
-          disabled={nearMeLoading}
-          className={`flex size-[42px] shrink-0 items-center justify-center rounded-xl transition-colors ${
-            locationMode === "nearby"
-              ? "bg-[#fa6460] text-white"
-              : "bg-[#f3f3f3] text-[#757575]"
-          }`}
-        >
-          {nearMeLoading
-            ? <span className="text-[11px]">…</span>
-            : <NearMeIcon className="size-5" />}
-        </button>
-      </div>
-
-      {/* Context label */}
-      {contextLabel && (
-        <div className="mx-4 mt-2 flex items-center justify-between rounded-lg bg-[#fff3f3] px-3 py-2">
-          <span className="text-[13px] font-medium text-[#1e1e1e]">
-            {contextLabel}
-          </span>
-          <button onClick={handleClearLocation}>
-            <XIcon className="size-4 text-[#757575]" />
-          </button>
-        </div>
-      )}
-
-      {/* Archetype chips + Advanced Search */}
-      <div className="mt-2 flex gap-2 overflow-x-auto px-4 pb-1 scrollbar-hide">
-        <button
-          onClick={() => handleArchetype(null)}
-          className={`shrink-0 rounded-full px-3 py-1 text-[13px] font-medium transition-colors ${
-            activeArchetype === null ? "bg-[#2c2c2c] text-white" : "bg-[#f3f3f3] text-[#757575]"
-          }`}
-        >
-          All
-        </button>
-        {ARCHETYPES.map((a) => (
-          <button
-            key={a}
-            onClick={() => handleArchetype(activeArchetype === a ? null : a)}
-            className={`shrink-0 rounded-full px-3 py-1 text-[13px] font-medium transition-colors ${
-              activeArchetype === a ? "bg-[#2c2c2c] text-white" : "bg-[#f3f3f3] text-[#757575]"
-            }`}
-          >
-            {a}
-          </button>
-        ))}
-        <button
-          onClick={() => setShowTagFilter(true)}
-          className={`shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1 text-[13px] font-medium transition-colors ${
-            activeTag ? "bg-[#fff1c2] text-[#595959]" : "bg-[#f3f3f3] text-[#757575]"
-          }`}
-        >
-          <SlidersIcon className="size-3.5" />
-          {activeTag ? `#${activeTag}` : "Advanced Search"}
-          {activeTag && (
-            <span
-              onClick={(e) => { e.stopPropagation(); handleClearTag(); }}
-              className="ml-0.5 flex size-4 items-center justify-center rounded-full bg-[#d4a800]/20 text-[#595959]"
+          {/* Archetype chips + Advanced Search */}
+          <div className="mt-2 flex gap-2 overflow-x-auto px-4 pb-1 scrollbar-hide">
+            <button
+              onClick={() => handleArchetype(null)}
+              className={`shrink-0 rounded-full px-3 py-1 text-[13px] font-medium transition-colors ${
+                activeArchetype === null ? "bg-[#2c2c2c] text-white" : "bg-[#f3f3f3] text-[#757575]"
+              }`}
             >
-              <XIcon className="size-2.5" />
-            </span>
-          )}
-        </button>
+              All
+            </button>
+            {ARCHETYPES.map((a) => (
+              <button
+                key={a}
+                onClick={() => handleArchetype(activeArchetype === a ? null : a)}
+                className={`shrink-0 rounded-full px-3 py-1 text-[13px] font-medium transition-colors ${
+                  activeArchetype === a ? "bg-[#2c2c2c] text-white" : "bg-[#f3f3f3] text-[#757575]"
+                }`}
+              >
+                {a}
+              </button>
+            ))}
+            <button
+              onClick={() => setShowTagFilter(true)}
+              className={`shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1 text-[13px] font-medium transition-colors ${
+                activeTag ? "bg-[#fff1c2] text-[#595959]" : "bg-[#f3f3f3] text-[#757575]"
+              }`}
+            >
+              <SlidersIcon className="size-3.5" />
+              {activeTag ? `#${activeTag}` : "Advanced Search"}
+              {activeTag && (
+                <span
+                  onClick={(e) => { e.stopPropagation(); handleClearTag(); }}
+                  className="ml-0.5 flex size-4 items-center justify-center rounded-full bg-[#d4a800]/20 text-[#595959]"
+                >
+                  <XIcon className="size-2.5" />
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Feed */}
-      <div className="mt-3 flex-1 overflow-y-auto px-[7px] pb-20">
+      <div ref={feedRef} className="mt-3 flex-1 overflow-y-auto px-[7px] pb-20">
         {loading && posts.length === 0 && (
           <div className="flex items-center justify-center py-24">
             <p className="text-[15px] text-[#757575]">Loading feed...</p>
