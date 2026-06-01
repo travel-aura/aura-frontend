@@ -9,11 +9,6 @@ import type { PublicProfileResponse, ArchetypeStats, Aura } from "../../../../sh
 
 const DEFAULT_AVATAR = "https://www.figma.com/api/mcp/asset/e4add399-8205-4c2a-8782-3da6c9f7bf60";
 
-function calculatePercentage(count: number, total: number) {
-  if (total === 0) return "0.00%";
-  return ((count / total) * 100).toFixed(2) + "%";
-}
-
 export default function PublicProfilePage() {
   const params = useParams();
   const router = useRouter();
@@ -67,6 +62,18 @@ export default function PublicProfilePage() {
     finally { setFollowPending(false); }
   };
 
+  const copyShare = async () => {
+    const url = `${window.location.origin}/profile/${userId}`;
+    try { await navigator.clipboard.writeText(url); }
+    catch {
+      const ta = document.createElement("textarea");
+      ta.value = url; document.body.appendChild(ta); ta.select();
+      document.execCommand("copy"); document.body.removeChild(ta);
+    }
+    setShareCopied(true);
+    setTimeout(() => setShareCopied(false), 2000);
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white">
@@ -86,13 +93,20 @@ export default function PublicProfilePage() {
     );
   }
 
-  const totalPosts = stats.photo_spots + stats.wanderings + stats.indoor_vibes;
+  const archCategories = [
+    { label: "Photo Spots", count: stats.photo_spots },
+    { label: "Wanderings", count: stats.wanderings },
+    { label: "Indoor Vibes", count: stats.indoor_vibes },
+  ].filter(s => s.count > 0);
 
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-white">
-      {/* Header */}
+      {/* Back header with username */}
       <div className="flex items-center gap-3 px-4 pt-4 pb-2">
-        <button onClick={() => window.history.length > 1 ? router.back() : router.push("/")} className="flex items-center">
+        <button
+          onClick={() => window.history.length > 1 ? router.back() : router.push("/")}
+          className="flex items-center"
+        >
           <svg className="size-6 text-[#1e1e1e]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6" />
           </svg>
@@ -101,45 +115,55 @@ export default function PublicProfilePage() {
       </div>
 
       <div className="flex-1 overflow-y-auto pb-6">
-        {/* Avatar */}
-        <div className="mt-4 flex justify-center">
-          <div className="size-[101px] overflow-hidden rounded-full border-2 border-white shadow-md">
+
+        {/* ── Instagram-style header ── */}
+        <div className="flex items-center gap-5 px-4 pt-3">
+          {/* Avatar */}
+          <div className="size-[86px] shrink-0 overflow-hidden rounded-full border border-[#d9d9d9]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={profile.avatar_url || DEFAULT_AVATAR} alt={profile.name} className="h-full w-full object-cover" />
+          </div>
+
+          {/* Posts / Followers / Following */}
+          <div className="flex flex-1 items-center justify-around">
+            {[
+              { label: "Posts", value: profile.post_count },
+              { label: "Followers", value: profile.follower_count },
+              { label: "Following", value: profile.following_count },
+            ].map((s) => (
+              <div key={s.label} className="flex flex-col items-center gap-0.5">
+                <span className="text-[18px] font-bold leading-tight text-[#1e1e1e]">{s.value}</span>
+                <span className="text-[12px] text-[#757575]">{s.label}</span>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Name */}
-        <p className="mt-3 text-center text-[22px] font-bold text-[#1e1e1e]">{profile.name}</p>
+        <p className="mt-2 px-4 text-[15px] font-bold text-[#1e1e1e]">{profile.name}</p>
 
         {/* Bio */}
         {profile.bio && (
-          <p className="mt-2 px-6 text-center text-[14px] leading-relaxed text-[#757575]">{profile.bio}</p>
+          <p className="mt-0.5 px-4 text-[13px] leading-relaxed text-[#757575]">{profile.bio}</p>
         )}
 
-        {/* Counts row */}
-        <div className="mx-4 mt-4 flex">
-          {[
-            { label: "Posts", value: profile.post_count },
-            { label: "Followers", value: profile.follower_count },
-            { label: "Following", value: profile.following_count },
-          ].map((item, i) => (
-            <div key={i} className="flex flex-1">
-              {i > 0 && <div className="w-px self-stretch bg-[#d9d9d9]" />}
-              <div className="flex flex-1 flex-col items-center py-1">
-                <span className="text-[20px] font-bold text-[#1e1e1e]">{item.value}</span>
-                <span className="text-[12px] text-[#757575]">{item.label}</span>
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* Archetype category pills */}
+        {archCategories.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5 px-4">
+            {archCategories.map((s) => (
+              <span key={s.label} className="rounded-full bg-[#f3f3f3] px-2.5 py-[3px] text-[11px] font-medium text-[#757575]">
+                {s.label} · {s.count}
+              </span>
+            ))}
+          </div>
+        )}
 
         {/* Follow + Share buttons */}
         <div className="mt-3 flex gap-2 px-4">
           <button
             onClick={handleFollow}
             disabled={followPending}
-            className={`flex-1 rounded-lg py-[9px] text-[13px] font-semibold transition-colors disabled:opacity-60 ${
+            className={`flex-1 rounded-lg py-[8px] text-[13px] font-semibold transition-colors disabled:opacity-60 ${
               profile.is_following
                 ? "border border-[#d9d9d9] bg-white text-[#1e1e1e]"
                 : "bg-[#fa6460] text-white"
@@ -148,49 +172,15 @@ export default function PublicProfilePage() {
             {profile.is_following ? "Following" : "Follow"}
           </button>
           <button
-            onClick={async () => {
-              const url = `${window.location.origin}/profile/${userId}`;
-              try {
-                await navigator.clipboard.writeText(url);
-              } catch {
-                const ta = document.createElement("textarea");
-                ta.value = url;
-                document.body.appendChild(ta);
-                ta.select();
-                document.execCommand("copy");
-                document.body.removeChild(ta);
-              }
-              setShareCopied(true);
-              setTimeout(() => setShareCopied(false), 2000);
-            }}
-            className="flex-1 rounded-lg border border-[#d9d9d9] bg-white py-[9px] text-[13px] font-medium text-[#1e1e1e] transition-colors"
+            onClick={copyShare}
+            className="flex-1 rounded-lg border border-[#d9d9d9] bg-white py-[8px] text-[13px] font-medium text-[#1e1e1e] transition-colors"
           >
             {shareCopied ? "Copied!" : "Share profile"}
           </button>
         </div>
 
-        {/* Archetype stats */}
-        <div className="mx-4 mt-5 flex">
-          {[
-            { label: "Photo Spots", count: stats.photo_spots },
-            { label: "Wanderings", count: stats.wanderings },
-            { label: "Indoor Vibes", count: stats.indoor_vibes },
-          ].map((stat, i) => (
-            <div key={i} className="flex flex-1">
-              {i > 0 && <div className="w-px self-stretch bg-[#d9d9d9]" />}
-              <div className="flex flex-1 flex-col items-center py-1">
-                <span className="text-[13px] font-semibold text-[#1e1e1e]">{stat.label}</span>
-                <span className="mt-0.5 text-[16px] font-bold text-[#1e1e1e]">{stat.count}</span>
-                <span className="text-[10px] text-[#757575]">{calculatePercentage(stat.count, totalPosts)}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Divider */}
-        <div className="mt-4 border-t border-[#d9d9d9]" />
-
         {/* Posts grid */}
+        <div className="mt-4 border-t border-[#d9d9d9]" />
         <div className="px-0.5 py-0.5">
           <PostGrid
             posts={posts}
