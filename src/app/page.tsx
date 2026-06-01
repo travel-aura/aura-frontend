@@ -211,7 +211,6 @@ export default function AuraFeed() {
   const [offset, setOffset] = useState(0);
 
   // Scroll-based header animation
-  const feedRef = useRef<HTMLDivElement>(null);
   const topGroupRef = useRef<HTMLDivElement>(null);
   const searchGroupRef = useRef<HTMLDivElement>(null);
   const lastScrollY = useRef(0);
@@ -262,12 +261,10 @@ export default function AuraFeed() {
     if (searchGroupRef.current) setSearchGroupH(searchGroupRef.current.offsetHeight);
   }, [locationMode]);
 
-  // Scroll listener — drives header animation
+  // Scroll listener — drives header animation (window scrolls, not the feed div)
   useEffect(() => {
-    const el = feedRef.current;
-    if (!el) return;
     const onScroll = () => {
-      const y = el.scrollTop;
+      const y = window.scrollY;
       if (y <= 0) {
         setScrollDir('top');
       } else if (y > lastScrollY.current) {
@@ -277,8 +274,8 @@ export default function AuraFeed() {
       }
       lastScrollY.current = y;
     };
-    el.addEventListener('scroll', onScroll, { passive: true });
-    return () => el.removeEventListener('scroll', onScroll);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   const buildUrl = useCallback((currentOffset: number, coords: Coords | null, archetype: Archetype | null, following: boolean, tag: string | null) => {
@@ -573,7 +570,7 @@ export default function AuraFeed() {
       </div>
 
       {/* Feed */}
-      <div ref={feedRef} className="mt-3 flex-1 overflow-y-auto px-[7px] pb-20">
+      <div className="mt-3 flex-1 overflow-y-auto px-[7px] pb-20">
         {loading && posts.length === 0 && (
           <div className="flex items-center justify-center py-24">
             <p className="text-[15px] text-[#757575]">Loading feed...</p>
