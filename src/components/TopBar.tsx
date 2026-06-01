@@ -7,11 +7,14 @@ import { getToken } from "@/lib/auth";
 
 export default function TopBar() {
   const [unread, setUnread] = useState(0);
-  const [loggedIn, setLoggedIn] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return !!getToken();
+  });
 
   useEffect(() => {
     const token = getToken();
-    if (!token) return;
+    if (!token) { setLoggedIn(false); return; }
     setLoggedIn(true);
     fetch(`${API_BASE}/api/notifications`, {
       headers: { Authorization: `Bearer ${token}` },
