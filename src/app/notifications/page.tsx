@@ -23,9 +23,10 @@ function formatDate(d: string) {
 
 function notificationText(n: Notification) {
   switch (n.type) {
-    case "follow": return "started following you";
-    case "like":   return "liked your post";
-    default:       return "interacted with you";
+    case "follow":      return "started following you";
+    case "save":        return "saved your post";
+    case "perspective": return "added a perspective to your post";
+    default:            return "interacted with you";
   }
 }
 
@@ -141,8 +142,18 @@ export default function NotificationsPage() {
                   </button>
                 )}
 
-                {/* Unread dot for like notifications */}
-                {n.type === "like" && !n.read && (
+                {/* Post link for save/perspective notifications */}
+                {(n.type === "save" || n.type === "perspective") && n.aura_id && (
+                  <Link href={`/post/${n.aura_id}`} className="shrink-0 mt-1">
+                    <div className="size-10 rounded-lg bg-[#f3f3f3] flex items-center justify-center">
+                      <svg className="size-4 text-[#757575]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                        <path d="M3 9h18" />
+                      </svg>
+                    </div>
+                  </Link>
+                )}
+                {(n.type === "save" || n.type === "perspective") && !n.aura_id && !n.read && (
                   <div className="mt-2 size-2 shrink-0 rounded-full bg-[#fa6460]" />
                 )}
               </li>

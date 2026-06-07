@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiGet, apiPut } from "@/lib/api";
-import { getToken } from "@/lib/auth";
+import { useAuth } from "@/context/AuthContext";
 import type { UserProfile, ProfileUpdatePayload } from "../../../../shared/aura-schema";
 
 const AVATAR =
@@ -47,6 +47,7 @@ function PencilIcon({ className }: { className?: string }) {
 // ── Edit Profile Page ──────────────────────────────────────────────────────────
 
 export default function EditProfilePage() {
+  const { token, ready } = useAuth();
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [name, setName] = useState("");
@@ -57,55 +58,31 @@ export default function EditProfilePage() {
   const [showNameError, setShowNameError] = useState(false);
 
   useEffect(() => {
+    if (!ready) return;
+    if (!token) { router.push("/login"); return; }
     const fetchProfile = async () => {
       try {
         setLoading(true);
-        const token = getToken();
-
-        if (!token) {
-          console.log("No token found, redirecting to login");
-          router.push("/login");
-          return;
-        }
-
-        console.log("Fetching profile from /me...");
-        // Fetch user profile
         const response = await apiGet<{ ok: boolean; user: UserProfile }>("/me");
-        console.log("Profile fetched:", response);
-
-        // Extract user from response
         const userProfile = response.user;
-        console.log("User profile data:", userProfile);
-        console.log("Name field:", userProfile.name);
-        console.log("Email field:", userProfile.email);
-
         setProfile(userProfile);
-        // Use name if available, otherwise use email prefix as default
-        setName(userProfile.name || userProfile.email?.split('@')[0] || "");
+        setName(userProfile.name || userProfile.email?.split("@")[0] || "");
         setBio(userProfile.bio || "");
       } catch (err) {
-        console.error("Failed to fetch profile:", err);
         const errorMessage = (err as Error).message || "Failed to load profile";
-
-        // Check if error is related to authentication
         if (errorMessage.includes("Invalid or expired token") ||
             errorMessage.includes("401") ||
             errorMessage.includes("Unauthorized")) {
-          // Token is invalid/expired, redirect to login
           router.push("/login");
           return;
         }
-
         setError(errorMessage);
-        // Still set loading to false so we can see the error
       } finally {
         setLoading(false);
-        console.log("Loading complete");
       }
     };
-
     fetchProfile();
-  }, [router]);
+  }, [ready, token, router]);
 
   const handleSave = async () => {
     if (!name || name.trim() === "") {

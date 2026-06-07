@@ -3,19 +3,14 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { API_BASE } from "@/lib/api";
-import { getToken } from "@/lib/auth";
+import { useAuth } from "@/context/AuthContext";
 
 export default function TopBar() {
+  const { token } = useAuth();
   const [unread, setUnread] = useState(0);
-  const [loggedIn, setLoggedIn] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return !!getToken();
-  });
 
   useEffect(() => {
-    const token = getToken();
-    if (!token) { setLoggedIn(false); return; }
-    setLoggedIn(true);
+    if (!token) { setUnread(0); return; }
     fetch(`${API_BASE}/api/notifications`, {
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -25,12 +20,12 @@ export default function TopBar() {
         setUnread(count);
       })
       .catch(() => {});
-  }, []);
+  }, [token]);
 
   return (
     <div className="relative flex items-center justify-center px-4 pt-3">
       <span className="text-[20px] font-bold tracking-tight text-[#1e1e1e]">Aura</span>
-      {loggedIn && (
+      {token && (
         <div className="absolute right-4 flex items-center gap-3">
           <Link href="/friends" aria-label="Find friends">
             <svg className="size-6 text-[#1e1e1e]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">

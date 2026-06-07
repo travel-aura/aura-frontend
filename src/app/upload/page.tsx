@@ -1,11 +1,11 @@
 "use client";
 
-import { type ComponentType, useState, useRef } from "react";
-import Link from "next/link";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { processAndUploadMultipleAuras, type AuraMetadata, type UploadProgress, type UploadResult } from "@/services/uploadService";
 import { getToken } from "@/lib/auth";
 import { API_BASE } from "@/lib/api";
+import BottomNav from "@/components/BottomNav";
 import type { Archetype } from "../../../shared/aura-schema";
 
 interface NearbyPost { id: string; title: string; distance_meters: number; }
@@ -28,90 +28,6 @@ const ALL_TAGS = [
   "Cinematic", "Cozy", "Vibrant", "Quiet", "Bustling", "Vintage",
   "Romantic", "Moody",
 ];
-
-// ── Icons ────────────────────────────────────────────────────────────────────
-
-function HomeIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M10.707 2.293a1 1 0 0 1 1.414 0l8 8A1 1 0 0 1 20 12h-1v9a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1v-9H3a1 1 0 0 1-.707-1.707l8-8Z" />
-    </svg>
-  );
-}
-
-function PlusSquareIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-    >
-      <rect x="3" y="3" width="18" height="18" rx="3" />
-      <line x1="12" y1="8" x2="12" y2="16" />
-      <line x1="8" y1="12" x2="16" y2="12" />
-    </svg>
-  );
-}
-
-function UserIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-      <circle cx="12" cy="7" r="4" />
-    </svg>
-  );
-}
-
-// ── Bottom Nav ────────────────────────────────────────────────────────────────
-
-type NavItem = "home" | "create" | "profile";
-
-const NAV_ITEMS: {
-  id: NavItem;
-  label: string;
-  href: string;
-  Icon: ComponentType<{ className?: string }>;
-}[] = [
-  { id: "home", label: "Home", href: "/", Icon: HomeIcon },
-  { id: "create", label: "Create", href: "/upload", Icon: PlusSquareIcon },
-  { id: "profile", label: "Profile", href: "/profile", Icon: UserIcon },
-];
-
-function BottomNav({ active }: { active: NavItem }) {
-  return (
-    <div className="fixed bottom-0 left-0 right-0 flex h-16 items-center justify-center border-t border-[#d9d9d9] bg-white shadow-[0px_-2px_4px_0px_rgba(0,0,0,0.12)]">
-      <div className="flex w-[291px] items-center justify-between">
-        {NAV_ITEMS.map(({ id, label, href, Icon }) => (
-          <Link
-            key={id}
-            href={href}
-            className="flex w-[37px] flex-col items-center"
-          >
-            <Icon
-              className={`size-6 ${active === id ? "text-[#fa6460]" : "text-[#2c2c2c]"}`}
-            />
-            <span
-              className={`text-[11px] leading-[1.5] ${active === id ? "text-[#fa6460]" : "text-[#2c2c2c]"}`}
-            >
-              {label}
-            </span>
-          </Link>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 // ── Upload Page ───────────────────────────────────────────────────────────────
 
@@ -475,7 +391,7 @@ export default function UploadPage() {
           </div>
         </div>
 
-      <BottomNav active="create" />
+      <BottomNav />
 
       {/* Nearby post prompt */}
       {showNearbyPrompt && nearbyPosts.length > 0 && (

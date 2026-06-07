@@ -4,11 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiPost } from "@/lib/api";
-import { saveToken, saveUserId } from "@/lib/auth";
+import { useAuth } from "@/context/AuthContext";
 
 // ── Login Page ─────────────────────────────────────────────────────────────────
 
 export default function LoginPage() {
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const router = useRouter();
@@ -35,12 +36,8 @@ export default function LoginPage() {
         },
       );
 
-      // Store the JWT token from session
-      if (response.session?.access_token) {
-        saveToken(response.session.access_token);
-      }
-      if (response.user?.id) {
-        saveUserId(response.user.id);
+      if (response.session?.access_token && response.user?.id) {
+        login(response.session.access_token, response.user.id);
       }
 
       router.push("/profile");

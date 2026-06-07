@@ -1,6 +1,6 @@
 /**
  * SOURCE OF TRUTH: AURA DATA CONTRACT
- * Updated: 2026-05-29
+ * Last verified against DB: 2026-06-07
  */
 
 export type Archetype = 'Photo Spots' | 'Wanderings' | 'Indoor Vibes';
@@ -159,13 +159,15 @@ export interface SavedAurasResponse {
 // 14. Notification
 export interface Notification {
   id: string;
-  type: 'follow' | 'like';
+  type: 'follow' | 'save' | 'perspective';
   read: boolean;
   created_at: string;
   actor_id: string;
   actor_name: string;
   actor_avatar: string | null;
-  is_following: boolean;  // does the recipient already follow back?
+  is_following: boolean;      // does the recipient already follow back?
+  aura_id?: string | null;    // set on save/perspective notifications
+  aura_title?: string | null; // set on save/perspective notifications
 }
 
 // 15. Public user profile (shown to others — no saved posts)
