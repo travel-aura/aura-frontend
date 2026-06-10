@@ -394,46 +394,39 @@ export default function AuraFeed() {
     locationMode === "city" ? `📍 Showing Auras in ${selectedCity?.name}` :
     null;
 
-  // State A: at top → 0; State B: scrolling down → fully hidden; State C: scrolling up → only topGroup hidden
-  const headerY =
-    scrollDir === 'top' ? 0 :
-    scrollDir === 'down' ? -(topGroupH + searchGroupH + 4) :
-    -topGroupH;
-
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-white">
 
-      {/* Spacer — preserves flex layout height while header is fixed */}
+      {/* Spacer — preserves layout height for both fixed sections */}
       <div style={{ height: topGroupH + searchGroupH }} className="shrink-0" />
 
-      {/* ── Animated fixed header ── */}
+      {/* ── TopBar + Tabs — always fixed, never moves ── */}
       <div
-        className="fixed top-0 left-0 right-0 z-40 bg-white transition-transform duration-300 ease-in-out"
-        style={{ transform: `translateY(${headerY}px)` }}
+        ref={topGroupRef}
+        className={`fixed top-0 left-0 right-0 z-50 bg-white transition-shadow duration-300 ${scrollDir !== 'top' ? 'shadow-sm' : ''}`}
       >
-        {/* Group 1: TopBar + Tabs — hides on scroll, stays hidden on scroll-up */}
-        <div ref={topGroupRef}>
-          <TopBar />
-          <div className="mt-2 flex items-center justify-center gap-2">
-            {(["all", "following"] as Tab[]).map((t) => (
-              <button
-                key={t}
-                onClick={() => handleTabChange(t)}
-                className={`rounded-full px-3 py-0.5 text-[15px] font-medium transition-colors capitalize ${
-                  activeTab === t ? "bg-[#5a5a5a] text-[#f5f5f5]" : "text-[#1e1e1e]"
-                }`}
-              >
-                {t === "all" ? "All" : "Following"}
-              </button>
-            ))}
-          </div>
+        <TopBar />
+        <div className="mt-2 flex items-center justify-center gap-2">
+          {(["all", "following"] as Tab[]).map((t) => (
+            <button
+              key={t}
+              onClick={() => handleTabChange(t)}
+              className={`rounded-full px-3 py-0.5 text-[15px] font-medium transition-colors capitalize ${
+                activeTab === t ? "bg-[#5a5a5a] text-[#f5f5f5]" : "text-[#1e1e1e]"
+              }`}
+            >
+              {t === "all" ? "All" : "Following"}
+            </button>
+          ))}
         </div>
+      </div>
 
-        {/* Group 2: Search + Filters — slides back into view on scroll-up */}
-        <div
-          ref={searchGroupRef}
-          className={`pb-2 transition-shadow duration-300 ${scrollDir !== 'top' ? 'shadow-sm' : ''}`}
-        >
+      {/* ── Search + Filters — hides on scroll down, returns on scroll up ── */}
+      <div
+        ref={searchGroupRef}
+        className="fixed left-0 right-0 z-40 bg-white pb-2 transition-transform duration-300 ease-in-out"
+        style={{ top: topGroupH, transform: `translateY(${scrollDir === 'down' ? -searchGroupH : 0}px)` }}
+      >
           {/* Search + Near Me */}
           <div className="flex items-center gap-2 px-4 pt-3" ref={searchRef}>
             <div className="relative flex-1">
@@ -540,14 +533,13 @@ export default function AuraFeed() {
               )}
             </button>
           </div>
-        </div>
       </div>
 
       {/* Feed */}
-      <div className="mt-3 flex-1 overflow-y-auto px-[7px] pb-20">
-        {loading && posts.length === 0 && (
-          <div className="flex items-center justify-center py-24">
-            <p className="text-[15px] text-[#757575]">Loading feed...</p>
+      <div className="mt-3 flex-1 px-[7px] pb-20">
+        {loading && (
+          <div className="flex items-center justify-center py-4">
+            <p className="text-[13px] text-[#757575]">Loading…</p>
           </div>
         )}
         {error && (

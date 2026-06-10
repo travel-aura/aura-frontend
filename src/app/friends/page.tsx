@@ -98,7 +98,7 @@ export default function FriendsPage() {
             placeholder="Search by name or username…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="flex-1 bg-transparent text-[15px] text-[#1e1e1e] placeholder-[#9a9a9a] outline-none"
+            className="flex-1 bg-transparent text-[16px] text-[#1e1e1e] placeholder-[#9a9a9a] outline-none"
           />
           {query.length > 0 && (
             <button onClick={() => setQuery("")}>

@@ -218,7 +218,7 @@ export default function EditProfilePage() {
                 }}
                 onBlur={() => setShowNameError(!name || name.trim() === "")}
                 maxLength={10}
-                className="w-full rounded-lg border border-[#d9d9d9] bg-white px-3 py-2.5 text-[15px] text-[#1e1e1e] outline-none focus:border-[#fa6460] focus:ring-1 focus:ring-[#fa6460]"
+                className="w-full rounded-lg border border-[#d9d9d9] bg-white px-3 py-2.5 text-[16px] text-[#1e1e1e] outline-none focus:border-[#fa6460] focus:ring-1 focus:ring-[#fa6460]"
               />
               <div className="mt-1 flex items-center justify-between">
                 {showNameError && (
@@ -252,7 +252,7 @@ export default function EditProfilePage() {
                 placeholder="Share your location, your favorite..."
                 rows={4}
                 maxLength={100}
-                className="w-full resize-none rounded-lg border border-[#d9d9d9] bg-white px-3 py-2.5 text-[15px] text-[#1e1e1e] placeholder:text-[#b0b0b0] outline-none focus:border-[#fa6460] focus:ring-1 focus:ring-[#fa6460]"
+                className="w-full resize-none rounded-lg border border-[#d9d9d9] bg-white px-3 py-2.5 text-[16px] text-[#1e1e1e] placeholder:text-[#b0b0b0] outline-none focus:border-[#fa6460] focus:ring-1 focus:ring-[#fa6460]"
               />
               <div className="mt-1 flex justify-end">
                 <span className="text-[13px] text-[#757575]">

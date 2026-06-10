@@ -72,9 +72,9 @@ export const processAndUploadMultipleAuras = async (
     }
 
     const compressionOptions = {
-      maxSizeMB: 1.5,
-      maxWidthOrHeight: 2048,
-      initialQuality: 0.85,
+      maxSizeMB: 4,
+      maxWidthOrHeight: 3840,
+      initialQuality: 0.92,
       fileType: 'image/webp' as const,
     };
 

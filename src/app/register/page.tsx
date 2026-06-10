@@ -92,7 +92,7 @@ export default function RegisterPage() {
               placeholder="Your name"
               maxLength={10}
               required
-              className="w-full rounded-lg border border-[#d9d9d9] bg-white px-3 py-2.5 text-[15px] text-[#1e1e1e] placeholder:text-[#b0b0b0] outline-none focus:border-[#fa6460] focus:ring-1 focus:ring-[#fa6460]"
+              className="w-full rounded-lg border border-[#d9d9d9] bg-white px-3 py-2.5 text-[16px] text-[#1e1e1e] placeholder:text-[#b0b0b0] outline-none focus:border-[#fa6460] focus:ring-1 focus:ring-[#fa6460]"
             />
             <div className="mt-1 flex items-center justify-between">
               {showNameError && (
@@ -123,7 +123,7 @@ export default function RegisterPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="your@email.com"
               required
-              className="w-full rounded-lg border border-[#d9d9d9] bg-white px-3 py-2.5 text-[15px] text-[#1e1e1e] placeholder:text-[#b0b0b0] outline-none focus:border-[#fa6460] focus:ring-1 focus:ring-[#fa6460]"
+              className="w-full rounded-lg border border-[#d9d9d9] bg-white px-3 py-2.5 text-[16px] text-[#1e1e1e] placeholder:text-[#b0b0b0] outline-none focus:border-[#fa6460] focus:ring-1 focus:ring-[#fa6460]"
             />
           </div>
 
@@ -143,7 +143,7 @@ export default function RegisterPage() {
               placeholder="Create a password"
               required
               minLength={6}
-              className="w-full rounded-lg border border-[#d9d9d9] bg-white px-3 py-2.5 text-[15px] text-[#1e1e1e] placeholder:text-[#b0b0b0] outline-none focus:border-[#fa6460] focus:ring-1 focus:ring-[#fa6460]"
+              className="w-full rounded-lg border border-[#d9d9d9] bg-white px-3 py-2.5 text-[16px] text-[#1e1e1e] placeholder:text-[#b0b0b0] outline-none focus:border-[#fa6460] focus:ring-1 focus:ring-[#fa6460]"
             />
             <p className="mt-1 text-[12px] text-[#757575]">
               At least 6 characters

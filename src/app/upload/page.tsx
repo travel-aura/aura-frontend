@@ -268,7 +268,7 @@ export default function UploadPage() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Title"
-              className="w-full rounded-[8px] border border-[#d9d9d9] px-3 py-[10px] text-[15px] text-[#1e1e1e] outline-none placeholder:text-[#b7b7b7] focus:border-[#aaa]"
+              className="w-full rounded-[8px] border border-[#d9d9d9] px-3 py-[10px] text-[16px] text-[#1e1e1e] outline-none placeholder:text-[#b7b7b7] focus:border-[#aaa]"
             />
           </div>
 
@@ -279,7 +279,7 @@ export default function UploadPage() {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Description(Optional)"
               rows={5}
-              className="w-full resize-none rounded-[8px] border border-[#d9d9d9] px-3 py-[10px] text-[15px] text-[#1e1e1e] outline-none placeholder:text-[#b7b7b7] focus:border-[#aaa]"
+              className="w-full resize-none rounded-[8px] border border-[#d9d9d9] px-3 py-[10px] text-[16px] text-[#1e1e1e] outline-none placeholder:text-[#b7b7b7] focus:border-[#aaa]"
             />
           </div>
 
