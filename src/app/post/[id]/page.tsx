@@ -381,7 +381,7 @@ export default function PostDetailPage() {
         {/* Action row: like | comment | ... | save */}
         <div className="flex items-center gap-4 px-4 pt-3 pb-1">
           <button
-            onClick={() => { if (requireAuth("Log in to like")) handleLike(); }}
+            onClick={() => { if (requireAuth("Sign up to like posts")) handleLike(); }}
             disabled={likePending}
             className="flex items-center gap-1.5"
           >
@@ -397,7 +397,7 @@ export default function PostDetailPage() {
           </button>
 
           <button
-            onClick={() => requireAuth("Log in to comment")}
+            onClick={() => requireAuth("Sign up to comment")}
             className="flex items-center gap-1.5"
           >
             <CommentIcon className="size-6 text-[#1e1e1e]" />
@@ -406,7 +406,7 @@ export default function PostDetailPage() {
           <div className="flex-1" />
 
           {!isOwnPost && (
-            <button onClick={() => requireAuth("Log in to save") && handleSave()} disabled={savePending} className="flex items-center">
+            <button onClick={() => requireAuth("Sign up to save posts") && handleSave()} disabled={savePending} className="flex items-center">
               <BookmarkIcon
                 className={`size-6 ${isSaved ? "text-[#fa6460]" : "text-[#1e1e1e]"}`}
                 filled={isSaved}
@@ -541,10 +541,18 @@ export default function PostDetailPage() {
         </div>
       </div>
 
-      {/* Auth toast */}
+      {/* Auth prompt */}
       {authToast && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 rounded-full bg-[#1e1e1e] px-5 py-2.5 text-[13px] font-medium text-white shadow-lg">
-          {authToast}
+        <div className="fixed bottom-20 left-4 right-4 z-50 flex items-center justify-between rounded-2xl bg-[#1e1e1e] px-5 py-4 shadow-xl">
+          <p className="text-[14px] font-medium text-white">{authToast}</p>
+          <div className="flex shrink-0 gap-2">
+            <Link href="/register" className="rounded-full border border-white/30 px-3 py-1.5 text-[12px] font-semibold text-white">
+              Sign up
+            </Link>
+            <Link href="/login" className="rounded-full bg-[#fa6460] px-3 py-1.5 text-[12px] font-semibold text-white">
+              Log in
+            </Link>
+          </div>
         </div>
       )}
 

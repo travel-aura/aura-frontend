@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 function HomeIcon({ className }: { className?: string; filled?: boolean }) {
   return (
@@ -52,13 +53,27 @@ function getActive(pathname: string) {
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { token } = useAuth();
   const active = getActive(pathname);
+
+  const handleNavClick = (id: string, href: string) => {
+    if ((id === "create" || id === "profile") && !token) {
+      router.push("/login");
+      return;
+    }
+    router.push(href);
+  };
 
   return (
     <div className="fixed bottom-0 left-0 right-0 flex h-16 items-center justify-center border-t border-[#d9d9d9] bg-white shadow-[0px_-2px_4px_0px_rgba(0,0,0,0.12)]">
       <div className="flex w-[291px] items-center justify-between">
         {NAV_ITEMS.map(({ id, label, href, Icon }) => (
-          <Link key={id} href={href} className="flex w-[37px] flex-col items-center">
+          <button
+            key={id}
+            onClick={() => handleNavClick(id, href)}
+            className="flex w-[37px] flex-col items-center"
+          >
             <Icon
               className={`size-6 ${active === id ? "text-[#fa6460]" : "text-[#2c2c2c]"}`}
               filled={active === id}
@@ -66,7 +81,7 @@ export default function BottomNav() {
             <span className={`text-[11px] leading-[1.5] ${active === id ? "text-[#fa6460]" : "text-[#2c2c2c]"}`}>
               {label}
             </span>
-          </Link>
+          </button>
         ))}
       </div>
     </div>
