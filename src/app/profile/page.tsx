@@ -14,6 +14,15 @@ import type { Post, UserProfile, ArchetypeStats, PublicProfileResponse } from ".
 const AVATAR =
   "https://www.figma.com/api/mcp/asset/e4add399-8205-4c2a-8782-3da6c9f7bf60";
 
+function TagIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+      <line x1="7" y1="7" x2="7.01" y2="7" />
+    </svg>
+  );
+}
+
 // ── Profile Page ───────────────────────────────────────────────────────────────
 
 const TABS = ["Uploaded", "Saved"] as const;
@@ -102,11 +111,32 @@ export default function ProfilePage() {
     load();
   }, [ready, token, router]);
 
-  const archCategories = [
-    { label: "Photo Spots", count: stats.photo_spots },
-    { label: "Wanderings", count: stats.wanderings },
-    { label: "Indoor Vibes", count: stats.indoor_vibes },
-  ].filter(s => s.count > 0);
+  // Derived stats from posts
+  const verifiedCount = uploadedPosts.filter(p => p.is_verified).length;
+
+  const citiesCount = new Set(
+    uploadedPosts
+      .filter(p => p.is_verified && p.lat != null && p.lng != null)
+      .map(p => `${Math.round((p.lat ?? 0) * 10)},${Math.round((p.lng ?? 0) * 10)}`)
+  ).size;
+
+  const topArchetype = (() => {
+    const opts = [
+      { name: "Photo Spots", count: stats.photo_spots },
+      { name: "Wanderings", count: stats.wanderings },
+      { name: "Indoor Vibes", count: stats.indoor_vibes },
+    ].filter(o => o.count > 0).sort((a, b) => b.count - a.count);
+    return opts[0]?.name ?? null;
+  })();
+
+  const tagFreq: Record<string, number> = {};
+  uploadedPosts.forEach(p => {
+    (p.tags ?? []).forEach(t => { tagFreq[t] = (tagFreq[t] ?? 0) + 1; });
+  });
+  const topTags = Object.entries(tagFreq)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([t]) => t);
 
   const copyShare = async () => {
     const url = userId ? `${window.location.origin}/profile/${userId}` : window.location.href;
@@ -126,45 +156,49 @@ export default function ProfilePage() {
 
       <div className="flex-1 overflow-y-auto pb-20">
 
-        {/* ── Instagram-style header ── */}
-        <div className="flex items-center gap-5 px-4 pt-5">
+        {/* ── Profile header ── */}
+        <div className="flex items-start gap-4 px-4 pt-5">
           {/* Avatar */}
-          <div className="size-[86px] shrink-0 overflow-hidden rounded-full border border-[#d9d9d9]">
+          <div className="size-[80px] shrink-0 overflow-hidden rounded-full border border-[#d9d9d9]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={AVATAR} alt={userName} className="h-full w-full object-cover" />
           </div>
 
-          {/* Posts / Followers / Following */}
-          <div className="flex flex-1 items-center justify-around">
-            {[
-              { label: "Posts", value: uploadedPosts.length },
-              { label: "Followers", value: followerCount },
-              { label: "Following", value: followingCount },
-            ].map((s) => (
-              <div key={s.label} className="flex flex-col items-center gap-0.5">
-                <span className="text-[18px] font-bold leading-tight text-[#1e1e1e]">{s.value}</span>
-                <span className="text-[12px] text-[#757575]">{s.label}</span>
-              </div>
-            ))}
+          {/* Name + stats */}
+          <div className="min-w-0 flex-1">
+            <p className="text-[17px] font-bold leading-tight text-[#1e1e1e]">{userName || "—"}</p>
+            <div className="mt-2.5 flex items-stretch divide-x divide-[#d9d9d9]">
+              {[
+                { label: "Verified", value: verifiedCount },
+                { label: "Cities", value: citiesCount },
+                { label: "Followers", value: followerCount },
+              ].map((s) => (
+                <div key={s.label} className="flex flex-1 flex-col items-center gap-0.5 px-1">
+                  <span className="text-[12px] text-[#757575]">{s.label}</span>
+                  <span className="text-[17px] font-bold text-[#1e1e1e]">{s.value}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Name */}
-        {userName && (
-          <p className="mt-2 px-4 text-[15px] font-bold text-[#1e1e1e]">{userName}</p>
-        )}
-
         {/* Bio */}
         {userBio && (
-          <p className="mt-0.5 px-4 text-[13px] leading-relaxed text-[#757575]">{userBio}</p>
+          <p className="mt-2 px-4 text-[13px] leading-relaxed text-[#757575]">{userBio}</p>
         )}
 
-        {/* Archetype category pills (only when user has posts) */}
-        {archCategories.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1.5 px-4">
-            {archCategories.map((s) => (
-              <span key={s.label} className="rounded-full bg-[#f3f3f3] px-2.5 py-[3px] text-[11px] font-medium text-[#757575]">
-                {s.label} · {s.count}
+        {/* Tags: top archetype + top user tags */}
+        {(topArchetype || topTags.length > 0) && (
+          <div className="mt-3 flex flex-wrap gap-2 px-4">
+            {topArchetype && (
+              <span className="rounded-full bg-[#ededed] px-3 py-1.5 text-[13px] font-medium text-[#1e1e1e]">
+                {topArchetype}
+              </span>
+            )}
+            {topTags.map((tag) => (
+              <span key={tag} className="flex items-center gap-1.5 rounded-full bg-[#fff1c2] px-3 py-1.5 text-[13px] font-medium text-[#595959]">
+                <TagIcon className="size-3" />
+                {tag}
               </span>
             ))}
           </div>
