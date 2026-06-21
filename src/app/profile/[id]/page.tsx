@@ -5,7 +5,16 @@ import { useParams, useRouter } from "next/navigation";
 import { API_BASE } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import PostGrid from "@/components/PostGrid";
-import type { PublicProfileResponse, ArchetypeStats, Aura } from "../../../../shared/aura-schema";
+import type { PublicProfileResponse, ArchetypeStats, Aura, Post } from "../../../../shared/aura-schema";
+
+function TagIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+      <line x1="7" y1="7" x2="7.01" y2="7" />
+    </svg>
+  );
+}
 
 const DEFAULT_AVATAR = "https://www.figma.com/api/mcp/asset/e4add399-8205-4c2a-8782-3da6c9f7bf60";
 
@@ -16,7 +25,10 @@ export default function PublicProfilePage() {
 
   const [profile, setProfile] = useState<PublicProfileResponse["profile"] | null>(null);
   const [posts, setPosts] = useState<Aura[]>([]);
-  const [stats, setStats] = useState<ArchetypeStats>({ photo_spots: 0, wanderings: 0, indoor_vibes: 0 });
+  const [stats, setStats] = useState<ArchetypeStats>({
+    photo_spots: 0, wanderings: 0, indoor_vibes: 0,
+    city_count: 0, verified_count: 0, follower_count: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [followPending, setFollowPending] = useState(false);
@@ -34,7 +46,7 @@ export default function PublicProfilePage() {
         const data: PublicProfileResponse = await res.json();
         setProfile(data.profile);
         setPosts(data.posts ?? []);
-        setStats(data.stats ?? { photo_spots: 0, wanderings: 0, indoor_vibes: 0 });
+        setStats(data.stats ?? { photo_spots: 0, wanderings: 0, indoor_vibes: 0, city_count: 0, verified_count: 0, follower_count: 0 });
       } catch (err) {
         setError((err as Error).message);
       } finally {
@@ -93,15 +105,27 @@ export default function PublicProfilePage() {
     );
   }
 
-  const archCategories = [
-    { label: "Photo Spots", count: stats.photo_spots },
-    { label: "Wanderings", count: stats.wanderings },
-    { label: "Indoor Vibes", count: stats.indoor_vibes },
-  ].filter(s => s.count > 0);
+  const topArchetype = (() => {
+    const opts = [
+      { name: "Photo Spots", count: stats.photo_spots },
+      { name: "Wanderings", count: stats.wanderings },
+      { name: "Indoor Vibes", count: stats.indoor_vibes },
+    ].filter(o => o.count > 0).sort((a, b) => b.count - a.count);
+    return opts[0]?.name ?? null;
+  })();
+
+  const tagFreq: Record<string, number> = {};
+  (posts as Post[]).forEach(p => {
+    (p.tags ?? []).forEach(t => { tagFreq[t] = (tagFreq[t] ?? 0) + 1; });
+  });
+  const topTags = Object.entries(tagFreq)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([t]) => t);
 
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-white">
-      {/* Back header with username */}
+      {/* Back header */}
       <div className="flex items-center gap-3 px-4 pt-4 pb-2">
         <button
           onClick={() => window.history.length > 1 ? router.back() : router.push("/")}
@@ -116,43 +140,49 @@ export default function PublicProfilePage() {
 
       <div className="flex-1 overflow-y-auto pb-6">
 
-        {/* ── Instagram-style header ── */}
-        <div className="flex items-center gap-5 px-4 pt-3">
+        {/* ── Profile header ── */}
+        <div className="flex items-start gap-4 px-4 pt-3">
           {/* Avatar */}
-          <div className="size-[86px] shrink-0 overflow-hidden rounded-full border border-[#d9d9d9]">
+          <div className="size-[80px] shrink-0 overflow-hidden rounded-full border border-[#d9d9d9]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={profile.avatar_url || DEFAULT_AVATAR} alt={profile.name} className="h-full w-full object-cover" />
           </div>
 
-          {/* Posts / Followers / Following */}
-          <div className="flex flex-1 items-center justify-around">
-            {[
-              { label: "Posts", value: profile.post_count },
-              { label: "Followers", value: profile.follower_count },
-              { label: "Following", value: profile.following_count },
-            ].map((s) => (
-              <div key={s.label} className="flex flex-col items-center gap-0.5">
-                <span className="text-[18px] font-bold leading-tight text-[#1e1e1e]">{s.value}</span>
-                <span className="text-[12px] text-[#757575]">{s.label}</span>
-              </div>
-            ))}
+          {/* Name + stats */}
+          <div className="min-w-0 flex-1">
+            <p className="text-[17px] font-bold leading-tight text-[#1e1e1e]">{profile.name}</p>
+            <div className="mt-2.5 flex items-stretch divide-x divide-[#d9d9d9]">
+              {[
+                { label: "Verified", value: stats.verified_count },
+                { label: "Cities", value: stats.city_count },
+                { label: "Followers", value: stats.follower_count },
+              ].map((s) => (
+                <div key={s.label} className="flex flex-1 flex-col items-center gap-0.5 px-1">
+                  <span className="text-[12px] text-[#757575]">{s.label}</span>
+                  <span className="text-[17px] font-bold text-[#1e1e1e]">{s.value}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Name */}
-        <p className="mt-2 px-4 text-[15px] font-bold text-[#1e1e1e]">{profile.name}</p>
-
         {/* Bio */}
         {profile.bio && (
-          <p className="mt-0.5 px-4 text-[13px] leading-relaxed text-[#757575]">{profile.bio}</p>
+          <p className="mt-2 px-4 text-[13px] leading-relaxed text-[#757575]">{profile.bio}</p>
         )}
 
-        {/* Archetype category pills */}
-        {archCategories.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1.5 px-4">
-            {archCategories.map((s) => (
-              <span key={s.label} className="rounded-full bg-[#f3f3f3] px-2.5 py-[3px] text-[11px] font-medium text-[#757575]">
-                {s.label} · {s.count}
+        {/* Tags: top archetype + top user tags */}
+        {(topArchetype || topTags.length > 0) && (
+          <div className="mt-3 flex flex-wrap gap-2 px-4">
+            {topArchetype && (
+              <span className="rounded-full bg-[#ededed] px-3 py-1.5 text-[13px] font-medium text-[#1e1e1e]">
+                {topArchetype}
+              </span>
+            )}
+            {topTags.map((tag) => (
+              <span key={tag} className="flex items-center gap-1.5 rounded-full bg-[#fff1c2] px-3 py-1.5 text-[13px] font-medium text-[#595959]">
+                <TagIcon className="size-3" />
+                {tag}
               </span>
             ))}
           </div>
@@ -173,7 +203,7 @@ export default function PublicProfilePage() {
           </button>
           <button
             onClick={copyShare}
-            className="flex-1 rounded-lg border border-[#d9d9d9] bg-white py-[8px] text-[13px] font-medium text-[#1e1e1e] transition-colors"
+            className="flex-1 rounded-lg bg-[#ededed] py-[8px] text-[13px] font-medium text-[#1e1e1e] transition-colors"
           >
             {shareCopied ? "Copied!" : "Share profile"}
           </button>
@@ -182,11 +212,18 @@ export default function PublicProfilePage() {
         {/* Posts grid */}
         <div className="mt-4 border-t border-[#d9d9d9]" />
         <div className="px-0.5 py-0.5">
-          <PostGrid
-            posts={posts}
-            emptyTitle="No posts yet"
-            emptyMessage="This user hasn't uploaded anything yet."
-          />
+          {posts.length === 0 && profile.post_count > 0 ? (
+            <div className="flex flex-col items-center justify-center py-24">
+              <p className="text-[17px] font-semibold text-[#1e1e1e]">Posts unavailable</p>
+              <p className="mt-1 text-center text-[13px] text-[#757575]">Could not load posts right now.</p>
+            </div>
+          ) : (
+            <PostGrid
+              posts={posts}
+              emptyTitle="No posts yet"
+              emptyMessage="This user hasn't uploaded anything yet."
+            />
+          )}
         </div>
       </div>
     </div>

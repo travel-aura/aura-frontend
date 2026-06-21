@@ -105,6 +105,9 @@ export interface ArchetypeStats {
   photo_spots: number;
   wanderings: number;
   indoor_vibes: number;
+  city_count: number;
+  verified_count: number;
+  follower_count: number;
 }
 
 // 8. User profile
@@ -186,9 +189,5 @@ export interface PublicProfileResponse {
   ok: true;
   profile: PublicProfile;
   posts: Aura[];
-  stats: {
-    photo_spots: number;
-    wanderings: number;
-    indoor_vibes: number;
-  };
+  stats: ArchetypeStats;
 }

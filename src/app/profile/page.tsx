@@ -3,13 +3,13 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { apiGet, API_BASE } from "@/lib/api";
+import { apiGet } from "@/lib/api";
 import { saveUserId } from "@/lib/auth";
 import { useAuth } from "@/context/AuthContext";
 import TopBar from "@/components/TopBar";
 import PostGrid from "@/components/PostGrid";
 import BottomNav from "@/components/BottomNav";
-import type { Post, UserProfile, ArchetypeStats, PublicProfileResponse } from "../../../shared/aura-schema";
+import type { Post, UserProfile, ArchetypeStats } from "../../../shared/aura-schema";
 
 const AVATAR =
   "https://www.figma.com/api/mcp/asset/e4add399-8205-4c2a-8782-3da6c9f7bf60";
@@ -40,12 +40,9 @@ export default function ProfilePage() {
   const [userBio, setUserBio] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [shareCopied, setShareCopied] = useState(false);
-  const [followerCount, setFollowerCount] = useState(0);
-  const [followingCount, setFollowingCount] = useState(0);
   const [stats, setStats] = useState<ArchetypeStats>({
-    photo_spots: 0,
-    wanderings: 0,
-    indoor_vibes: 0,
+    photo_spots: 0, wanderings: 0, indoor_vibes: 0,
+    city_count: 0, verified_count: 0, follower_count: 0,
   });
 
   useEffect(() => {
@@ -65,17 +62,6 @@ export default function ProfilePage() {
         if (uid) {
           setUserId(uid);
           saveUserId(uid);
-
-          // Follower / following counts via public profile endpoint
-          try {
-            const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
-            const res = await fetch(`${API_BASE}/api/users/${uid}`, { headers });
-            if (res.ok) {
-              const data: PublicProfileResponse = await res.json();
-              setFollowerCount(data.profile.follower_count);
-              setFollowingCount(data.profile.following_count);
-            }
-          } catch { /* counts stay at 0 */ }
         }
 
         // Posts
@@ -110,15 +96,6 @@ export default function ProfilePage() {
     };
     load();
   }, [ready, token, router]);
-
-  // Derived stats from posts
-  const verifiedCount = uploadedPosts.filter(p => p.is_verified).length;
-
-  const citiesCount = new Set(
-    uploadedPosts
-      .filter(p => p.is_verified && p.lat != null && p.lng != null)
-      .map(p => `${Math.round((p.lat ?? 0) * 10)},${Math.round((p.lng ?? 0) * 10)}`)
-  ).size;
 
   const topArchetype = (() => {
     const opts = [
@@ -169,9 +146,9 @@ export default function ProfilePage() {
             <p className="text-[17px] font-bold leading-tight text-[#1e1e1e]">{userName || "—"}</p>
             <div className="mt-2.5 flex items-stretch divide-x divide-[#d9d9d9]">
               {[
-                { label: "Verified", value: verifiedCount },
-                { label: "Cities", value: citiesCount },
-                { label: "Followers", value: followerCount },
+                { label: "Verified", value: stats.verified_count },
+                { label: "Cities", value: stats.city_count },
+                { label: "Followers", value: stats.follower_count },
               ].map((s) => (
                 <div key={s.label} className="flex flex-1 flex-col items-center gap-0.5 px-1">
                   <span className="text-[12px] text-[#757575]">{s.label}</span>
