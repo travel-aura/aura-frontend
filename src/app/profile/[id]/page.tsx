@@ -35,25 +35,27 @@ export default function PublicProfilePage() {
   const [shareCopied, setShareCopied] = useState(false);
 
   useEffect(() => {
+    const controller = new AbortController();
     const load = async () => {
       try {
         setLoading(true);
         const token = getToken();
         const headers: Record<string, string> = {};
         if (token) headers.Authorization = `Bearer ${token}`;
-        const res = await fetch(`${API_BASE}/api/users/${userId}`, { headers });
+        const res = await fetch(`${API_BASE}/api/users/${userId}`, { headers, signal: controller.signal });
         if (!res.ok) throw new Error("User not found");
         const data: PublicProfileResponse = await res.json();
         setProfile(data.profile);
         setPosts(data.posts ?? []);
         setStats(data.stats ?? { photo_spots: 0, wanderings: 0, indoor_vibes: 0, city_count: 0, verified_count: 0, follower_count: 0 });
       } catch (err) {
-        setError((err as Error).message);
+        if ((err as Error).name !== "AbortError") setError((err as Error).message);
       } finally {
         setLoading(false);
       }
     };
     load();
+    return () => controller.abort();
   }, [userId]);
 
   const handleFollow = async () => {
@@ -115,7 +117,7 @@ export default function PublicProfilePage() {
   })();
 
   const tagFreq: Record<string, number> = {};
-  (posts as Post[]).forEach(p => {
+  posts.forEach(p => {
     (p.tags ?? []).forEach(t => { tagFreq[t] = (tagFreq[t] ?? 0) + 1; });
   });
   const topTags = Object.entries(tagFreq)

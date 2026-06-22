@@ -142,9 +142,11 @@ export default function UploadPage() {
       const exifData = await exifr.parse(photos[gpsPhotoIndex].file, { gps: true });
       if (exifData?.latitude && exifData?.longitude) {
         const token = getToken();
+        const headers: Record<string, string> = {};
+        if (token) headers.Authorization = `Bearer ${token}`;
         const res = await fetch(
           `${API_BASE}/api/auras/check-nearby?lat=${exifData.latitude}&lng=${exifData.longitude}`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers }
         );
         if (res.ok) {
           const data = await res.json();

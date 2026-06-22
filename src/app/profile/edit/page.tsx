@@ -82,7 +82,7 @@ export default function EditProfilePage() {
       }
     };
     fetchProfile();
-  }, [ready, token, router]);
+  }, [ready, token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSave = async () => {
     if (!name || name.trim() === "") {

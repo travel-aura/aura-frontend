@@ -11,8 +11,10 @@ export default function TopBar() {
 
   useEffect(() => {
     if (!token) { setUnread(0); return; }
+    const controller = new AbortController();
     fetch(`${API_BASE}/api/notifications`, {
       headers: { Authorization: `Bearer ${token}` },
+      signal: controller.signal,
     })
       .then((r) => r.ok ? r.json() : { notifications: [] })
       .then((data) => {
@@ -20,6 +22,7 @@ export default function TopBar() {
         setUnread(count);
       })
       .catch(() => {});
+    return () => controller.abort();
   }, [token]);
 
   return (

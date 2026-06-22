@@ -56,6 +56,8 @@ export interface AuraUploadMetadata {
   heading?: number;            // Optional - only if GPS found
   altitude?: number;           // Optional - only if GPS found (formerly alt)
   is_verified: boolean;        // true if GPS, false if no GPS
+  parent_id?: string | null;   // null = Anchor, uuid = Perspective
+  tags?: string[];             // Up to 5 user-selected tags
 }
 
 // 4. Profile page response

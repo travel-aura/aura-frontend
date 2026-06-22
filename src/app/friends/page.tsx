@@ -48,6 +48,7 @@ export default function FriendsPage() {
         setLoading(false);
       }
     }, 300);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [query]);
 
   const handleFollow = async (user: UserResult) => {

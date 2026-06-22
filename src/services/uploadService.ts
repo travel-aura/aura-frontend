@@ -39,7 +39,6 @@ export const processAndUploadMultipleAuras = async (
     // --- STEP 1: EXTRACT GPS FROM ANCHOR PHOTO ---
     onProgress?.({ current: 0, total: files.length, status: 'extracting' });
 
-    console.log('Extracting GPS from anchor photo...');
     const exifData = await exifr.parse(gpsAnchorFile, {
       gps: true, // This usually includes altitude, latitude, longitude, and direction
     });
@@ -53,7 +52,6 @@ export const processAndUploadMultipleAuras = async (
     let isVerified = true;
 
     if (!exifData?.latitude || !exifData?.longitude) {
-      console.warn('⚠️ No GPS data found in anchor photo. Upload will proceed as unverified.');
       isVerified = false;
     } else {
       sharedGPS = {
@@ -62,7 +60,6 @@ export const processAndUploadMultipleAuras = async (
         altitude: exifData.altitude || 0,
         heading: exifData.GPSImgDirection || 0,
       };
-      console.log('Shared GPS data:', sharedGPS);
     }
 
     // --- STEP 2: OPTIMIZE ALL PHOTOS ---
@@ -83,11 +80,8 @@ export const processAndUploadMultipleAuras = async (
     for (let i = 0; i < files.length; i++) {
       onProgress?.({ current: i + 1, total: files.length, status: 'optimizing' });
 
-      console.log(`Optimizing photo ${i + 1}/${files.length}...`);
       const optimizedBlob = await imageCompression(files[i], compressionOptions);
       optimizedImages.push(optimizedBlob);
-
-      console.log(`Photo ${i + 1}: ${(files[i].size / 1024 / 1024).toFixed(2)}MB → ${(optimizedBlob.size / 1024 / 1024).toFixed(2)}MB`);
     }
 
     // --- STEP 3: BUILD SINGLE FORMDATA WITH MULTIPLE FILES ---
@@ -110,8 +104,6 @@ export const processAndUploadMultipleAuras = async (
     formData.append('metadata', JSON.stringify(auraPayload));
 
     // --- STEP 4: SINGLE UPLOAD REQUEST ---
-    console.log(`Uploading ${files.length} photos in one request...`);
-
     const response = await fetch(`${API_BASE}/api/auras/upload`, {
       method: 'POST',
       headers: {
@@ -129,15 +121,12 @@ export const processAndUploadMultipleAuras = async (
     const result = await response.json();
     onProgress?.({ current: files.length, total: files.length, status: 'complete' });
 
-    console.log(`All ${files.length} photos uploaded successfully!`, result);
-
     return {
       data: result,
       hasGPS: isVerified
     };
 
   } catch (error) {
-    console.error("Multi-upload process failed:", error);
     throw error;
   }
 };

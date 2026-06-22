@@ -207,7 +207,7 @@ export default function PostDetailPage() {
         if (route) setRouteInfo({ distanceM: route.distance, durationS: route.duration });
       })
       .catch(() => {});
-  }, [userCoords, post, mapToken]);
+  }, [userCoords?.lat, userCoords?.lng, post?.id, mapToken]);
 
   const requireAuth = (msg: string) => {
     if (getToken()) return true;

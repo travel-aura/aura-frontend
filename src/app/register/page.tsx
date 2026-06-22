@@ -24,8 +24,6 @@ export default function RegisterPage() {
       setShowNameError(true);
       return;
     }
-    // Handle register logic here
-    console.log("Register:", { name, email, password });
     setError(null);
     setLoading(true);
 
