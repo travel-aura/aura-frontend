@@ -68,6 +68,17 @@ function BookmarkIcon({ className, filled }: { className?: string; filled?: bool
   );
 }
 
+function TrashIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6M14 11v6" />
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    </svg>
+  );
+}
+
 function PinIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -101,6 +112,8 @@ export default function PostDetailPage() {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [authToast, setAuthToast] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -278,6 +291,22 @@ export default function PostDetailPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (deleteLoading || !post) return;
+    setDeleteLoading(true);
+    const token = getToken();
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (token) headers.Authorization = `Bearer ${token}`;
+    try {
+      const res = await fetch(`${API_BASE}/api/auras/${post.id}`, { method: "DELETE", headers });
+      if (!res.ok) throw new Error("Failed to delete post");
+      router.push("/profile");
+    } catch {
+      setDeleteLoading(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white">
@@ -405,7 +434,11 @@ export default function PostDetailPage() {
 
           <div className="flex-1" />
 
-          {!isOwnPost && (
+          {isOwnPost ? (
+            <button onClick={() => setShowDeleteConfirm(true)} className="flex items-center">
+              <TrashIcon className="size-6 text-[#757575]" />
+            </button>
+          ) : (
             <button onClick={() => requireAuth("Sign up to save posts") && handleSave()} disabled={savePending} className="flex items-center">
               <BookmarkIcon
                 className={`size-6 ${isSaved ? "text-[#fa6460]" : "text-[#1e1e1e]"}`}
@@ -540,6 +573,30 @@ export default function PostDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Delete confirmation sheet */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-end" onClick={() => setShowDeleteConfirm(false)}>
+          <div className="w-full rounded-t-2xl bg-white px-4 pt-5 pb-8 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-1 h-1 w-10 rounded-full bg-[#d9d9d9] mx-auto" />
+            <p className="mt-4 text-center text-[17px] font-bold text-[#1e1e1e]">Delete post?</p>
+            <p className="mt-1.5 text-center text-[14px] text-[#757575]">This can't be undone.</p>
+            <button
+              onClick={handleDelete}
+              disabled={deleteLoading}
+              className="mt-5 w-full rounded-xl bg-red-500 py-3.5 text-[15px] font-semibold text-white disabled:opacity-60"
+            >
+              {deleteLoading ? "Deleting..." : "Delete"}
+            </button>
+            <button
+              onClick={() => setShowDeleteConfirm(false)}
+              className="mt-3 w-full rounded-xl bg-[#f3f3f3] py-3.5 text-[15px] font-semibold text-[#1e1e1e]"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Auth prompt */}
       {authToast && (
