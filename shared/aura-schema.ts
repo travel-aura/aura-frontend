@@ -110,6 +110,7 @@ export interface ArchetypeStats {
   city_count: number;
   verified_count: number;
   follower_count: number;
+  top_tags: string[];
 }
 
 // 8. User profile

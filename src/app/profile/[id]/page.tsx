@@ -27,7 +27,7 @@ export default function PublicProfilePage() {
   const [posts, setPosts] = useState<Aura[]>([]);
   const [stats, setStats] = useState<ArchetypeStats>({
     photo_spots: 0, wanderings: 0, indoor_vibes: 0,
-    city_count: 0, verified_count: 0, follower_count: 0,
+    city_count: 0, verified_count: 0, follower_count: 0, top_tags: [],
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +47,7 @@ export default function PublicProfilePage() {
         const data: PublicProfileResponse = await res.json();
         setProfile(data.profile);
         setPosts(data.posts ?? []);
-        setStats(data.stats ?? { photo_spots: 0, wanderings: 0, indoor_vibes: 0, city_count: 0, verified_count: 0, follower_count: 0 });
+        setStats(data.stats ?? { photo_spots: 0, wanderings: 0, indoor_vibes: 0, city_count: 0, verified_count: 0, follower_count: 0, top_tags: [] });
       } catch (err) {
         if ((err as Error).name !== "AbortError") setError((err as Error).message);
       } finally {
@@ -116,14 +116,7 @@ export default function PublicProfilePage() {
     return opts[0]?.name ?? null;
   })();
 
-  const tagFreq: Record<string, number> = {};
-  posts.forEach(p => {
-    (p.tags ?? []).forEach(t => { tagFreq[t] = (tagFreq[t] ?? 0) + 1; });
-  });
-  const topTags = Object.entries(tagFreq)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
-    .map(([t]) => t);
+  const topTags = stats.top_tags ?? [];
 
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-white">

@@ -42,7 +42,7 @@ export default function ProfilePage() {
   const [shareCopied, setShareCopied] = useState(false);
   const [stats, setStats] = useState<ArchetypeStats>({
     photo_spots: 0, wanderings: 0, indoor_vibes: 0,
-    city_count: 0, verified_count: 0, follower_count: 0,
+    city_count: 0, verified_count: 0, follower_count: 0, top_tags: [],
   });
 
   useEffect(() => {
@@ -106,14 +106,7 @@ export default function ProfilePage() {
     return opts[0]?.name ?? null;
   })();
 
-  const tagFreq: Record<string, number> = {};
-  uploadedPosts.forEach(p => {
-    (p.tags ?? []).forEach(t => { tagFreq[t] = (tagFreq[t] ?? 0) + 1; });
-  });
-  const topTags = Object.entries(tagFreq)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
-    .map(([t]) => t);
+  const topTags = stats.top_tags ?? [];
 
   const copyShare = async () => {
     const url = userId ? `${window.location.origin}/profile/${userId}` : window.location.href;
