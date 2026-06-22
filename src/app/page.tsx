@@ -461,7 +461,7 @@ export default function AuraFeed() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
                   onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleSearch(); } }}
-                  className="flex-1 bg-transparent text-[14px] text-[#1e1e1e] placeholder-[#757575] outline-none"
+                  className="flex-1 bg-transparent text-[16px] text-[#1e1e1e] placeholder-[#757575] outline-none"
                 />
                 {suggestionsLoading && <span className="text-[11px] text-[#757575]">…</span>}
                 {searchQuery && !suggestionsLoading && (
