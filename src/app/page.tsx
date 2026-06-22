@@ -99,7 +99,7 @@ interface LocationSuggestion {
 
 interface Coords { lat: number; lng: number; }
 
-type LocationMode = "global" | "nearby" | "city";
+type LocationMode = "global" | "nearby" | "city" | "text";
 
 // ── Feed Card ─────────────────────────────────────────────────────────────────
 
@@ -164,6 +164,7 @@ export default function AuraFeed() {
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeQuery, setActiveQuery] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
@@ -252,9 +253,10 @@ export default function AuraFeed() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const buildUrl = useCallback((currentOffset: number, coords: Coords | null, archetype: Archetype | null, following: boolean, tag: string | null) => {
+  const buildUrl = useCallback((currentOffset: number, coords: Coords | null, archetype: Archetype | null, following: boolean, tag: string | null, query: string | null) => {
     let url = `/api/auras/feed?limit=${LIMIT}&offset=${currentOffset}`;
     if (coords) url += `&lat=${coords.lat}&lng=${coords.lng}&radius=${RADIUS}`;
+    if (query) url += `&q=${encodeURIComponent(query)}`;
     if (archetype) url += `&archetype=${archetypeParam(archetype)}`;
     if (following) url += `&following=true`;
     if (tag) url += `&tag=${encodeURIComponent(tag)}`;
@@ -268,8 +270,9 @@ export default function AuraFeed() {
     currentOffset?: number;
     following?: boolean;
     tag?: string | null;
+    query?: string | null;
   }) => {
-    const { loadMore = false, coords = null, archetype = null, currentOffset, following = false, tag = null } = opts;
+    const { loadMore = false, coords = null, archetype = null, currentOffset, following = false, tag = null, query = null } = opts;
     const off = currentOffset ?? (loadMore ? offset : 0);
     try {
       setLoading(true);
@@ -277,7 +280,7 @@ export default function AuraFeed() {
         ok: boolean;
         auras: Aura[];
         pagination: { limit: number; offset: number; count: number };
-      }>(buildUrl(off, coords, archetype, following, tag));
+      }>(buildUrl(off, coords, archetype, following, tag, query));
 
       if (loadMore) {
         setPosts(prev => [...prev, ...response.auras]);
@@ -298,6 +301,19 @@ export default function AuraFeed() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const handleSearch = () => {
+    const q = searchQuery.trim();
+    if (!q) return;
+    setShowSuggestions(false);
+    setSuggestions([]);
+    setActiveQuery(q);
+    setLocationMode("text");
+    setUserCoords(null);
+    setSelectedCity(null);
+    setOffset(0);
+    fetchPosts({ query: q, coords: null, archetype: activeArchetype, currentOffset: 0, following: isFollowing, tag: activeTag });
+  };
+
   const handleTabChange = (tab: Tab) => {
     setActiveTab(tab);
     setOffset(0);
@@ -306,7 +322,9 @@ export default function AuraFeed() {
     setSelectedCity(null);
     setActiveArchetype(null);
     setActiveTag(null);
-    fetchPosts({ coords: null, archetype: null, currentOffset: 0, following: tab === "following", tag: null });
+    setActiveQuery(null);
+    setSearchQuery("");
+    fetchPosts({ coords: null, archetype: null, currentOffset: 0, following: tab === "following", tag: null, query: null });
   };
 
   const isFollowing = activeTab === "following";
@@ -328,9 +346,10 @@ export default function AuraFeed() {
         setSelectedCity(null);
         setSearchQuery("");
         setSuggestions([]);
+        setActiveQuery(null);
         setLocationMode("nearby");
         setOffset(0);
-        fetchPosts({ coords, archetype: activeArchetype, currentOffset: 0, following: isFollowing, tag: activeTag });
+        fetchPosts({ coords, archetype: activeArchetype, currentOffset: 0, following: isFollowing, tag: activeTag, query: null });
         setNearMeLoading(false);
       },
       () => {
@@ -345,28 +364,30 @@ export default function AuraFeed() {
     const city = { name: s.name, lat: s.lat, lng: s.lng };
     setSelectedCity(city);
     setUserCoords(null);
+    setActiveQuery(null);
     setLocationMode("city");
     setSearchQuery("");
     setSuggestions([]);
     setShowSuggestions(false);
     setOffset(0);
-    fetchPosts({ coords: city, archetype: activeArchetype, currentOffset: 0, following: isFollowing, tag: activeTag });
+    fetchPosts({ coords: city, archetype: activeArchetype, currentOffset: 0, following: isFollowing, tag: activeTag, query: null });
   };
 
   const handleClearLocation = () => {
     setLocationMode("global");
     setUserCoords(null);
     setSelectedCity(null);
+    setActiveQuery(null);
     setSearchQuery("");
     setOffset(0);
-    fetchPosts({ coords: null, archetype: activeArchetype, currentOffset: 0, following: isFollowing, tag: activeTag });
+    fetchPosts({ coords: null, archetype: activeArchetype, currentOffset: 0, following: isFollowing, tag: activeTag, query: null });
   };
 
   const handleArchetype = (a: Archetype | null) => {
     setActiveArchetype(a);
     const coords = locationMode === "nearby" ? userCoords : locationMode === "city" ? selectedCity : null;
     setOffset(0);
-    fetchPosts({ coords, archetype: a, currentOffset: 0, following: isFollowing, tag: activeTag });
+    fetchPosts({ coords, archetype: a, currentOffset: 0, following: isFollowing, tag: activeTag, query: activeQuery });
   };
 
   const handleTag = (t: string) => {
@@ -374,14 +395,14 @@ export default function AuraFeed() {
     setShowTagFilter(false);
     const coords = locationMode === "nearby" ? userCoords : locationMode === "city" ? selectedCity : null;
     setOffset(0);
-    fetchPosts({ coords, archetype: activeArchetype, currentOffset: 0, following: isFollowing, tag: t });
+    fetchPosts({ coords, archetype: activeArchetype, currentOffset: 0, following: isFollowing, tag: t, query: activeQuery });
   };
 
   const handleClearTag = () => {
     setActiveTag(null);
     const coords = locationMode === "nearby" ? userCoords : locationMode === "city" ? selectedCity : null;
     setOffset(0);
-    fetchPosts({ coords, archetype: activeArchetype, currentOffset: 0, following: isFollowing, tag: null });
+    fetchPosts({ coords, archetype: activeArchetype, currentOffset: 0, following: isFollowing, tag: null, query: activeQuery });
   };
 
   const activeCoords = locationMode === "nearby" ? userCoords : locationMode === "city" ? selectedCity : null;
@@ -392,6 +413,7 @@ export default function AuraFeed() {
   const contextLabel =
     locationMode === "nearby" ? "📍 Showing nearby posts" :
     locationMode === "city" ? `📍 Showing Auras in ${selectedCity?.name}` :
+    locationMode === "text" ? `🔍 Results for "${activeQuery}"` :
     null;
 
   return (
@@ -434,10 +456,11 @@ export default function AuraFeed() {
                 <SearchIcon className="size-4 shrink-0 text-[#757575]" />
                 <input
                   type="text"
-                  placeholder="Search a location…"
+                  placeholder="Search location or post title…"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleSearch(); } }}
                   className="flex-1 bg-transparent text-[14px] text-[#1e1e1e] placeholder-[#757575] outline-none"
                 />
                 {suggestionsLoading && <span className="text-[11px] text-[#757575]">…</span>}
@@ -560,7 +583,7 @@ export default function AuraFeed() {
             {hasMore && (
               <div className="mt-6 flex justify-center">
                 <button
-                  onClick={() => fetchPosts({ loadMore: true, coords: activeCoords, archetype: activeArchetype, following: isFollowing, tag: activeTag })}
+                  onClick={() => fetchPosts({ loadMore: true, coords: activeCoords, archetype: activeArchetype, following: isFollowing, tag: activeTag, query: activeQuery })}
                   disabled={loading}
                   className="rounded-lg bg-[#ededed] px-6 py-2.5 text-[14px] font-medium text-[#1e1e1e] disabled:opacity-50"
                 >
