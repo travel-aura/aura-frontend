@@ -42,7 +42,7 @@ export default function ProfilePage() {
   const [shareCopied, setShareCopied] = useState(false);
   const [stats, setStats] = useState<ArchetypeStats>({
     photo_spots: 0, wanderings: 0, indoor_vibes: 0,
-    city_count: 0, verified_count: 0, follower_count: 0, top_tags: [],
+    city_count: 0, verified_count: 0, follower_count: 0, top_tags: [], cities: [],
   });
 
   useEffect(() => {
@@ -138,16 +138,18 @@ export default function ProfilePage() {
           <div className="min-w-0 flex-1">
             <p className="text-[17px] font-bold leading-tight text-[#1e1e1e]">{userName || "—"}</p>
             <div className="mt-2.5 flex items-stretch divide-x divide-[#d9d9d9]">
-              {[
-                { label: "Verified", value: stats.verified_count },
-                { label: "Cities", value: stats.city_count },
-                { label: "Followers", value: stats.follower_count },
-              ].map((s) => (
-                <div key={s.label} className="flex flex-1 flex-col items-center gap-0.5 px-1">
-                  <span className="text-[12px] text-[#757575]">{s.label}</span>
-                  <span className="text-[17px] font-bold text-[#1e1e1e]">{s.value}</span>
-                </div>
-              ))}
+              <div className="flex flex-1 flex-col items-center gap-0.5 px-1">
+                <span className="text-[12px] text-[#757575]">Verified</span>
+                <span className="text-[17px] font-bold text-[#1e1e1e]">{stats.verified_count}</span>
+              </div>
+              <Link href="/profile/cities" className="flex flex-1 flex-col items-center gap-0.5 px-1">
+                <span className="text-[12px] text-[#757575]">Cities</span>
+                <span className="text-[17px] font-bold text-[#1e1e1e]">{stats.city_count}</span>
+              </Link>
+              <div className="flex flex-1 flex-col items-center gap-0.5 px-1">
+                <span className="text-[12px] text-[#757575]">Followers</span>
+                <span className="text-[17px] font-bold text-[#1e1e1e]">{stats.follower_count}</span>
+              </div>
             </div>
           </div>
         </div>

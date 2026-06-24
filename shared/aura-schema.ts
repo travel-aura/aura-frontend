@@ -111,6 +111,7 @@ export interface ArchetypeStats {
   verified_count: number;
   follower_count: number;
   top_tags: string[];
+  cities: string[];
 }
 
 // 8. User profile
