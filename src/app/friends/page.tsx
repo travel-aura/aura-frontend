@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { API_BASE } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 
@@ -145,21 +146,21 @@ export default function FriendsPage() {
 
         {/* User list */}
         {!loading && results.length > 0 && (
-          <ul className="divide-y divide-[#f3f3f3]">
+          <ul>
             {results.map((user) => (
               <li key={user.id} className="flex items-center gap-3 px-4 py-3">
-                {/* Avatar */}
-                <div className="size-11 shrink-0 overflow-hidden rounded-full bg-[#f3f3f3]">
+                {/* Avatar → profile link */}
+                <Link href={`/profile/${user.id}`} className="size-11 shrink-0 overflow-hidden rounded-full bg-[#f3f3f3]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={user.avatar_url || DEFAULT_AVATAR}
                     alt={displayName(user)}
                     className="h-full w-full object-cover"
                   />
-                </div>
+                </Link>
 
-                {/* Name */}
-                <div className="min-w-0 flex-1">
+                {/* Name → profile link */}
+                <Link href={`/profile/${user.id}`} className="min-w-0 flex-1">
                   <p className="truncate text-[15px] font-semibold text-[#1e1e1e]">
                     {displayName(user)}
                   </p>
@@ -168,7 +169,7 @@ export default function FriendsPage() {
                       {user.email.split("@")[0]}
                     </p>
                   )}
-                </div>
+                </Link>
 
                 {/* Follow button */}
                 <button

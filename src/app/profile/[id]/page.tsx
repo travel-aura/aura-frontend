@@ -6,7 +6,7 @@ import Link from "next/link";
 import { API_BASE } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import PostGrid from "@/components/PostGrid";
-import type { PublicProfileResponse, ArchetypeStats, Aura, Post } from "../../../../shared/aura-schema";
+import type { PublicProfileResponse, ArchetypeStats, Aura } from "../../../../shared/aura-schema";
 
 function TagIcon({ className }: { className?: string }) {
   return (
@@ -45,9 +45,11 @@ export default function PublicProfilePage() {
         if (token) headers.Authorization = `Bearer ${token}`;
         const res = await fetch(`${API_BASE}/api/users/${userId}`, { headers, signal: controller.signal });
         if (!res.ok) throw new Error("User not found");
-        const data: PublicProfileResponse = await res.json();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const data: PublicProfileResponse & { auras?: Aura[] } = await res.json();
         setProfile(data.profile);
-        setPosts(data.posts ?? []);
+        // Backend may return posts under 'posts' or 'auras'
+        setPosts(data.posts ?? data.auras ?? []);
         setStats(data.stats ?? { photo_spots: 0, wanderings: 0, indoor_vibes: 0, city_count: 0, verified_count: 0, follower_count: 0, top_tags: [], cities: [] });
       } catch (err) {
         if ((err as Error).name !== "AbortError") setError((err as Error).message);
@@ -210,18 +212,11 @@ export default function PublicProfilePage() {
         {/* Posts grid */}
         <div className="mt-4 border-t border-[#d9d9d9]" />
         <div className="px-0.5 py-0.5">
-          {posts.length === 0 && profile.post_count > 0 ? (
-            <div className="flex flex-col items-center justify-center py-24">
-              <p className="text-[17px] font-semibold text-[#1e1e1e]">Posts unavailable</p>
-              <p className="mt-1 text-center text-[13px] text-[#757575]">Could not load posts right now.</p>
-            </div>
-          ) : (
-            <PostGrid
-              posts={posts}
-              emptyTitle="No posts yet"
-              emptyMessage="This user hasn't uploaded anything yet."
-            />
-          )}
+          <PostGrid
+            posts={posts}
+            emptyTitle="No posts yet"
+            emptyMessage="This user hasn't uploaded anything yet."
+          />
         </div>
       </div>
     </div>

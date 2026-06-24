@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { API_BASE, apiGet } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { useAuth } from "@/context/AuthContext";
@@ -361,26 +362,26 @@ function FollowersList({
       ) : (
         <ul>
           {followers.map((user) => (
-            <li
-              key={user.id}
-              className="flex items-center gap-3 px-4 py-3 border-b border-[#f5f5f5]"
-            >
-              {/* Avatar */}
-              <div className="size-[54px] shrink-0 overflow-hidden rounded-full bg-[#f3f3f3]">
+            <li key={user.id} className="flex items-center gap-3 px-4 py-3">
+              {/* Avatar → profile link */}
+              <Link href={`/profile/${user.id}`} className="size-[54px] shrink-0 overflow-hidden rounded-full bg-[#f3f3f3]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={user.avatar_url || DEFAULT_AVATAR}
                   alt={displayName(user)}
                   className="h-full w-full object-cover"
                 />
-              </div>
+              </Link>
 
               {/* Name + follow back */}
               <div className="min-w-0 flex-1">
                 <div className="flex items-center flex-wrap gap-x-1">
-                  <span className="text-[15px] font-semibold text-[#1e1e1e]">
+                  <Link
+                    href={`/profile/${user.id}`}
+                    className="text-[15px] font-semibold text-[#1e1e1e]"
+                  >
                     {displayName(user)}
-                  </span>
+                  </Link>
                   {!user.is_following && (
                     <>
                       <span className="text-[14px] text-[#b0b0b0]">·</span>
@@ -395,9 +396,7 @@ function FollowersList({
                   )}
                 </div>
                 {subName(user) && (
-                  <p className="truncate text-[12px] text-[#757575]">
-                    {subName(user)}
-                  </p>
+                  <p className="truncate text-[12px] text-[#757575]">{subName(user)}</p>
                 )}
               </div>
 
@@ -432,80 +431,134 @@ function FollowingList({
   displayName: (u: FollowUser) => string;
   subName: (u: FollowUser) => string | null;
 }) {
-  if (following.length === 0) {
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filtered = following.filter((u) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
     return (
-      <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
-        <svg
-          className="size-12 text-[#d9d9d9]"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={1.5}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <line x1="19" y1="8" x2="19" y2="14" />
-          <line x1="22" y1="11" x2="16" y2="11" />
-        </svg>
-        <p className="mt-4 text-[16px] font-semibold text-[#1e1e1e]">
-          Not following anyone yet
-        </p>
-        <p className="mt-1 text-[13px] text-[#757575]">
-          Follow people to see them here
-        </p>
-      </div>
+      displayName(u).toLowerCase().includes(q) ||
+      (u.email || "").toLowerCase().includes(q)
     );
-  }
+  });
 
   return (
-    <ul>
-      {following.map((user) => (
-        <li
-          key={user.id}
-          className="flex items-center gap-3 px-4 py-3 border-b border-[#f5f5f5]"
-        >
-          {/* Avatar */}
-          <div className="size-[54px] shrink-0 overflow-hidden rounded-full bg-[#f3f3f3]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={user.avatar_url || DEFAULT_AVATAR}
-              alt={displayName(user)}
-              className="h-full w-full object-cover"
+    <>
+      {/* Search bar */}
+      {following.length > 0 && (
+        <div className="px-4 pt-4 pb-2">
+          <div className="flex items-center gap-2 rounded-xl bg-[#f3f3f3] px-3 py-3">
+            <svg
+              className="size-4 shrink-0 text-[#757575]"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 bg-transparent text-[16px] text-[#1e1e1e] placeholder-[#9a9a9a] outline-none"
             />
-          </div>
-
-          {/* Name */}
-          <div className="min-w-0 flex-1">
-            <p className="text-[15px] font-semibold text-[#1e1e1e]">
-              {displayName(user)}
-            </p>
-            {subName(user) && (
-              <p className="truncate text-[12px] text-[#757575]">
-                {subName(user)}
-              </p>
+            {searchQuery && (
+              <button onClick={() => setSearchQuery("")}>
+                <svg
+                  className="size-4 text-[#757575]"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
             )}
           </div>
+        </div>
+      )}
 
-          {/* Following / Follow toggle */}
-          <button
-            onClick={() => onToggle(user)}
-            disabled={followPending[user.id]}
-            className={`shrink-0 rounded-lg px-4 py-[7px] text-[13px] font-semibold transition-colors disabled:opacity-50 ${
-              user.is_following
-                ? "border border-[#d9d9d9] bg-white text-[#1e1e1e] active:bg-[#f3f3f3]"
-                : "bg-[#fa6460] text-white active:bg-[#e55550]"
-            }`}
+      {filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+          <svg
+            className="size-12 text-[#d9d9d9]"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
           >
-            {followPending[user.id]
-              ? "…"
-              : user.is_following
-              ? "Following"
-              : "Follow"}
-          </button>
-        </li>
-      ))}
-    </ul>
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <line x1="19" y1="8" x2="19" y2="14" />
+            <line x1="22" y1="11" x2="16" y2="11" />
+          </svg>
+          <p className="mt-4 text-[16px] font-semibold text-[#1e1e1e]">
+            {searchQuery ? "No results found" : "Not following anyone yet"}
+          </p>
+          {!searchQuery && (
+            <p className="mt-1 text-[13px] text-[#757575]">
+              Follow people to see them here
+            </p>
+          )}
+        </div>
+      ) : (
+        <ul>
+          {filtered.map((user) => (
+            <li key={user.id} className="flex items-center gap-3 px-4 py-3">
+              {/* Avatar → profile link */}
+              <Link href={`/profile/${user.id}`} className="size-[54px] shrink-0 overflow-hidden rounded-full bg-[#f3f3f3]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={user.avatar_url || DEFAULT_AVATAR}
+                  alt={displayName(user)}
+                  className="h-full w-full object-cover"
+                />
+              </Link>
+
+              {/* Name → profile link */}
+              <div className="min-w-0 flex-1">
+                <Link href={`/profile/${user.id}`} className="block">
+                  <p className="text-[15px] font-semibold text-[#1e1e1e]">
+                    {displayName(user)}
+                  </p>
+                  {subName(user) && (
+                    <p className="truncate text-[12px] text-[#757575]">
+                      {subName(user)}
+                    </p>
+                  )}
+                </Link>
+              </div>
+
+              {/* Following / Follow toggle */}
+              <button
+                onClick={() => onToggle(user)}
+                disabled={followPending[user.id]}
+                className={`shrink-0 rounded-lg px-4 py-[7px] text-[13px] font-semibold transition-colors disabled:opacity-50 ${
+                  user.is_following
+                    ? "border border-[#d9d9d9] bg-white text-[#1e1e1e] active:bg-[#f3f3f3]"
+                    : "bg-[#fa6460] text-white active:bg-[#e55550]"
+                }`}
+              >
+                {followPending[user.id]
+                  ? "…"
+                  : user.is_following
+                  ? "Following"
+                  : "Follow"}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
   );
 }
