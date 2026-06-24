@@ -170,12 +170,12 @@ export default function PublicProfilePage() {
         {(topArchetype || topTags.length > 0) && (
           <div className="mt-3 flex flex-wrap gap-2 px-4">
             {topArchetype && (
-              <span className="rounded-full bg-[#ededed] px-3 py-1.5 text-[13px] font-medium text-[#1e1e1e]">
+              <span className="rounded-full bg-[#ededed] px-2.5 py-1 text-[12px] font-medium text-[#1e1e1e]">
                 {topArchetype}
               </span>
             )}
             {topTags.map((tag) => (
-              <span key={tag} className="flex items-center gap-1.5 rounded-full bg-[#fff1c2] px-3 py-1.5 text-[13px] font-medium text-[#595959]">
+              <span key={tag} className="flex items-center gap-1 rounded-full bg-[#fff1c2] px-2.5 py-1 text-[12px] font-medium text-[#595959]">
                 <TagIcon className="size-3" />
                 {tag}
               </span>
