@@ -146,10 +146,10 @@ export default function ProfilePage() {
                 <span className="text-[12px] text-[#757575]">Cities</span>
                 <span className="text-[17px] font-bold text-[#1e1e1e]">{stats.city_count}</span>
               </Link>
-              <div className="flex flex-1 flex-col items-center gap-0.5 px-1">
+              <Link href="/profile/followers" className="flex flex-1 flex-col items-center gap-0.5 px-1">
                 <span className="text-[12px] text-[#757575]">Followers</span>
                 <span className="text-[17px] font-bold text-[#1e1e1e]">{stats.follower_count}</span>
-              </div>
+              </Link>
             </div>
           </div>
         </div>
