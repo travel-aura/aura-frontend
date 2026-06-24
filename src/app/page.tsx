@@ -119,7 +119,7 @@ function FeedCard({ post }: { post: Aura }) {
     <Link href={`/post/${post.id}`} className="flex flex-col gap-1">
       <div className="relative h-[232px] w-full overflow-hidden rounded-lg bg-[#d9d9d9]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={post.image_urls[0]} alt={post.title} className="h-full w-full object-cover" />
+        <img src={post.image_urls[0]} alt={post.title} loading="lazy" className="h-full w-full object-cover" />
         {post.image_urls.length > 1 && (
           <div className="absolute left-2 top-2">
             <LayersIcon className="size-5 text-white drop-shadow-lg" />

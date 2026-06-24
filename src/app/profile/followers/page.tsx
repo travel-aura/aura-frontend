@@ -43,14 +43,13 @@ export default function FollowersPage() {
     const load = async () => {
       setLoading(true);
       try {
-        const userRes = await apiGet<{ ok: boolean; user: UserProfile }>("/me");
-        setUserName(userRes.user.name || userRes.user.email?.split("@")[0] || "");
-
         const tok = getToken();
         const headers: Record<string, string> = {};
         if (tok) headers.Authorization = `Bearer ${tok}`;
 
-        const [followersRes, followingRes] = await Promise.allSettled([
+        // Fire all 3 requests in parallel — none depend on each other
+        const [userRes, followersRes, followingRes] = await Promise.allSettled([
+          apiGet<{ ok: boolean; user: UserProfile }>("/me"),
           fetch(`${API_BASE}/api/follows/followers`, { headers }).then((r) =>
             r.ok ? r.json() : { users: [] }
           ),
@@ -58,6 +57,15 @@ export default function FollowersPage() {
             r.ok ? r.json() : { users: [] }
           ),
         ]);
+
+        if (userRes.status === "fulfilled") {
+          setUserName(userRes.value.user.name || userRes.value.user.email?.split("@")[0] || "");
+        } else {
+          const msg = (userRes.reason as Error).message || "";
+          if (msg.includes("401") || msg.includes("Unauthorized")) {
+            router.push("/login"); return;
+          }
+        }
 
         if (followersRes.status === "fulfilled") {
           const raw = followersRes.value;

@@ -52,37 +52,43 @@ export default function ProfilePage() {
       try {
         setLoading(true);
 
-        // User info
-        const userResponse = await apiGet<{ ok: boolean; user: UserProfile }>("/me");
-        const userInfo = userResponse.user;
-        setUserName(userInfo.name || userInfo.email?.split('@')[0] || '');
-        setUserBio(userInfo.bio ?? null);
+        // Fire all 4 requests in parallel — none depend on each other
+        const [userRes, aurasRes, savesRes, statsRes] = await Promise.allSettled([
+          apiGet<{ ok: boolean; user: UserProfile }>("/me"),
+          apiGet<{ ok: boolean; auras: Post[] }>("/api/auras/me"),
+          apiGet<{ ok: boolean; auras: Post[] }>("/api/saves"),
+          apiGet<{ ok: boolean; stats: ArchetypeStats }>("/api/auras/me/stats"),
+        ]);
 
-        const uid = userInfo.user_id;
-        if (uid) {
-          setUserId(uid);
-          saveUserId(uid);
+        if (userRes.status === "fulfilled") {
+          const userInfo = userRes.value.user;
+          setUserName(userInfo.name || userInfo.email?.split('@')[0] || '');
+          setUserBio(userInfo.bio ?? null);
+          const uid = userInfo.user_id;
+          if (uid) { setUserId(uid); saveUserId(uid); }
+        } else {
+          const msg = (userRes.reason as Error).message || "";
+          if (msg.includes("401") || msg.includes("Unauthorized") || msg.includes("Invalid or expired token")) {
+            router.push("/login"); return;
+          }
+          throw userRes.reason;
         }
 
-        // Posts
-        const aurasResponse = await apiGet<{ ok: boolean; auras: Post[] }>("/api/auras/me");
-        setUploadedPosts(
-          (aurasResponse.auras ?? []).sort((a, b) =>
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-          )
-        );
+        if (aurasRes.status === "fulfilled") {
+          setUploadedPosts(
+            (aurasRes.value.auras ?? []).sort((a, b) =>
+              new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            )
+          );
+        }
 
-        // Saved posts
-        try {
-          const savesRes = await apiGet<{ ok: boolean; auras: Post[] }>("/api/saves");
-          setSavedPosts(savesRes.auras ?? []);
-        } catch { /* endpoint may not exist yet */ }
+        if (savesRes.status === "fulfilled") {
+          setSavedPosts(savesRes.value.auras ?? []);
+        }
 
-        // Archetype stats
-        try {
-          const statsResponse = await apiGet<{ ok: boolean; stats: ArchetypeStats }>("/api/auras/me/stats");
-          if (statsResponse.stats) setStats(statsResponse.stats);
-        } catch { /* optional */ }
+        if (statsRes.status === "fulfilled" && statsRes.value.stats) {
+          setStats(statsRes.value.stats);
+        }
 
       } catch (err) {
         const msg = (err as Error).message || "Failed to load";

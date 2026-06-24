@@ -132,21 +132,6 @@ export default function PostDetailPage() {
 
         if (!foundPost) { setError("Post not found"); return; }
 
-        // If we got the post but have no user info, fetch the public profile to get the name
-        if (!foundPost.user?.name && !foundPost.user_name && foundPost.user_id) {
-          try {
-            const token = getToken();
-            const h: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
-            const profileRes = await fetch(`${API_BASE}/api/users/${foundPost.user_id}`, { headers: h });
-            if (profileRes.ok) {
-              const profileData = await profileRes.json();
-              const name = profileData.profile?.name;
-              const avatar = profileData.profile?.avatar_url ?? null;
-              if (name) foundPost = { ...foundPost, user: { id: foundPost.user_id, name, email: "", avatar_url: avatar } };
-            }
-          } catch { /* leave user info absent */ }
-        }
-
         setPost(foundPost);
         if (foundPost.is_saved !== undefined) setIsSaved(foundPost.is_saved);
         setIsLiked(foundPost.is_liked);
@@ -156,40 +141,47 @@ export default function PostDetailPage() {
         const token = getToken();
         const authHeader: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
-        const requests: Promise<unknown>[] = [
+        // Fire all secondary requests in parallel — fixed indices, no dynamic shifting
+        const [cityTokenResult, userProfileResult, saveResult, perspResult] = await Promise.allSettled([
+          // 0: reverse geocode + mapbox token
           foundPost.lat && foundPost.lng
             ? Promise.all([
                 getCityFromCoordinates(foundPost.lat, foundPost.lng),
                 fetch("/api/mapbox-token").then((r) => r.json()),
               ])
             : Promise.resolve(null),
-        ];
-        if (foundPost.is_saved === undefined) {
-          requests.push(
-            fetch(`${API_BASE}/api/saves/check?aura_id=${foundPost.id}`, { headers: authHeader })
-              .then((r) => r.ok ? r.json() : { saved: false })
-          );
-        }
-        if (!foundPost.perspectives) {
-          requests.push(
-            fetch(`${API_BASE}/api/auras/${foundPost.id}/perspectives`, { headers: authHeader })
-              .then((r) => r.ok ? r.json() : { perspectives: [] })
-          );
-        }
+          // 1: user display name (only if post doesn't include it)
+          !foundPost.user?.name && !foundPost.user_name && foundPost.user_id
+            ? fetch(`${API_BASE}/api/users/${foundPost.user_id}`, { headers: authHeader })
+                .then((r) => r.ok ? r.json() : null)
+            : Promise.resolve(null),
+          // 2: save state (only if not already embedded in post)
+          foundPost.is_saved === undefined
+            ? fetch(`${API_BASE}/api/saves/check?aura_id=${foundPost.id}`, { headers: authHeader })
+                .then((r) => r.ok ? r.json() : { saved: false })
+            : Promise.resolve(null),
+          // 3: perspectives (only if not already embedded in post)
+          !foundPost.perspectives
+            ? fetch(`${API_BASE}/api/auras/${foundPost.id}/perspectives`, { headers: authHeader })
+                .then((r) => r.ok ? r.json() : { perspectives: [] })
+            : Promise.resolve(null),
+        ]);
 
-        const results = await Promise.allSettled(requests);
-
-        const cityTokenRes = results[0];
-        if (cityTokenRes.status === "fulfilled" && cityTokenRes.value) {
-          const [city, tokenData] = cityTokenRes.value as [string, { token: string }];
+        if (cityTokenResult.status === "fulfilled" && cityTokenResult.value) {
+          const [city, tokenData] = cityTokenResult.value as [string, { token: string }];
           setCityLocation(city);
           setMapToken(tokenData.token ?? "");
         }
-        if (foundPost.is_saved === undefined && results[1]?.status === "fulfilled") {
-          setIsSaved((results[1].value as { saved: boolean }).saved ?? false);
+        if (userProfileResult.status === "fulfilled" && userProfileResult.value) {
+          const pd = userProfileResult.value as { profile?: { name?: string; avatar_url?: string | null } };
+          const name = pd.profile?.name;
+          const avatar = pd.profile?.avatar_url ?? null;
+          if (name) setPost((prev) => prev ? { ...prev, user: { id: prev.user_id, name, email: "", avatar_url: avatar } } : prev);
         }
-        const perspResult = results[foundPost.is_saved === undefined ? 2 : 1];
-        if (!foundPost.perspectives && perspResult?.status === "fulfilled") {
+        if (saveResult.status === "fulfilled" && saveResult.value && foundPost.is_saved === undefined) {
+          setIsSaved((saveResult.value as { saved: boolean }).saved ?? false);
+        }
+        if (perspResult.status === "fulfilled" && perspResult.value && !foundPost.perspectives) {
           setPerspectives((perspResult.value as { perspectives: Perspective[] }).perspectives ?? []);
         }
       } catch (err) {
