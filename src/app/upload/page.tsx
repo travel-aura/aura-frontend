@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { processAndUploadMultipleAuras, type AuraMetadata, type UploadProgress, type UploadResult } from "@/services/uploadService";
 import { getToken } from "@/lib/auth";
@@ -25,6 +25,10 @@ export default function UploadPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { language } = useLanguage();
+
+  useEffect(() => {
+    if (!getToken()) router.replace("/login");
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [photos, setPhotos] = useState<PhotoFile[]>([]);
   const [gpsPhotoIndex, setGpsPhotoIndex] = useState(0);
