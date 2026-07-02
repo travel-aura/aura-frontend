@@ -9,6 +9,8 @@ import { useAuth } from "@/context/AuthContext";
 import TopBar from "@/components/TopBar";
 import PostGrid from "@/components/PostGrid";
 import BottomNav from "@/components/BottomNav";
+import { useLanguage } from "@/hooks/useLanguage";
+import { translateTag } from "@/lib/i18n";
 import type { Post, UserProfile, ArchetypeStats } from "../../../shared/aura-schema";
 
 const AVATAR =
@@ -31,6 +33,7 @@ type Tab = (typeof TABS)[number];
 export default function ProfilePage() {
   const { token, ready } = useAuth();
   const router = useRouter();
+  const { language } = useLanguage();
   const [activeTab, setActiveTab] = useState<Tab>("Uploaded");
   const [uploadedPosts, setUploadedPosts] = useState<Post[]>([]);
   const [savedPosts, setSavedPosts] = useState<Post[]>([]);
@@ -162,7 +165,7 @@ export default function ProfilePage() {
             {topTags.map((tag) => (
               <span key={tag} className="flex items-center gap-1 rounded-full bg-[#fff1c2] px-2.5 py-1 text-[12px] font-medium text-[#595959]">
                 <TagIcon className="size-3" />
-                {tag}
+                {translateTag(tag, language)}
               </span>
             ))}
           </div>

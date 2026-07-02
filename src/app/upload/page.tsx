@@ -6,24 +6,12 @@ import { processAndUploadMultipleAuras, type AuraMetadata, type UploadProgress, 
 import { getToken } from "@/lib/auth";
 import { API_BASE } from "@/lib/api";
 import BottomNav from "@/components/BottomNav";
+import { useLanguage } from "@/hooks/useLanguage";
+import { TAG_GROUPS, translateTag, translateGroupLabel } from "@/lib/i18n";
+
 interface NearbyPost { id: string; title: string; distance_meters: number; }
 
 const MAX_TAGS = 5;
-
-const ALL_TAGS = [
-  "Downtown", "Neighborhoods", "Alleyways", "Courtyards",
-  "LocalMarkets", "NightMarkets", "StreetArt", "Bridges",
-  "Waterfront", "Rooftops & Skylines", "Architecture",
-  "Mountains", "Forests", "Deserts", "Waterfalls", "Lakes", "Caves",
-  "Beaches", "Islands", "Canyons", "Parks & Gardens", "Countryside",
-  "Cafes", "Speakeasies", "Bookshops", "Libraries", "Boutiques",
-  "Museums", "Galleries", "Hotels & Stays", "HistoricSites", "PopCulture",
-  "StreetFood", "FineDining", "LiveMusic", "JazzBars", "LocalEats",
-  "Hiking", "Cycling", "RoadTrip", "Camping", "WaterSports",
-  "GoldenHour", "BlueHour", "Sunrise", "Sunset", "Stargazing",
-  "Cinematic", "Cozy", "Vibrant", "Quiet", "Bustling", "Vintage",
-  "Romantic", "Moody",
-];
 
 // ── Upload Page ───────────────────────────────────────────────────────────────
 
@@ -35,6 +23,8 @@ interface PhotoFile {
 export default function UploadPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { language } = useLanguage();
 
   const [photos, setPhotos] = useState<PhotoFile[]>([]);
   const [gpsPhotoIndex, setGpsPhotoIndex] = useState(0);
@@ -285,35 +275,44 @@ export default function UploadPage() {
               <p className="text-[16px] font-medium text-black">Tags</p>
               <p className="text-[12px] text-[#9a9a9a]">{selectedTags.length}/{MAX_TAGS}</p>
             </div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {ALL_TAGS.map((tag) => {
-                const selected = selectedTags.includes(tag);
-                const disabled = !selected && selectedTags.length >= MAX_TAGS;
-                return (
-                  <button
-                    key={tag}
-                    disabled={disabled}
-                    onClick={() =>
-                      setSelectedTags((prev) =>
-                        selected ? prev.filter((t) => t !== tag) : [...prev, tag]
-                      )
-                    }
-                    className={`flex items-center gap-1 rounded-[6px] px-[10px] py-[4px] text-[12px] transition-colors ${
-                      selected
-                        ? "bg-[#fff1c2] text-[#595959]"
-                        : disabled
-                        ? "border border-[#eee] text-[#ccc]"
-                        : "border border-[#eee] text-[#7a7a7a]"
-                    }`}
-                  >
-                    <svg className="size-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
-                      <line x1="7" y1="7" x2="7.01" y2="7" />
-                    </svg>
-                    {tag}
-                  </button>
-                );
-              })}
+            <div className="mt-3 space-y-4">
+              {TAG_GROUPS.map((group) => (
+                <div key={group.key}>
+                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[#b0b0b0]">
+                    {translateGroupLabel(group, language)}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {group.tags.map((tag) => {
+                      const selected = selectedTags.includes(tag);
+                      const disabled = !selected && selectedTags.length >= MAX_TAGS;
+                      return (
+                        <button
+                          key={tag}
+                          disabled={disabled}
+                          onClick={() =>
+                            setSelectedTags((prev) =>
+                              selected ? prev.filter((t) => t !== tag) : [...prev, tag]
+                            )
+                          }
+                          className={`flex items-center gap-1 rounded-[6px] px-[10px] py-[4px] text-[12px] transition-colors ${
+                            selected
+                              ? "bg-[#fff1c2] text-[#595959]"
+                              : disabled
+                              ? "border border-[#eee] text-[#ccc]"
+                              : "border border-[#eee] text-[#7a7a7a]"
+                          }`}
+                        >
+                          <svg className="size-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                            <line x1="7" y1="7" x2="7.01" y2="7" />
+                          </svg>
+                          {translateTag(tag, language)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 

@@ -4,10 +4,13 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { API_BASE } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/hooks/useLanguage";
+import { languageLabel } from "@/lib/i18n";
 
 export default function TopBar() {
   const { token } = useAuth();
   const [unread, setUnread] = useState(0);
+  const { language, cycle } = useLanguage();
 
   useEffect(() => {
     if (!token) { setUnread(0); return; }
@@ -27,6 +30,15 @@ export default function TopBar() {
 
   return (
     <div className="relative flex items-center justify-center px-4 pt-3">
+      {/* Language cycle button — always visible, no login required */}
+      <button
+        onClick={cycle}
+        suppressHydrationWarning
+        className="absolute left-4 rounded-full bg-[#f3f3f3] px-2.5 py-1 text-[12px] font-semibold text-[#1e1e1e]"
+      >
+        {languageLabel(language)}
+      </button>
+
       <span className="text-[20px] font-bold tracking-tight text-[#1e1e1e]">Aura</span>
       {token && (
         <div className="absolute right-4 flex items-center gap-3">

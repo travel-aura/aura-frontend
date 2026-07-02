@@ -6,6 +6,8 @@ import Link from "next/link";
 import { API_BASE } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import PostGrid from "@/components/PostGrid";
+import { useLanguage } from "@/hooks/useLanguage";
+import { translateTag } from "@/lib/i18n";
 import type { PublicProfileResponse, ArchetypeStats, Aura } from "../../../../shared/aura-schema";
 
 function TagIcon({ className }: { className?: string }) {
@@ -24,6 +26,7 @@ export default function PublicProfilePage() {
   const router = useRouter();
   const userId = params.id as string;
 
+  const { language } = useLanguage();
   const [profile, setProfile] = useState<PublicProfileResponse["profile"] | null>(null);
   const [posts, setPosts] = useState<Aura[]>([]);
   const [stats, setStats] = useState<ArchetypeStats>({
@@ -168,7 +171,7 @@ export default function PublicProfilePage() {
             {topTags.map((tag) => (
               <span key={tag} className="flex items-center gap-1 rounded-full bg-[#fff1c2] px-2.5 py-1 text-[12px] font-medium text-[#595959]">
                 <TagIcon className="size-3" />
-                {tag}
+                {translateTag(tag, language)}
               </span>
             ))}
           </div>

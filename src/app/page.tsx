@@ -6,29 +6,12 @@ import { apiGet } from "@/lib/api";
 import { searchPlaces } from "@/lib/geocoding";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
+import { useLanguage } from "@/hooks/useLanguage";
+import { TAG_GROUPS, translateTag, translateGroupLabel } from "@/lib/i18n";
 import type { Aura } from "../../shared/aura-schema";
 
 const RADIUS = 5000;
 const LIMIT = 10;
-
-const ALL_TAGS = [
-  "Downtown", "Neighborhoods", "Alleyways", "Courtyards",
-  "LocalMarkets", "NightMarkets", "StreetArt", "Bridges",
-  "Waterfront", "Rooftops & Skylines", "Architecture",
-  "Mountains", "Forests", "Deserts", "Waterfalls", "Lakes", "Caves",
-  "Beaches", "Islands", "Canyons", "Parks & Gardens", "Countryside",
-  "Cafes", "Speakeasies", "Bookshops", "Libraries", "Boutiques",
-  "Museums", "Galleries", "Hotels & Stays", "HistoricSites", "PopCulture",
-  "StreetFood", "FineDining", "LiveMusic", "JazzBars", "LocalEats",
-  "Hiking", "Cycling", "RoadTrip", "Camping", "WaterSports",
-  "GoldenHour", "BlueHour", "Sunrise", "Sunset", "Stargazing",
-  "Cinematic", "Cozy", "Vibrant", "Quiet", "Bustling", "Vintage",
-  "Romantic", "Moody",
-];
-
-function formatDistance(m: number) {
-  return m < 1000 ? `${Math.round(m)}m away` : `${(m / 1000).toFixed(1)}km away`;
-}
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -144,6 +127,9 @@ export default function AuraFeed() {
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
+
+  // Language
+  const { language } = useLanguage();
 
   // Tag filter
   const [activeTag, setActiveTag] = useState<string | null>(null);
@@ -487,7 +473,7 @@ export default function AuraFeed() {
               }`}
             >
               <SlidersIcon className="size-3.5" />
-              {activeTag ? `#${activeTag}` : "Advanced Search"}
+              {activeTag ? `#${translateTag(activeTag, language)}` : "Advanced Search"}
               {activeTag && (
                 <span
                   onClick={(e) => { e.stopPropagation(); handleClearTag(); }}
@@ -574,27 +560,34 @@ export default function AuraFeed() {
               </button>
             </div>
 
-            {/* Tags — scrollable */}
-            <div className="max-h-[60vh] overflow-y-auto px-5 pb-2">
-              <div className="flex flex-wrap gap-2">
-                {ALL_TAGS.map((tag) => (
-                  <button
-                    key={tag}
-                    onClick={() => handleTag(tag)}
-                    className={`flex items-center gap-1 rounded-[6px] px-3 py-1.5 text-[13px] font-medium transition-colors ${
-                      activeTag === tag
-                        ? "bg-[#fff1c2] text-[#595959]"
-                        : "border border-[#e8e8e8] text-[#757575]"
-                    }`}
-                  >
-                    <svg className="size-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
-                      <line x1="7" y1="7" x2="7.01" y2="7" />
-                    </svg>
-                    {tag}
-                  </button>
-                ))}
-              </div>
+            {/* Tags — grouped, scrollable */}
+            <div className="max-h-[60vh] overflow-y-auto px-5 pb-2 space-y-4">
+              {TAG_GROUPS.map((group) => (
+                <div key={group.key}>
+                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[#b0b0b0]">
+                    {translateGroupLabel(group, language)}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {group.tags.map((tag) => (
+                      <button
+                        key={tag}
+                        onClick={() => handleTag(tag)}
+                        className={`flex items-center gap-1 rounded-[6px] px-3 py-1.5 text-[13px] font-medium transition-colors ${
+                          activeTag === tag
+                            ? "bg-[#fff1c2] text-[#595959]"
+                            : "border border-[#e8e8e8] text-[#757575]"
+                        }`}
+                      >
+                        <svg className="size-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                          <line x1="7" y1="7" x2="7.01" y2="7" />
+                        </svg>
+                        {translateTag(tag, language)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

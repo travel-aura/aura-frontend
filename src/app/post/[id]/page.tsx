@@ -6,6 +6,8 @@ import Link from "next/link";
 import { apiGet, API_BASE } from "@/lib/api";
 import { getToken, getUserId } from "@/lib/auth";
 import { getCityFromCoordinates } from "@/lib/geocoding";
+import { useLanguage } from "@/hooks/useLanguage";
+import { translateTag } from "@/lib/i18n";
 import type { AuraWithUser, Perspective } from "../../../../shared/aura-schema";
 
 const DEFAULT_AVATAR = "https://www.figma.com/api/mcp/asset/e4add399-8205-4c2a-8782-3da6c9f7bf60";
@@ -95,6 +97,7 @@ export default function PostDetailPage() {
   const router = useRouter();
   const postId = params.id as string;
 
+  const { language } = useLanguage();
   const [post, setPost] = useState<AuraWithUser | null>(null);
   const [cityLocation, setCityLocation] = useState<string | null>(null);
   const [mapToken, setMapToken] = useState<string>("");
@@ -456,7 +459,7 @@ export default function PostDetailPage() {
                   <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
                   <line x1="7" y1="7" x2="7.01" y2="7" />
                 </svg>
-                {tag}
+                {translateTag(tag, language)}
               </span>
             ))}
           </div>
