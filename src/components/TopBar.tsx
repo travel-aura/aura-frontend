@@ -34,16 +34,16 @@ export default function TopBar() {
       <button
         onClick={cycle}
         suppressHydrationWarning
-        className="absolute left-4 rounded-full bg-[#f3f3f3] px-2.5 py-1 text-[12px] font-semibold text-[#1e1e1e]"
+        className="absolute left-4 rounded-full bg-[#EDE6D9] px-2.5 py-1 text-[12px] font-semibold text-[#1A1613]"
       >
         {languageLabel(language)}
       </button>
 
-      <span className="text-[20px] font-bold tracking-tight text-[#1e1e1e]">Aura</span>
+      <span className="text-[20px] font-bold tracking-tight text-[#C9973A]">Aura</span>
       {token && (
         <div className="absolute right-4 flex items-center gap-3">
           <Link href="/friends" aria-label="Find friends">
-            <svg className="size-6 text-[#1e1e1e]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+            <svg className="size-6 text-[#1A1613]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
               <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
               <circle cx="9" cy="7" r="4" />
               <line x1="19" y1="8" x2="19" y2="14" />
@@ -51,12 +51,12 @@ export default function TopBar() {
             </svg>
           </Link>
           <Link href="/notifications" aria-label="Notifications" className="relative">
-            <svg className="size-6 text-[#1e1e1e]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+            <svg className="size-6 text-[#1A1613]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
               <path d="M13.73 21a2 2 0 0 1-3.46 0" />
             </svg>
             {unread > 0 && (
-              <span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-[#fa6460] text-[9px] font-bold text-white">
+              <span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-[#B85C38] text-[9px] font-bold text-white">
                 {unread > 9 ? "9+" : unread}
               </span>
             )}

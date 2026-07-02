@@ -184,10 +184,10 @@ export default function FollowersPage() {
   });
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col bg-white">
+    <div className="relative flex min-h-screen w-full flex-col bg-[#F7F3EC]">
 
       {/* ── Header ── */}
-      <div className="flex items-center px-4 pt-4 pb-3 border-b border-[#f0f0f0]">
+      <div className="flex items-center px-4 pt-4 pb-3 border-b border-[#EDE6D9]">
         <button
           onClick={() =>
             window.history.length > 1 ? router.back() : router.push("/profile")
@@ -195,7 +195,7 @@ export default function FollowersPage() {
           className="flex items-center justify-center size-8"
         >
           <svg
-            className="size-6 text-[#1e1e1e]"
+            className="size-6 text-[#1A1613]"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -206,7 +206,7 @@ export default function FollowersPage() {
             <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
-        <h1 className="flex-1 text-center text-[17px] font-bold text-[#1e1e1e]">
+        <h1 className="flex-1 text-center text-[17px] font-bold text-[#1A1613]">
           {userName}
         </h1>
         {/* Spacer to balance back button */}
@@ -214,7 +214,7 @@ export default function FollowersPage() {
       </div>
 
       {/* ── Tabs ── */}
-      <div className="flex border-b border-[#d9d9d9]">
+      <div className="flex border-b border-[#D4C4A8]">
         {(["followers", "following"] as Tab[]).map((tab) => {
           const count = tab === "followers" ? followers.length : following.length;
           const isActive = activeTab === tab;
@@ -227,15 +227,15 @@ export default function FollowersPage() {
               <span
                 className={
                   isActive
-                    ? "font-bold text-[#1e1e1e]"
-                    : "font-normal text-[#757575]"
+                    ? "font-bold text-[#1A1613]"
+                    : "font-normal text-[#6B5F52]"
                 }
               >
                 {count}{" "}
                 {tab}
               </span>
               {isActive && (
-                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#1e1e1e]" />
+                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#1A1613]" />
               )}
             </button>
           );
@@ -246,7 +246,7 @@ export default function FollowersPage() {
       <div className="flex-1 overflow-y-auto">
         {loading ? (
           <div className="flex items-center justify-center py-24">
-            <p className="text-[14px] text-[#757575]">Loading…</p>
+            <p className="text-[14px] text-[#6B5F52]">Loading…</p>
           </div>
         ) : activeTab === "followers" ? (
           <FollowersList
@@ -305,9 +305,9 @@ function FollowersList({
       {/* Search bar */}
       {hasSearch && (
         <div className="px-4 pt-4 pb-2">
-          <div className="flex items-center gap-2 rounded-xl bg-[#f3f3f3] px-3 py-3">
+          <div className="flex items-center gap-2 rounded-xl bg-[#EDE6D9] px-3 py-3">
             <svg
-              className="size-4 shrink-0 text-[#757575]"
+              className="size-4 shrink-0 text-[#6B5F52]"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -323,12 +323,12 @@ function FollowersList({
               placeholder="Search"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="flex-1 bg-transparent text-[16px] text-[#1e1e1e] placeholder-[#9a9a9a] outline-none"
+              className="flex-1 bg-transparent text-[16px] text-[#1A1613] placeholder-[#A09080] outline-none"
             />
             {searchQuery && (
               <button onClick={() => onSearchChange("")}>
                 <svg
-                  className="size-4 text-[#757575]"
+                  className="size-4 text-[#6B5F52]"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -347,7 +347,7 @@ function FollowersList({
       {followers.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
           <svg
-            className="size-12 text-[#d9d9d9]"
+            className="size-12 text-[#D4C4A8]"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -358,11 +358,11 @@ function FollowersList({
             <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
             <circle cx="9" cy="7" r="4" />
           </svg>
-          <p className="mt-4 text-[16px] font-semibold text-[#1e1e1e]">
+          <p className="mt-4 text-[16px] font-semibold text-[#1A1613]">
             {searchQuery ? "No results found" : "No followers yet"}
           </p>
           {!searchQuery && (
-            <p className="mt-1 text-[13px] text-[#757575]">
+            <p className="mt-1 text-[13px] text-[#6B5F52]">
               When people follow you, they&apos;ll appear here
             </p>
           )}
@@ -372,7 +372,7 @@ function FollowersList({
           {followers.map((user) => (
             <li key={user.id} className="flex items-center gap-3 px-4 py-3">
               {/* Avatar → profile link */}
-              <Link href={`/profile/${user.id}`} className="size-[54px] shrink-0 overflow-hidden rounded-full bg-[#f3f3f3]">
+              <Link href={`/profile/${user.id}`} className="size-[54px] shrink-0 overflow-hidden rounded-full bg-[#EDE6D9]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={user.avatar_url || DEFAULT_AVATAR}
@@ -386,13 +386,13 @@ function FollowersList({
                 <div className="flex items-center flex-wrap gap-x-1">
                   <Link
                     href={`/profile/${user.id}`}
-                    className="text-[15px] font-semibold text-[#1e1e1e]"
+                    className="text-[15px] font-semibold text-[#1A1613]"
                   >
                     {displayName(user)}
                   </Link>
                   {!user.is_following && (
                     <>
-                      <span className="text-[14px] text-[#b0b0b0]">·</span>
+                      <span className="text-[14px] text-[#A09080]">·</span>
                       <button
                         onClick={() => onFollowBack(user)}
                         disabled={followPending[user.id]}
@@ -404,7 +404,7 @@ function FollowersList({
                   )}
                 </div>
                 {subName(user) && (
-                  <p className="truncate text-[12px] text-[#757575]">{subName(user)}</p>
+                  <p className="truncate text-[12px] text-[#6B5F52]">{subName(user)}</p>
                 )}
               </div>
 
@@ -412,7 +412,7 @@ function FollowersList({
               <button
                 onClick={() => onRemove(user)}
                 disabled={removePending[user.id]}
-                className="shrink-0 rounded-lg border border-[#d9d9d9] bg-white px-4 py-[7px] text-[13px] font-semibold text-[#1e1e1e] active:bg-[#f3f3f3] disabled:opacity-50"
+                className="shrink-0 rounded-lg border border-[#D4C4A8] bg-[#F7F3EC] px-4 py-[7px] text-[13px] font-semibold text-[#1A1613] active:bg-[#EDE6D9] disabled:opacity-50"
               >
                 {removePending[user.id] ? "…" : "Remove"}
               </button>
@@ -455,9 +455,9 @@ function FollowingList({
       {/* Search bar */}
       {following.length > 0 && (
         <div className="px-4 pt-4 pb-2">
-          <div className="flex items-center gap-2 rounded-xl bg-[#f3f3f3] px-3 py-3">
+          <div className="flex items-center gap-2 rounded-xl bg-[#EDE6D9] px-3 py-3">
             <svg
-              className="size-4 shrink-0 text-[#757575]"
+              className="size-4 shrink-0 text-[#6B5F52]"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -473,12 +473,12 @@ function FollowingList({
               placeholder="Search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 bg-transparent text-[16px] text-[#1e1e1e] placeholder-[#9a9a9a] outline-none"
+              className="flex-1 bg-transparent text-[16px] text-[#1A1613] placeholder-[#A09080] outline-none"
             />
             {searchQuery && (
               <button onClick={() => setSearchQuery("")}>
                 <svg
-                  className="size-4 text-[#757575]"
+                  className="size-4 text-[#6B5F52]"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -497,7 +497,7 @@ function FollowingList({
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
           <svg
-            className="size-12 text-[#d9d9d9]"
+            className="size-12 text-[#D4C4A8]"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -510,11 +510,11 @@ function FollowingList({
             <line x1="19" y1="8" x2="19" y2="14" />
             <line x1="22" y1="11" x2="16" y2="11" />
           </svg>
-          <p className="mt-4 text-[16px] font-semibold text-[#1e1e1e]">
+          <p className="mt-4 text-[16px] font-semibold text-[#1A1613]">
             {searchQuery ? "No results found" : "Not following anyone yet"}
           </p>
           {!searchQuery && (
-            <p className="mt-1 text-[13px] text-[#757575]">
+            <p className="mt-1 text-[13px] text-[#6B5F52]">
               Follow people to see them here
             </p>
           )}
@@ -524,7 +524,7 @@ function FollowingList({
           {filtered.map((user) => (
             <li key={user.id} className="flex items-center gap-3 px-4 py-3">
               {/* Avatar → profile link */}
-              <Link href={`/profile/${user.id}`} className="size-[54px] shrink-0 overflow-hidden rounded-full bg-[#f3f3f3]">
+              <Link href={`/profile/${user.id}`} className="size-[54px] shrink-0 overflow-hidden rounded-full bg-[#EDE6D9]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={user.avatar_url || DEFAULT_AVATAR}
@@ -536,11 +536,11 @@ function FollowingList({
               {/* Name → profile link */}
               <div className="min-w-0 flex-1">
                 <Link href={`/profile/${user.id}`} className="block">
-                  <p className="text-[15px] font-semibold text-[#1e1e1e]">
+                  <p className="text-[15px] font-semibold text-[#1A1613]">
                     {displayName(user)}
                   </p>
                   {subName(user) && (
-                    <p className="truncate text-[12px] text-[#757575]">
+                    <p className="truncate text-[12px] text-[#6B5F52]">
                       {subName(user)}
                     </p>
                   )}
@@ -553,8 +553,8 @@ function FollowingList({
                 disabled={followPending[user.id]}
                 className={`shrink-0 rounded-lg px-4 py-[7px] text-[13px] font-semibold transition-colors disabled:opacity-50 ${
                   user.is_following
-                    ? "border border-[#d9d9d9] bg-white text-[#1e1e1e] active:bg-[#f3f3f3]"
-                    : "bg-[#fa6460] text-white active:bg-[#e55550]"
+                    ? "border border-[#D4C4A8] bg-[#F7F3EC] text-[#1A1613] active:bg-[#EDE6D9]"
+                    : "bg-[#B85C38] text-white active:bg-[#A84828]"
                 }`}
               >
                 {followPending[user.id]

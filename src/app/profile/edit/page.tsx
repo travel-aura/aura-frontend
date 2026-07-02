@@ -130,7 +130,7 @@ export default function EditProfilePage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="text-[15px] text-[#757575]">Loading profile...</p>
+        <p className="text-[15px] text-[#6B5F52]">Loading profile...</p>
       </div>
     );
   }
@@ -140,17 +140,17 @@ export default function EditProfilePage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-4">
         <p className="text-[15px] font-semibold text-red-600">Failed to load profile</p>
-        <p className="mt-2 text-center text-[13px] text-[#757575]">{error}</p>
+        <p className="mt-2 text-center text-[13px] text-[#6B5F52]">{error}</p>
         <div className="mt-6 flex gap-3">
           <Link
             href="/profile"
-            className="rounded-lg bg-[#ededed] px-4 py-2 text-[14px] font-medium text-[#1e1e1e]"
+            className="rounded-lg bg-[#EDE6D9] px-4 py-2 text-[14px] font-medium text-[#1A1613]"
           >
             Go Back
           </Link>
           <button
             onClick={() => window.location.reload()}
-            className="rounded-lg bg-[#fa6460] px-4 py-2 text-[14px] font-medium text-white"
+            className="rounded-lg bg-[#B85C38] px-4 py-2 text-[14px] font-medium text-white"
           >
             Retry
           </button>
@@ -160,13 +160,13 @@ export default function EditProfilePage() {
   }
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col bg-white">
+    <div className="relative flex min-h-screen w-full flex-col bg-[#F7F3EC]">
       {/* Header */}
-      <div className="flex items-center border-b border-[#d9d9d9] px-4 py-3">
+      <div className="flex items-center border-b border-[#D4C4A8] px-4 py-3">
         <Link href="/profile" className="mr-3">
-          <ChevronLeftIcon className="size-6 text-[#1e1e1e]" />
+          <ChevronLeftIcon className="size-6 text-[#1A1613]" />
         </Link>
-        <h1 className="text-[17px] font-semibold text-[#1e1e1e]">
+        <h1 className="text-[17px] font-semibold text-[#1A1613]">
           Edit profile
         </h1>
       </div>
@@ -184,7 +184,7 @@ export default function EditProfilePage() {
                   className="h-full w-full object-cover"
                 />
               </div>
-              <button className="absolute bottom-0 right-0 flex size-8 items-center justify-center rounded-full bg-[#fa6460] shadow-md">
+              <button className="absolute bottom-0 right-0 flex size-8 items-center justify-center rounded-full bg-[#B85C38] shadow-md">
                 <PencilIcon className="size-4 text-white" />
               </button>
             </div>
@@ -203,7 +203,7 @@ export default function EditProfilePage() {
             <div className="mb-4">
               <label
                 htmlFor="name"
-                className="mb-1 block text-[13px] font-medium text-[#757575]"
+                className="mb-1 block text-[13px] font-medium text-[#6B5F52]"
               >
                 Name
               </label>
@@ -218,7 +218,7 @@ export default function EditProfilePage() {
                 }}
                 onBlur={() => setShowNameError(!name || name.trim() === "")}
                 maxLength={10}
-                className="w-full rounded-lg border border-[#d9d9d9] bg-white px-3 py-2.5 text-[16px] text-[#1e1e1e] outline-none focus:border-[#fa6460] focus:ring-1 focus:ring-[#fa6460]"
+                className="w-full rounded-lg border border-[#D4C4A8] bg-[#F7F3EC] px-3 py-2.5 text-[16px] text-[#1A1613] outline-none focus:border-[#B85C38] focus:ring-1 focus:ring-[#B85C38]"
               />
               <div className="mt-1 flex items-center justify-between">
                 {showNameError && (
@@ -227,7 +227,7 @@ export default function EditProfilePage() {
                   </span>
                 )}
                 <span
-                  className={`text-[13px] text-[#757575] ${!showNameError ? "ml-auto" : ""}`}
+                  className={`text-[13px] text-[#6B5F52] ${!showNameError ? "ml-auto" : ""}`}
                 >
                   {(name || "").length}/10
                 </span>
@@ -238,7 +238,7 @@ export default function EditProfilePage() {
             <div>
               <label
                 htmlFor="bio"
-                className="mb-1 block text-[13px] font-medium text-[#757575]"
+                className="mb-1 block text-[13px] font-medium text-[#6B5F52]"
               >
                 Bio
               </label>
@@ -252,10 +252,10 @@ export default function EditProfilePage() {
                 placeholder="Share your location, your favorite..."
                 rows={4}
                 maxLength={100}
-                className="w-full resize-none rounded-lg border border-[#d9d9d9] bg-white px-3 py-2.5 text-[16px] text-[#1e1e1e] placeholder:text-[#b0b0b0] outline-none focus:border-[#fa6460] focus:ring-1 focus:ring-[#fa6460]"
+                className="w-full resize-none rounded-lg border border-[#D4C4A8] bg-[#F7F3EC] px-3 py-2.5 text-[16px] text-[#1A1613] placeholder:text-[#A09080] outline-none focus:border-[#B85C38] focus:ring-1 focus:ring-[#B85C38]"
               />
               <div className="mt-1 flex justify-end">
-                <span className="text-[13px] text-[#757575]">
+                <span className="text-[13px] text-[#6B5F52]">
                   {(bio || "").length}/100
                 </span>
               </div>
@@ -266,7 +266,7 @@ export default function EditProfilePage() {
               <button
                 onClick={handleSave}
                 disabled={saving || !name || name.trim() === ""}
-                className="w-full rounded-lg bg-[#fa6460] py-3 text-[16px] font-semibold text-white transition-colors hover:bg-[#e55550] disabled:opacity-50"
+                className="w-full rounded-lg bg-[#B85C38] py-3 text-[16px] font-semibold text-white transition-colors hover:bg-[#A84828] disabled:opacity-50"
               >
                 {saving ? "Saving..." : "Save Changes"}
               </button>
@@ -274,11 +274,11 @@ export default function EditProfilePage() {
           </div>
 
           {/* Account section */}
-          <div className="mx-4 mt-8 border-t border-[#f3f3f3] pt-6">
+          <div className="mx-4 mt-8 border-t border-[#EDE6D9] pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[13px] font-medium text-[#757575]">Account</p>
-                <p className="mt-1 text-[15px] text-[#1e1e1e]">{profile?.email || "Loading..."}</p>
+                <p className="text-[13px] font-medium text-[#6B5F52]">Account</p>
+                <p className="mt-1 text-[15px] text-[#1A1613]">{profile?.email || "Loading..."}</p>
               </div>
             </div>
           </div>

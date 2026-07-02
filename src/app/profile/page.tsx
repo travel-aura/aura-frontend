@@ -121,7 +121,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col bg-white">
+    <div className="relative flex min-h-screen w-full flex-col bg-[#F7F3EC]">
       <TopBar />
 
       <div className="flex-1 overflow-y-auto pb-20">
@@ -129,26 +129,26 @@ export default function ProfilePage() {
         {/* ── Profile header ── */}
         <div className="flex items-start gap-4 px-4 pt-5">
           {/* Avatar */}
-          <div className="size-[80px] shrink-0 overflow-hidden rounded-full border border-[#d9d9d9]">
+          <div className="size-[80px] shrink-0 overflow-hidden rounded-full border border-[#D4C4A8]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={AVATAR} alt={userName} className="h-full w-full object-cover" />
           </div>
 
           {/* Name + stats */}
           <div className="min-w-0 flex-1">
-            <p className="text-[17px] font-bold leading-tight text-[#1e1e1e]">{userName || "—"}</p>
-            <div className="mt-2.5 flex items-stretch divide-x divide-[#d9d9d9]">
+            <p className="text-[17px] font-bold leading-tight text-[#1A1613]">{userName || "—"}</p>
+            <div className="mt-2.5 flex items-stretch divide-x divide-[#D4C4A8]">
               <div className="flex flex-1 flex-col items-center gap-0.5 px-1">
-                <span className="text-[12px] text-[#757575]">Verified</span>
-                <span className="text-[17px] font-bold text-[#1e1e1e]">{stats.verified_count}</span>
+                <span className="text-[12px] text-[#6B5F52]">Verified</span>
+                <span className="text-[17px] font-bold text-[#1A1613]">{stats.verified_count}</span>
               </div>
               <Link href="/profile/cities" className="flex flex-1 flex-col items-center gap-0.5 px-1">
-                <span className="text-[12px] text-[#757575]">Cities</span>
-                <span className="text-[17px] font-bold text-[#1e1e1e]">{stats.city_count}</span>
+                <span className="text-[12px] text-[#6B5F52]">Cities</span>
+                <span className="text-[17px] font-bold text-[#1A1613]">{stats.city_count}</span>
               </Link>
               <Link href="/profile/followers" className="flex flex-1 flex-col items-center gap-0.5 px-1">
-                <span className="text-[12px] text-[#757575]">Followers</span>
-                <span className="text-[17px] font-bold text-[#1e1e1e]">{stats.follower_count}</span>
+                <span className="text-[12px] text-[#6B5F52]">Followers</span>
+                <span className="text-[17px] font-bold text-[#1A1613]">{stats.follower_count}</span>
               </Link>
             </div>
           </div>
@@ -156,14 +156,14 @@ export default function ProfilePage() {
 
         {/* Bio */}
         {userBio && (
-          <p className="mt-2 px-4 text-[13px] leading-relaxed text-[#757575]">{userBio}</p>
+          <p className="mt-2 px-4 text-[13px] leading-relaxed text-[#6B5F52]">{userBio}</p>
         )}
 
         {/* Top user tags */}
         {topTags.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-2 px-4">
             {topTags.map((tag) => (
-              <span key={tag} className="flex items-center gap-1 rounded-full bg-[#fff1c2] px-2.5 py-1 text-[12px] font-medium text-[#595959]">
+              <span key={tag} className="flex items-center gap-1 rounded-full bg-[#DEC9A0] px-2.5 py-1 text-[12px] font-medium text-[#5C4A36]">
                 <TagIcon className="size-3" />
                 {translateTag(tag, language)}
               </span>
@@ -175,29 +175,29 @@ export default function ProfilePage() {
         <div className="mt-3 flex gap-2 px-4">
           <Link
             href="/profile/edit"
-            className="flex-1 rounded-lg bg-[#ededed] py-[8px] text-center text-[13px] font-semibold text-[#1e1e1e]"
+            className="flex-1 rounded-lg bg-[#EDE6D9] py-[8px] text-center text-[13px] font-semibold text-[#1A1613]"
           >
             Edit profile
           </Link>
           <button
             onClick={copyShare}
-            className="flex-1 rounded-lg bg-[#ededed] py-[8px] text-[13px] font-semibold text-[#1e1e1e] transition-colors"
+            className="flex-1 rounded-lg bg-[#EDE6D9] py-[8px] text-[13px] font-semibold text-[#1A1613] transition-colors"
           >
             {shareCopied ? "Copied!" : "Share profile"}
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="mt-4 flex border-b border-[#d9d9d9]">
+        <div className="mt-4 flex border-b border-[#D4C4A8]">
           {TABS.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className="relative flex-1 py-[10px] text-[14px] font-medium text-[#1e1e1e]"
+              className="relative flex-1 py-[10px] text-[14px] font-medium text-[#1A1613]"
             >
               {tab}
               {activeTab === tab && (
-                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#fa6460]" />
+                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#B85C38]" />
               )}
             </button>
           ))}
@@ -207,7 +207,7 @@ export default function ProfilePage() {
         <div className="px-0.5 py-0.5">
           {loading && (
             <div className="flex items-center justify-center py-24">
-              <p className="text-[15px] text-[#757575]">Loading...</p>
+              <p className="text-[15px] text-[#6B5F52]">Loading...</p>
             </div>
           )}
           {error && !loading && (

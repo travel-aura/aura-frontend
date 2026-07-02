@@ -55,17 +55,17 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col bg-white">
+    <div className="relative flex min-h-screen w-full flex-col bg-[#F7F3EC]">
       {/* Logo */}
       <div className="flex justify-center pt-8">
-        <span className="text-[32px] font-bold tracking-tight text-[#1e1e1e]">
+        <span className="text-[32px] font-bold tracking-tight text-[#1A1613]">
           Aura
         </span>
       </div>
 
       {/* Form */}
       <div className="flex-1 px-4 pt-12">
-        <h1 className="mb-8 text-center text-[24px] font-semibold text-[#1e1e1e]">
+        <h1 className="mb-8 text-center text-[24px] font-semibold text-[#1A1613]">
           Create your account
         </h1>
 
@@ -74,7 +74,7 @@ export default function RegisterPage() {
           <div>
             <label
               htmlFor="name"
-              className="mb-1 block text-[13px] font-medium text-[#757575]"
+              className="mb-1 block text-[13px] font-medium text-[#6B5F52]"
             >
               Name
             </label>
@@ -90,7 +90,7 @@ export default function RegisterPage() {
               placeholder="Your name"
               maxLength={10}
               required
-              className="w-full rounded-lg border border-[#d9d9d9] bg-white px-3 py-2.5 text-[16px] text-[#1e1e1e] placeholder:text-[#b0b0b0] outline-none focus:border-[#fa6460] focus:ring-1 focus:ring-[#fa6460]"
+              className="w-full rounded-lg border border-[#D4C4A8] bg-[#F7F3EC] px-3 py-2.5 text-[16px] text-[#1A1613] placeholder:text-[#A09080] outline-none focus:border-[#B85C38] focus:ring-1 focus:ring-[#B85C38]"
             />
             <div className="mt-1 flex items-center justify-between">
               {showNameError && (
@@ -99,7 +99,7 @@ export default function RegisterPage() {
                 </span>
               )}
               <span
-                className={`text-[13px] text-[#757575] ${!showNameError ? "ml-auto" : ""}`}
+                className={`text-[13px] text-[#6B5F52] ${!showNameError ? "ml-auto" : ""}`}
               >
                 {name.length}/10
               </span>
@@ -110,7 +110,7 @@ export default function RegisterPage() {
           <div>
             <label
               htmlFor="email"
-              className="mb-1 block text-[13px] font-medium text-[#757575]"
+              className="mb-1 block text-[13px] font-medium text-[#6B5F52]"
             >
               Email
             </label>
@@ -121,7 +121,7 @@ export default function RegisterPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="your@email.com"
               required
-              className="w-full rounded-lg border border-[#d9d9d9] bg-white px-3 py-2.5 text-[16px] text-[#1e1e1e] placeholder:text-[#b0b0b0] outline-none focus:border-[#fa6460] focus:ring-1 focus:ring-[#fa6460]"
+              className="w-full rounded-lg border border-[#D4C4A8] bg-[#F7F3EC] px-3 py-2.5 text-[16px] text-[#1A1613] placeholder:text-[#A09080] outline-none focus:border-[#B85C38] focus:ring-1 focus:ring-[#B85C38]"
             />
           </div>
 
@@ -129,7 +129,7 @@ export default function RegisterPage() {
           <div>
             <label
               htmlFor="password"
-              className="mb-1 block text-[13px] font-medium text-[#757575]"
+              className="mb-1 block text-[13px] font-medium text-[#6B5F52]"
             >
               Password
             </label>
@@ -141,9 +141,9 @@ export default function RegisterPage() {
               placeholder="Create a password"
               required
               minLength={6}
-              className="w-full rounded-lg border border-[#d9d9d9] bg-white px-3 py-2.5 text-[16px] text-[#1e1e1e] placeholder:text-[#b0b0b0] outline-none focus:border-[#fa6460] focus:ring-1 focus:ring-[#fa6460]"
+              className="w-full rounded-lg border border-[#D4C4A8] bg-[#F7F3EC] px-3 py-2.5 text-[16px] text-[#1A1613] placeholder:text-[#A09080] outline-none focus:border-[#B85C38] focus:ring-1 focus:ring-[#B85C38]"
             />
-            <p className="mt-1 text-[12px] text-[#757575]">
+            <p className="mt-1 text-[12px] text-[#6B5F52]">
               At least 6 characters
             </p>
           </div>
@@ -154,7 +154,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-lg bg-[#fa6460] py-3 text-[16px] font-semibold text-white transition-colors hover:bg-[#e55550] disabled:opacity-60"
+              className="w-full rounded-lg bg-[#B85C38] py-3 text-[16px] font-semibold text-white transition-colors hover:bg-[#A84828] disabled:opacity-60"
             >
               {loading ? "Creating..." : "Sign up"}
             </button>
@@ -163,11 +163,11 @@ export default function RegisterPage() {
 
         {/* Login link */}
         <div className="mt-6 text-center">
-          <p className="text-[14px] text-[#757575]">
+          <p className="text-[14px] text-[#6B5F52]">
             Already have an account?{" "}
             <Link
               href="/login"
-              className="font-semibold text-[#fa6460] hover:underline"
+              className="font-semibold text-[#B85C38] hover:underline"
             >
               Log in
             </Link>

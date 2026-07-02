@@ -36,8 +36,8 @@ export default function PostGrid({ posts, emptyTitle, emptyMessage }: PostGridPr
     return (
       <div className="flex flex-col items-center justify-center py-24">
         <ImageEmptyIcon className="size-[31px] text-black" />
-        <p className="mt-5 text-[17px] font-semibold text-[#1e1e1e]">{emptyTitle}</p>
-        <p className="mt-1 text-center text-[13px] leading-[1.5] text-[#757575]">{emptyMessage}</p>
+        <p className="mt-5 text-[17px] font-semibold text-[#1A1613]">{emptyTitle}</p>
+        <p className="mt-1 text-center text-[13px] leading-[1.5] text-[#6B5F52]">{emptyMessage}</p>
       </div>
     );
   }

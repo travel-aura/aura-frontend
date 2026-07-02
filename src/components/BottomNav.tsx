@@ -66,7 +66,7 @@ export default function BottomNav() {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 flex h-16 items-center justify-center border-t border-[#d9d9d9] bg-white shadow-[0px_-2px_4px_0px_rgba(0,0,0,0.12)]">
+    <div className="fixed bottom-0 left-0 right-0 flex h-16 items-center justify-center border-t border-[#D4C4A8] bg-[#F7F3EC] shadow-[0px_-2px_4px_0px_rgba(0,0,0,0.12)]">
       <div className="flex w-[291px] items-center justify-between">
         {NAV_ITEMS.map(({ id, label, href, Icon }) => (
           <button
@@ -75,10 +75,10 @@ export default function BottomNav() {
             className="flex w-[37px] flex-col items-center"
           >
             <Icon
-              className={`size-6 ${active === id ? "text-[#fa6460]" : "text-[#2c2c2c]"}`}
+              className={`size-6 ${active === id ? "text-[#B85C38]" : "text-[#1A1613]"}`}
               filled={active === id}
             />
-            <span className={`text-[11px] leading-[1.5] ${active === id ? "text-[#fa6460]" : "text-[#2c2c2c]"}`}>
+            <span className={`text-[11px] leading-[1.5] ${active === id ? "text-[#B85C38]" : "text-[#1A1613]"}`}>
               {label}
             </span>
           </button>

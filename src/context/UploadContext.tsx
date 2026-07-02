@@ -50,7 +50,7 @@ function UploadToast({ status, progress, message, dismiss }: {
   return (
     <div className="fixed bottom-16 left-0 right-0 z-40 px-3 pb-2">
       <div className={`rounded-xl px-4 py-3 shadow-lg ${
-        isSuccess ? "bg-[#1e1e1e]" : isError ? "bg-red-600" : "bg-[#1e1e1e]"
+        isSuccess ? "bg-[#1A1613]" : isError ? "bg-red-600" : "bg-[#1A1613]"
       }`}>
         <div className="flex items-center justify-between gap-3">
           <p className="text-[13px] font-medium text-white truncate">
@@ -75,9 +75,9 @@ function UploadToast({ status, progress, message, dismiss }: {
 
         {/* Progress bar */}
         {!isError && (
-          <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-white/20">
+          <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-[#F7F3EC]/20">
             <div
-              className={`h-full rounded-full transition-all duration-500 ${isSuccess ? "bg-[#fa6460]" : "bg-white"}`}
+              className="h-full rounded-full transition-all duration-500 bg-[#C9973A]"
               style={{ width: `${isSuccess ? 100 : pct}%` }}
             />
           </div>

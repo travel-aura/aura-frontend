@@ -75,42 +75,42 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col bg-white">
+    <div className="relative flex min-h-screen w-full flex-col bg-[#F7F3EC]">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-[#f0f0f0]">
+      <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-[#EDE6D9]">
         <button onClick={() => window.history.length > 1 ? router.back() : router.push("/")} className="flex items-center justify-center">
-          <svg className="size-6 text-[#1e1e1e]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <svg className="size-6 text-[#1A1613]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
-        <h1 className="text-[18px] font-bold text-[#1e1e1e]">Notifications</h1>
+        <h1 className="text-[18px] font-bold text-[#1A1613]">Notifications</h1>
       </div>
 
       <div className="flex-1 overflow-y-auto">
         {loading && (
           <div className="flex items-center justify-center py-20">
-            <p className="text-[14px] text-[#757575]">Loading…</p>
+            <p className="text-[14px] text-[#6B5F52]">Loading…</p>
           </div>
         )}
 
         {!loading && notifications.length === 0 && (
           <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
-            <svg className="size-14 text-[#d9d9d9]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round">
+            <svg className="size-14 text-[#D4C4A8]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
               <path d="M13.73 21a2 2 0 0 1-3.46 0" />
             </svg>
-            <p className="mt-5 text-[17px] font-semibold text-[#1e1e1e]">All caught up</p>
-            <p className="mt-1 text-[13px] text-[#757575]">You have no new notifications</p>
+            <p className="mt-5 text-[17px] font-semibold text-[#1A1613]">All caught up</p>
+            <p className="mt-1 text-[13px] text-[#6B5F52]">You have no new notifications</p>
           </div>
         )}
 
         {!loading && notifications.length > 0 && (
-          <ul className="divide-y divide-[#f3f3f3]">
+          <ul className="divide-y divide-[#EDE6D9]">
             {notifications.map((n) => (
-              <li key={n.id} className={`flex items-start gap-3 px-4 py-3 ${!n.read ? "bg-[#fff8f8]" : ""}`}>
+              <li key={n.id} className={`flex items-start gap-3 px-4 py-3 ${!n.read ? "bg-[#EDE6D9]" : ""}`}>
                 {/* Avatar */}
                 <Link href={`/profile/${n.actor_id}`} className="mt-0.5 shrink-0">
-                  <div className="size-10 overflow-hidden rounded-full bg-[#f3f3f3]">
+                  <div className="size-10 overflow-hidden rounded-full bg-[#EDE6D9]">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={n.actor_avatar || DEFAULT_AVATAR} alt={n.actor_name} className="h-full w-full object-cover" />
                   </div>
@@ -118,13 +118,13 @@ export default function NotificationsPage() {
 
                 {/* Text */}
                 <div className="min-w-0 flex-1">
-                  <p className="text-[14px] leading-snug text-[#1e1e1e]">
+                  <p className="text-[14px] leading-snug text-[#1A1613]">
                     <Link href={`/profile/${n.actor_id}`} className="font-semibold">
                       {n.actor_name}
                     </Link>
                     {" "}{notificationText(n)}
                   </p>
-                  <p className="mt-0.5 text-[12px] text-[#9a9a9a]">{formatDate(n.created_at)}</p>
+                  <p className="mt-0.5 text-[12px] text-[#A09080]">{formatDate(n.created_at)}</p>
                 </div>
 
                 {/* Follow-back button */}
@@ -134,8 +134,8 @@ export default function NotificationsPage() {
                     disabled={followPending[n.id]}
                     className={`shrink-0 rounded-full px-3 py-1 text-[12px] font-semibold transition-colors disabled:opacity-60 ${
                       n.is_following
-                        ? "border border-[#d9d9d9] bg-white text-[#1e1e1e]"
-                        : "bg-[#fa6460] text-white"
+                        ? "border border-[#D4C4A8] bg-[#F7F3EC] text-[#1A1613]"
+                        : "bg-[#B85C38] text-white"
                     }`}
                   >
                     {n.is_following ? "Following" : "Follow back"}
@@ -145,8 +145,8 @@ export default function NotificationsPage() {
                 {/* Post link for save/perspective notifications */}
                 {(n.type === "save" || n.type === "perspective") && n.aura_id && (
                   <Link href={`/post/${n.aura_id}`} className="shrink-0 mt-1">
-                    <div className="size-10 rounded-lg bg-[#f3f3f3] flex items-center justify-center">
-                      <svg className="size-4 text-[#757575]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                    <div className="size-10 rounded-lg bg-[#EDE6D9] flex items-center justify-center">
+                      <svg className="size-4 text-[#6B5F52]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
                         <rect x="3" y="3" width="18" height="18" rx="2" />
                         <path d="M3 9h18" />
                       </svg>
@@ -154,7 +154,7 @@ export default function NotificationsPage() {
                   </Link>
                 )}
                 {(n.type === "save" || n.type === "perspective") && !n.aura_id && !n.read && (
-                  <div className="mt-2 size-2 shrink-0 rounded-full bg-[#fa6460]" />
+                  <div className="mt-2 size-2 shrink-0 rounded-full bg-[#B85C38]" />
                 )}
               </li>
             ))}

@@ -84,7 +84,7 @@ type LocationMode = "global" | "nearby" | "city" | "text";
 function FeedCard({ post }: { post: Aura }) {
   return (
     <Link href={`/post/${post.id}`} className="block">
-      <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg bg-[#d9d9d9]">
+      <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg bg-[#D4C4A8]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={post.image_urls[0]} alt={post.title} loading="lazy" className="h-full w-full object-cover" />
 
@@ -364,7 +364,7 @@ export default function AuraFeed() {
     null;
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col bg-white">
+    <div className="relative flex min-h-screen w-full flex-col bg-[#F7F3EC]">
 
       {/* Spacer — preserves layout height for both fixed sections */}
       <div style={{ height: topGroupH + searchGroupH }} className="shrink-0" />
@@ -372,7 +372,7 @@ export default function AuraFeed() {
       {/* ── TopBar + Tabs — always fixed, never moves ── */}
       <div
         ref={topGroupRef}
-        className={`fixed top-0 left-0 right-0 z-50 bg-white transition-shadow duration-300 ${scrollDir !== 'top' ? 'shadow-sm' : ''}`}
+        className={`fixed top-0 left-0 right-0 z-50 bg-[#F7F3EC] transition-shadow duration-300 ${scrollDir !== 'top' ? 'shadow-sm' : ''}`}
       >
         <TopBar />
         <div className="mt-2 flex items-center justify-center gap-2">
@@ -381,7 +381,7 @@ export default function AuraFeed() {
               key={t}
               onClick={() => handleTabChange(t)}
               className={`rounded-full px-3 py-0.5 text-[15px] font-medium transition-colors capitalize ${
-                activeTab === t ? "bg-[#5a5a5a] text-[#f5f5f5]" : "text-[#1e1e1e]"
+                activeTab === t ? "bg-[#3D3328] text-[#F2EDE4]" : "text-[#1A1613]"
               }`}
             >
               {t === "all" ? "All" : "Following"}
@@ -393,14 +393,14 @@ export default function AuraFeed() {
       {/* ── Search + Filters — hides on scroll down, returns on scroll up ── */}
       <div
         ref={searchGroupRef}
-        className="fixed left-0 right-0 z-40 bg-white pb-2 transition-transform duration-300 ease-in-out"
+        className="fixed left-0 right-0 z-40 bg-[#F7F3EC] pb-2 transition-transform duration-300 ease-in-out"
         style={{ top: topGroupH, transform: `translateY(${scrollDir === 'down' ? -searchGroupH : 0}px)` }}
       >
           {/* Search + Near Me */}
           <div className="flex items-center gap-2 px-4 pt-3" ref={searchRef}>
             <div className="relative flex-1">
-              <div className="flex items-center gap-2 rounded-xl bg-[#f3f3f3] px-3 py-2">
-                <SearchIcon className="size-4 shrink-0 text-[#757575]" />
+              <div className="flex items-center gap-2 rounded-xl bg-[#EDE6D9] px-3 py-2">
+                <SearchIcon className="size-4 shrink-0 text-[#6B5F52]" />
                 <input
                   type="text"
                   placeholder="Search location or post title…"
@@ -408,29 +408,29 @@ export default function AuraFeed() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
                   onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleSearch(); } }}
-                  className="flex-1 bg-transparent text-[16px] text-[#1e1e1e] placeholder-[#757575] outline-none"
+                  className="flex-1 bg-transparent text-[16px] text-[#1A1613] placeholder-[#6B5F52] outline-none"
                 />
-                {suggestionsLoading && <span className="text-[11px] text-[#757575]">…</span>}
+                {suggestionsLoading && <span className="text-[11px] text-[#6B5F52]">…</span>}
                 {searchQuery && !suggestionsLoading && (
                   <button onClick={() => { setSearchQuery(""); setSuggestions([]); setShowSuggestions(false); }}>
-                    <XIcon className="size-4 text-[#757575]" />
+                    <XIcon className="size-4 text-[#6B5F52]" />
                   </button>
                 )}
               </div>
 
               {/* Suggestions dropdown */}
               {showSuggestions && (
-                <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-xl border border-[#e8e8e8] bg-white shadow-lg">
+                <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-xl border border-[#D4C4A8] bg-[#F7F3EC] shadow-lg">
                   {suggestions.map((s) => (
                     <button
                       key={s.id}
                       onMouseDown={(e) => { e.preventDefault(); handleSelectCity(s); }}
-                      className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-[#f9f9f9]"
+                      className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-[#F2EDE4]"
                     >
-                      <PinIcon className="mt-0.5 size-4 shrink-0 text-[#fa6460]" />
+                      <PinIcon className="mt-0.5 size-4 shrink-0 text-[#B85C38]" />
                       <div className="min-w-0">
-                        <p className="text-[14px] font-medium text-[#1e1e1e]">{s.name}</p>
-                        <p className="truncate text-[12px] text-[#757575]">{s.place_name}</p>
+                        <p className="text-[14px] font-medium text-[#1A1613]">{s.name}</p>
+                        <p className="truncate text-[12px] text-[#6B5F52]">{s.place_name}</p>
                       </div>
                     </button>
                   ))}
@@ -444,8 +444,8 @@ export default function AuraFeed() {
               disabled={nearMeLoading}
               className={`flex size-[42px] shrink-0 items-center justify-center rounded-xl transition-colors ${
                 locationMode === "nearby"
-                  ? "bg-[#fa6460] text-white"
-                  : "bg-[#f3f3f3] text-[#757575]"
+                  ? "bg-[#B85C38] text-white"
+                  : "bg-[#EDE6D9] text-[#6B5F52]"
               }`}
             >
               {nearMeLoading
@@ -456,10 +456,10 @@ export default function AuraFeed() {
 
           {/* Context label */}
           {contextLabel && (
-            <div className="mx-4 mt-2 flex items-center justify-between rounded-lg bg-[#fff3f3] px-3 py-2">
-              <span className="text-[13px] font-medium text-[#1e1e1e]">{contextLabel}</span>
+            <div className="mx-4 mt-2 flex items-center justify-between rounded-lg bg-[#FBF6EE] px-3 py-2">
+              <span className="text-[13px] font-medium text-[#1A1613]">{contextLabel}</span>
               <button onClick={handleClearLocation}>
-                <XIcon className="size-4 text-[#757575]" />
+                <XIcon className="size-4 text-[#6B5F52]" />
               </button>
             </div>
           )}
@@ -469,7 +469,7 @@ export default function AuraFeed() {
             <button
               onClick={() => setShowTagFilter(true)}
               className={`shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1 text-[13px] font-medium transition-colors ${
-                activeTag ? "bg-[#fff1c2] text-[#595959]" : "bg-[#f3f3f3] text-[#757575]"
+                activeTag ? "bg-[#DEC9A0] text-[#5C4A36]" : "bg-[#EDE6D9] text-[#6B5F52]"
               }`}
             >
               <SlidersIcon className="size-3.5" />
@@ -477,7 +477,7 @@ export default function AuraFeed() {
               {activeTag && (
                 <span
                   onClick={(e) => { e.stopPropagation(); handleClearTag(); }}
-                  className="ml-0.5 flex size-4 items-center justify-center rounded-full bg-[#d4a800]/20 text-[#595959]"
+                  className="ml-0.5 flex size-4 items-center justify-center rounded-full bg-[#C9973A]/20 text-[#5C4A36]"
                 >
                   <XIcon className="size-2.5" />
                 </span>
@@ -490,7 +490,7 @@ export default function AuraFeed() {
       <div className="mt-3 flex-1 px-[7px] pb-20">
         {loading && (
           <div className="flex items-center justify-center py-4">
-            <p className="text-[13px] text-[#757575]">Loading…</p>
+            <p className="text-[13px] text-[#6B5F52]">Loading…</p>
           </div>
         )}
         {error && (
@@ -513,7 +513,7 @@ export default function AuraFeed() {
                 <button
                   onClick={() => fetchPosts({ loadMore: true, coords: activeCoords, following: isFollowing, tag: activeTag, query: activeQuery })}
                   disabled={loading}
-                  className="rounded-lg bg-[#ededed] px-6 py-2.5 text-[14px] font-medium text-[#1e1e1e] disabled:opacity-50"
+                  className="rounded-lg bg-[#EDE6D9] px-6 py-2.5 text-[14px] font-medium text-[#1A1613] disabled:opacity-50"
                 >
                   {loading ? "Loading..." : "Load More"}
                 </button>
@@ -526,16 +526,16 @@ export default function AuraFeed() {
             {locationMode !== "global" ? (
               <>
                 <p className="text-[32px]">🗺️</p>
-                <p className="mt-3 text-[17px] font-semibold text-[#1e1e1e]">
+                <p className="mt-3 text-[17px] font-semibold text-[#1A1613]">
                   No Auras here yet.
                 </p>
-                <p className="mt-1 text-[14px] text-[#757575]">Be the first to capture this place.</p>
-                <Link href="/upload" className="mt-5 rounded-xl bg-[#fa6460] px-6 py-3 text-[15px] font-semibold text-white">
+                <p className="mt-1 text-[14px] text-[#6B5F52]">Be the first to capture this place.</p>
+                <Link href="/upload" className="mt-5 rounded-xl bg-[#B85C38] px-6 py-3 text-[15px] font-semibold text-white">
                   Be a Pioneer 🚩
                 </Link>
               </>
             ) : (
-              <p className="text-[15px] text-[#757575]">No posts yet</p>
+              <p className="text-[15px] text-[#6B5F52]">No posts yet</p>
             )}
           </div>
         )}
@@ -546,17 +546,17 @@ export default function AuraFeed() {
         <div className="fixed inset-0 z-50 flex items-end" onClick={() => setShowTagFilter(false)}>
           <div className="absolute inset-0 bg-black/40" />
           <div
-            className="relative w-full rounded-t-2xl bg-white pb-10"
+            className="relative w-full rounded-t-2xl bg-[#F7F3EC] pb-10"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Handle */}
-            <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-[#d9d9d9]" />
+            <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-[#D4C4A8]" />
 
             {/* Header */}
             <div className="flex items-center justify-between px-5 pt-4 pb-3">
-              <p className="text-[17px] font-bold text-[#1e1e1e]">Filter by Tag</p>
-              <button onClick={() => setShowTagFilter(false)} className="flex size-8 items-center justify-center rounded-full bg-[#f3f3f3]">
-                <XIcon className="size-4 text-[#757575]" />
+              <p className="text-[17px] font-bold text-[#1A1613]">Filter by Tag</p>
+              <button onClick={() => setShowTagFilter(false)} className="flex size-8 items-center justify-center rounded-full bg-[#EDE6D9]">
+                <XIcon className="size-4 text-[#6B5F52]" />
               </button>
             </div>
 
@@ -564,7 +564,7 @@ export default function AuraFeed() {
             <div className="max-h-[60vh] overflow-y-auto px-5 pb-2 space-y-4">
               {TAG_GROUPS.map((group) => (
                 <div key={group.key}>
-                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[#b0b0b0]">
+                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[#A09080]">
                     {translateGroupLabel(group, language)}
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -574,8 +574,8 @@ export default function AuraFeed() {
                         onClick={() => handleTag(tag)}
                         className={`flex items-center gap-1 rounded-[6px] px-3 py-1.5 text-[13px] font-medium transition-colors ${
                           activeTag === tag
-                            ? "bg-[#fff1c2] text-[#595959]"
-                            : "border border-[#e8e8e8] text-[#757575]"
+                            ? "bg-[#DEC9A0] text-[#5C4A36]"
+                            : "border border-[#D4C4A8] text-[#6B5F52]"
                         }`}
                       >
                         <svg className="size-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">

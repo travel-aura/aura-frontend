@@ -304,17 +304,17 @@ export default function PostDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-white">
-        <p className="text-[15px] text-[#757575]">Loading...</p>
+      <div className="flex min-h-screen items-center justify-center bg-[#F7F3EC]">
+        <p className="text-[15px] text-[#6B5F52]">Loading...</p>
       </div>
     );
   }
 
   if (error || !post) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[#F7F3EC] px-4">
         <p className="text-[15px] font-semibold text-red-600">{error || "Post not found"}</p>
-        <button onClick={() => router.back()} className="mt-4 rounded-lg bg-[#ededed] px-4 py-2 text-[14px] font-medium text-[#1e1e1e]">
+        <button onClick={() => router.back()} className="mt-4 rounded-lg bg-[#EDE6D9] px-4 py-2 text-[14px] font-medium text-[#1A1613]">
           Go Back
         </button>
       </div>
@@ -324,7 +324,7 @@ export default function PostDetailPage() {
   const isOwnPost = post.user_id === getUserId();
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col bg-white">
+    <div className="relative flex min-h-screen w-full flex-col bg-[#F7F3EC]">
       {/* Header: back + user (left) | share (right) */}
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
@@ -335,14 +335,14 @@ export default function PostDetailPage() {
             }}
             className="flex items-center justify-center"
           >
-            <ChevronLeftIcon className="size-6 text-[#1e1e1e]" />
+            <ChevronLeftIcon className="size-6 text-[#1A1613]" />
           </button>
 
           <Link
             href={isOwnPost ? "/profile" : `/profile/${post.user_id}`}
             className="flex items-center gap-2"
           >
-            <div className="size-8 overflow-hidden rounded-full bg-[#f3f3f3]">
+            <div className="size-8 overflow-hidden rounded-full bg-[#EDE6D9]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={post.user?.avatar_url || post.user_avatar_url || DEFAULT_AVATAR}
@@ -350,7 +350,7 @@ export default function PostDetailPage() {
                 className="h-full w-full object-cover"
               />
             </div>
-            <span className="text-[15px] font-semibold text-[#1e1e1e]">
+            <span className="text-[15px] font-semibold text-[#1A1613]">
               {post.user?.name || post.user_name || post.user?.email?.split("@")[0]}
             </span>
           </Link>
@@ -358,8 +358,8 @@ export default function PostDetailPage() {
 
         <button onClick={handleShare} className="flex items-center justify-center">
           {shareCopied
-            ? <span className="text-[12px] font-semibold text-[#fa6460]">Copied!</span>
-            : <ShareIcon className="size-6 text-[#1e1e1e]" />
+            ? <span className="text-[12px] font-semibold text-[#B85C38]">Copied!</span>
+            : <ShareIcon className="size-6 text-[#1A1613]" />
           }
         </button>
       </div>
@@ -395,7 +395,7 @@ export default function PostDetailPage() {
               {post.image_urls.map((_, index) => (
                 <div
                   key={index}
-                  className={`h-1.5 rounded-full transition-all ${index === activeImageIndex ? "w-6 bg-[#1e1e1e]" : "w-1.5 bg-[#d9d9d9]"}`}
+                  className={`h-1.5 rounded-full transition-all ${index === activeImageIndex ? "w-6 bg-[#1A1613]" : "w-1.5 bg-[#D4C4A8]"}`}
                 />
               ))}
             </div>
@@ -410,11 +410,11 @@ export default function PostDetailPage() {
             className="flex items-center gap-1.5"
           >
             <HeartIcon
-              className={`size-6 ${isLiked ? "text-[#fa6460]" : "text-[#1e1e1e]"}`}
+              className={`size-6 ${isLiked ? "text-[#B85C38]" : "text-[#1A1613]"}`}
               filled={isLiked}
             />
             {likeCount > 0 && (
-              <span className={`text-[14px] font-medium ${isLiked ? "text-[#fa6460]" : "text-[#1e1e1e]"}`}>
+              <span className={`text-[14px] font-medium ${isLiked ? "text-[#B85C38]" : "text-[#1A1613]"}`}>
                 {likeCount}
               </span>
             )}
@@ -424,19 +424,19 @@ export default function PostDetailPage() {
             onClick={() => requireAuth("Sign up to comment")}
             className="flex items-center gap-1.5"
           >
-            <CommentIcon className="size-6 text-[#1e1e1e]" />
+            <CommentIcon className="size-6 text-[#1A1613]" />
           </button>
 
           <div className="flex-1" />
 
           {isOwnPost ? (
             <button onClick={() => setShowDeleteConfirm(true)} className="flex items-center">
-              <TrashIcon className="size-6 text-[#757575]" />
+              <TrashIcon className="size-6 text-[#6B5F52]" />
             </button>
           ) : (
             <button onClick={() => requireAuth("Sign up to save posts") && handleSave()} disabled={savePending} className="flex items-center">
               <BookmarkIcon
-                className={`size-6 ${isSaved ? "text-[#fa6460]" : "text-[#1e1e1e]"}`}
+                className={`size-6 ${isSaved ? "text-[#B85C38]" : "text-[#1A1613]"}`}
                 filled={isSaved}
               />
             </button>
@@ -454,7 +454,7 @@ export default function PostDetailPage() {
               </span>
             )}
             {(post.tags ?? []).map((tag) => (
-              <span key={tag} className="inline-flex items-center gap-1 rounded-[6px] bg-[#fff1c2] px-3 py-1 text-[12px] font-medium text-[#595959]">
+              <span key={tag} className="inline-flex items-center gap-1 rounded-[6px] bg-[#DEC9A0] px-3 py-1 text-[12px] font-medium text-[#5C4A36]">
                 <svg className="size-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                   <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
                   <line x1="7" y1="7" x2="7.01" y2="7" />
@@ -465,15 +465,15 @@ export default function PostDetailPage() {
           </div>
 
           {/* Title */}
-          <h1 className="mt-3 text-[22px] font-bold leading-tight text-[#1e1e1e]">
+          <h1 className="mt-3 text-[22px] font-bold leading-tight text-[#1A1613]">
             {post.title}
           </h1>
 
           {/* Location */}
           {cityLocation && (
             <div className="mt-1.5 flex items-center gap-1">
-              <PinIcon className="size-4 shrink-0 text-[#757575]" />
-              <span className="text-[14px] text-[#757575]">{cityLocation}</span>
+              <PinIcon className="size-4 shrink-0 text-[#6B5F52]" />
+              <span className="text-[14px] text-[#6B5F52]">{cityLocation}</span>
             </div>
           )}
 
@@ -483,7 +483,7 @@ export default function PostDetailPage() {
               href={`https://www.google.com/maps?q=${post.lat},${post.lng}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-[#f3f3f3] px-4 py-2 text-[13px] font-medium text-[#1e1e1e] transition-colors hover:bg-[#e8e8e8]"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-[#EDE6D9] px-4 py-2 text-[13px] font-medium text-[#1A1613] transition-colors hover:bg-[#D4C4A8]"
             >
               <svg className="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
@@ -495,7 +495,7 @@ export default function PostDetailPage() {
 
           {/* Description */}
           {post.description && (
-            <p className="mt-4 text-[15px] leading-relaxed text-[#757575]">
+            <p className="mt-4 text-[15px] leading-relaxed text-[#6B5F52]">
               {post.description}
             </p>
           )}
@@ -514,25 +514,25 @@ export default function PostDetailPage() {
                   <img src={src} alt="Post location map" className="w-full object-cover" />
                 </div>
                 {routeInfo && (
-                  <div className="mt-3 flex items-center gap-4 rounded-xl bg-[#f5f5f5] px-4 py-3">
+                  <div className="mt-3 flex items-center gap-4 rounded-xl bg-[#F2EDE4] px-4 py-3">
                     <div className="flex items-center gap-1.5">
-                      <svg className="size-4 shrink-0 text-[#757575]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                      <svg className="size-4 shrink-0 text-[#6B5F52]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                         <circle cx="12" cy="12" r="10" />
                         <polyline points="12 6 12 12 16 14" />
                       </svg>
-                      <span className="text-[14px] font-medium text-[#1e1e1e]">
+                      <span className="text-[14px] font-medium text-[#1A1613]">
                         {routeInfo.durationS < 3600
                           ? `${Math.round(routeInfo.durationS / 60)} min walk`
                           : `${Math.floor(routeInfo.durationS / 3600)}h ${Math.round((routeInfo.durationS % 3600) / 60)}m walk`}
                       </span>
                     </div>
-                    <div className="h-4 w-px bg-[#d9d9d9]" />
+                    <div className="h-4 w-px bg-[#D4C4A8]" />
                     <div className="flex items-center gap-1.5">
-                      <svg className="size-4 shrink-0 text-[#757575]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                      <svg className="size-4 shrink-0 text-[#6B5F52]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                         <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
                         <circle cx="12" cy="9" r="2.5" />
                       </svg>
-                      <span className="text-[14px] font-medium text-[#1e1e1e]">
+                      <span className="text-[14px] font-medium text-[#1A1613]">
                         {routeInfo.distanceM < 1000
                           ? `${Math.round(routeInfo.distanceM)} m away`
                           : `${(routeInfo.distanceM / 1000).toFixed(1)} km away`}
@@ -546,8 +546,8 @@ export default function PostDetailPage() {
 
           {/* Perspectives */}
           {perspectives.length > 0 && (
-            <div className="mt-6 border-t border-[#f3f3f3] pt-4">
-              <p className="text-[13px] font-semibold text-[#1e1e1e]">
+            <div className="mt-6 border-t border-[#EDE6D9] pt-4">
+              <p className="text-[13px] font-semibold text-[#1A1613]">
                 {perspectives.length} Perspective{perspectives.length > 1 ? "s" : ""}
               </p>
               <div className="mt-3 flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
@@ -569,10 +569,10 @@ export default function PostDetailPage() {
       {/* Delete confirmation sheet */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-end" onClick={() => setShowDeleteConfirm(false)}>
-          <div className="w-full rounded-t-2xl bg-white px-4 pt-5 pb-8 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-1 h-1 w-10 rounded-full bg-[#d9d9d9] mx-auto" />
-            <p className="mt-4 text-center text-[17px] font-bold text-[#1e1e1e]">Delete post?</p>
-            <p className="mt-1.5 text-center text-[14px] text-[#757575]">This can't be undone.</p>
+          <div className="w-full rounded-t-2xl bg-[#F7F3EC] px-4 pt-5 pb-8 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-1 h-1 w-10 rounded-full bg-[#D4C4A8] mx-auto" />
+            <p className="mt-4 text-center text-[17px] font-bold text-[#1A1613]">Delete post?</p>
+            <p className="mt-1.5 text-center text-[14px] text-[#6B5F52]">This can't be undone.</p>
             <button
               onClick={handleDelete}
               disabled={deleteLoading}
@@ -582,7 +582,7 @@ export default function PostDetailPage() {
             </button>
             <button
               onClick={() => setShowDeleteConfirm(false)}
-              className="mt-3 w-full rounded-xl bg-[#f3f3f3] py-3.5 text-[15px] font-semibold text-[#1e1e1e]"
+              className="mt-3 w-full rounded-xl bg-[#EDE6D9] py-3.5 text-[15px] font-semibold text-[#1A1613]"
             >
               Cancel
             </button>
@@ -592,13 +592,13 @@ export default function PostDetailPage() {
 
       {/* Auth prompt */}
       {authToast && (
-        <div className="fixed bottom-20 left-4 right-4 z-50 flex items-center justify-between rounded-2xl bg-[#1e1e1e] px-5 py-4 shadow-xl">
+        <div className="fixed bottom-20 left-4 right-4 z-50 flex items-center justify-between rounded-2xl bg-[#1A1613] px-5 py-4 shadow-xl">
           <p className="text-[14px] font-medium text-white">{authToast}</p>
           <div className="flex shrink-0 gap-2">
             <Link href="/register" className="rounded-full border border-white/30 px-3 py-1.5 text-[12px] font-semibold text-white">
               Sign up
             </Link>
-            <Link href="/login" className="rounded-full bg-[#fa6460] px-3 py-1.5 text-[12px] font-semibold text-white">
+            <Link href="/login" className="rounded-full bg-[#B85C38] px-3 py-1.5 text-[12px] font-semibold text-white">
               Log in
             </Link>
           </div>
@@ -609,7 +609,7 @@ export default function PostDetailPage() {
       {lightboxIndex !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black" onClick={() => setLightboxIndex(null)}>
           <button
-            className="absolute right-4 top-4 flex size-9 items-center justify-center rounded-full bg-white/20 text-white"
+            className="absolute right-4 top-4 flex size-9 items-center justify-center rounded-full bg-[#F7F3EC]/20 text-white"
             onClick={() => setLightboxIndex(null)}
           >
             <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={2}>
@@ -634,7 +634,7 @@ export default function PostDetailPage() {
 
           {lightboxIndex > 0 && (
             <button
-              className="absolute left-3 top-1/2 -translate-y-1/2 flex size-10 items-center justify-center rounded-full bg-white/20 text-white"
+              className="absolute left-3 top-1/2 -translate-y-1/2 flex size-10 items-center justify-center rounded-full bg-[#F7F3EC]/20 text-white"
               onClick={(e) => { e.stopPropagation(); setLightboxIndex(lightboxIndex - 1); }}
             >
               <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={2.5}>
@@ -644,7 +644,7 @@ export default function PostDetailPage() {
           )}
           {lightboxIndex < post.image_urls.length - 1 && (
             <button
-              className="absolute right-3 top-1/2 -translate-y-1/2 flex size-10 items-center justify-center rounded-full bg-white/20 text-white"
+              className="absolute right-3 top-1/2 -translate-y-1/2 flex size-10 items-center justify-center rounded-full bg-[#F7F3EC]/20 text-white"
               onClick={(e) => { e.stopPropagation(); setLightboxIndex(lightboxIndex + 1); }}
             >
               <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={2.5}>
