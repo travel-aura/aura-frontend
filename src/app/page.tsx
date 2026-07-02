@@ -104,45 +104,29 @@ type LocationMode = "global" | "nearby" | "city" | "text";
 // ── Feed Card ─────────────────────────────────────────────────────────────────
 
 function FeedCard({ post }: { post: Aura }) {
-  const formatDate = (d: string) => {
-    const diff = Date.now() - new Date(d).getTime();
-    const m = Math.floor(diff / 60000);
-    const h = Math.floor(m / 60);
-    const day = Math.floor(h / 24);
-    if (m < 60) return `${m}m ago`;
-    if (h < 24) return `${h}h ago`;
-    if (day < 7) return `${day}d ago`;
-    return new Date(d).toLocaleDateString();
-  };
-
   return (
-    <Link href={`/post/${post.id}`} className="flex flex-col gap-1">
+    <Link href={`/post/${post.id}`} className="block">
       <div className="relative h-[232px] w-full overflow-hidden rounded-lg bg-[#d9d9d9]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={post.image_urls[0]} alt={post.title} loading="lazy" className="h-full w-full object-cover" />
+
+        {/* Multi-image indicator */}
         {post.image_urls.length > 1 && (
           <div className="absolute left-2 top-2">
             <LayersIcon className="size-5 text-white drop-shadow-lg" />
           </div>
         )}
-        <span className="absolute bottom-[10px] right-2 rounded-full bg-[#2c2c2c] px-2 py-0.5 text-[9px] font-medium text-[#f3f3f3] shadow-[0px_0px_4px_0px_rgba(0,0,0,0.12)]">
+
+        {/* Archetype badge */}
+        <span className="absolute right-2 top-2 rounded-full bg-[#2c2c2c] px-2 py-0.5 text-[9px] font-medium text-[#f3f3f3]">
           {post.archetype_tag}
         </span>
-      </div>
-      <div className="flex flex-col gap-0.5 pt-0.5">
-        <div className="flex items-center gap-1 overflow-hidden">
-          {post.is_verified && <span className="shrink-0 text-[11px]">📍</span>}
-          <span className="truncate text-[13px] font-semibold leading-tight text-[#1e1e1e]">{post.title}</span>
-        </div>
 
-        <div className="flex items-center gap-2">
-          <p className="text-[11px] text-[#999]">{formatDate(post.created_at)}</p>
-          {post.distance_meters != null && (
-            <p className="text-[11px] font-medium text-[#fa6460]">{formatDistance(post.distance_meters)}</p>
-          )}
-          {(post.perspective_count ?? 0) > 0 && (
-            <p className="text-[11px] font-medium text-[#757575]">+{post.perspective_count} perspectives</p>
-          )}
+        {/* Gradient scrim + title */}
+        <div className="absolute inset-x-0 bottom-0 rounded-b-lg bg-gradient-to-t from-black/70 to-transparent px-2.5 pb-2.5 pt-8">
+          <p className="line-clamp-2 text-[13px] font-semibold leading-tight text-white drop-shadow">
+            {post.title}
+          </p>
         </div>
       </div>
     </Link>
