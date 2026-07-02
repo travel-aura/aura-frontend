@@ -2,12 +2,13 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { processAndUploadMultipleAuras, type AuraMetadata, type UploadProgress, type UploadResult } from "@/services/uploadService";
+import { type AuraMetadata } from "@/services/uploadService";
 import { getToken } from "@/lib/auth";
 import { API_BASE } from "@/lib/api";
 import BottomNav from "@/components/BottomNav";
 import { useLanguage } from "@/hooks/useLanguage";
 import { TAG_GROUPS, translateTag, translateGroupLabel } from "@/lib/i18n";
+import { useUpload } from "@/context/UploadContext";
 
 interface NearbyPost { id: string; title: string; distance_meters: number; }
 
@@ -25,6 +26,7 @@ export default function UploadPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { language } = useLanguage();
+  const { startUpload } = useUpload();
 
   useEffect(() => {
     if (!getToken()) router.replace("/login");
@@ -34,10 +36,7 @@ export default function UploadPage() {
   const [gpsPhotoIndex, setGpsPhotoIndex] = useState(0);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
-  const [gpsWarning, setGpsWarning] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [nearbyPosts, setNearbyPosts] = useState<NearbyPost[]>([]);
   const [showNearbyPrompt, setShowNearbyPrompt] = useState(false);
@@ -81,43 +80,16 @@ export default function UploadPage() {
     else if (gpsPhotoIndex === index) setGpsPhotoIndex(0);
   };
 
-  const doUpload = async (parentId?: string | null) => {
-    setError(null);
-    setGpsWarning(null);
-    setIsUploading(true);
-    setUploadProgress(null);
-    try {
-      const gpsPhoto = photos[gpsPhotoIndex];
-      const allFiles = photos.map(p => p.file);
-      const metadata: AuraMetadata = {
-        title: title.trim(),
-        description: description.trim() || undefined,
-        parent_id: parentId ?? null,
-        tags: selectedTags.length > 0 ? selectedTags : undefined,
-      };
-      const result: UploadResult = await processAndUploadMultipleAuras(
-        allFiles, gpsPhoto.file, metadata,
-        (progress) => setUploadProgress(progress)
-      );
-      if (!result.hasGPS) {
-        setGpsWarning("⚠️ No location data found in photos. Upload completed as unverified.");
-        setTimeout(() => { setGpsWarning(null); router.push('/'); }, 3000);
-      } else {
-        router.push('/');
-      }
-    } catch (err: unknown) {
-      const msg = (err as Error).message || "Upload failed";
-      if (msg.includes("Invalid or expired token") || msg.includes("401") || msg.includes("Unauthorized")) {
-        router.push("/login");
-        return;
-      }
-      setError(msg.includes("MAX_WRITE_OPERATIONS_PER_HOUR")
-        ? "Rate limit exceeded. Please try again later."
-        : msg);
-    } finally {
-      setIsUploading(false);
-      setUploadProgress(null);
-    }
+  const doUpload = (parentId?: string | null) => {
+    const gpsPhoto = photos[gpsPhotoIndex];
+    const metadata: AuraMetadata = {
+      title: title.trim(),
+      description: description.trim() || undefined,
+      parent_id: parentId ?? null,
+      tags: selectedTags.length > 0 ? selectedTags : undefined,
+    };
+    startUpload(photos.map(p => p.file), gpsPhoto.file, metadata);
+    router.push("/");
   };
 
   const handleUpload = async () => {
@@ -148,7 +120,7 @@ export default function UploadPage() {
       }
     } catch { /* no GPS or check-nearby not available — proceed normally */ }
 
-    await doUpload();
+    doUpload();
   };
 
   return (
@@ -327,43 +299,14 @@ export default function UploadPage() {
             </div>
           )}
 
-          {/* GPS warning */}
-          {gpsWarning && (
-            <div className="mx-3 mt-4 rounded-lg bg-yellow-50 px-4 py-3 border border-yellow-200">
-              <p className="text-sm text-yellow-800">{gpsWarning}</p>
-            </div>
-          )}
-
-          {/* Upload progress */}
-          {uploadProgress && (
-            <div className="mx-3 mt-4 rounded-lg bg-blue-50 px-4 py-3">
-              <p className="text-sm font-medium text-blue-900">
-                Uploading photo {uploadProgress.current} of {uploadProgress.total}
-              </p>
-              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-blue-200">
-                <div
-                  className="h-full bg-blue-600 transition-all duration-300"
-                  style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
-                />
-              </div>
-              <p className="mt-1 text-xs text-blue-700 capitalize">
-                {uploadProgress.status}...
-              </p>
-            </div>
-          )}
-
           {/* Upload button */}
           <div className="mb-6 mt-8 px-3">
             <button
               onClick={handleUpload}
-              disabled={isUploading || photos.length === 0}
+              disabled={photos.length === 0}
               className="w-full rounded-[40px] bg-[#101827] py-[13px] text-[20px] font-medium text-white transition-opacity disabled:opacity-50"
             >
-              {isUploading
-                ? "Uploading..."
-                : photos.length > 1
-                  ? `Upload ${photos.length} Photos`
-                  : "Upload"}
+              {photos.length > 1 ? `Upload ${photos.length} Photos` : "Upload"}
             </button>
           </div>
         </div>
@@ -383,13 +326,13 @@ export default function UploadPage() {
               Add your photo as a Perspective of this spot, or start a new Anchor.
             </p>
             <button
-              onClick={async () => { setShowNearbyPrompt(false); await doUpload(nearbyPosts[0].id); }}
+              onClick={() => { setShowNearbyPrompt(false); doUpload(nearbyPosts[0].id); }}
               className="mt-5 w-full rounded-[40px] bg-[#101827] py-[13px] text-[17px] font-medium text-white"
             >
               Add as Perspective
             </button>
             <button
-              onClick={async () => { setShowNearbyPrompt(false); await doUpload(null); }}
+              onClick={() => { setShowNearbyPrompt(false); doUpload(null); }}
               className="mt-3 w-full rounded-[40px] border border-[#e0e0e0] py-[13px] text-[17px] font-medium text-[#1e1e1e]"
             >
               No, new Anchor
