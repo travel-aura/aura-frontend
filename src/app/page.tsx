@@ -106,7 +106,7 @@ type LocationMode = "global" | "nearby" | "city" | "text";
 function FeedCard({ post }: { post: Aura }) {
   return (
     <Link href={`/post/${post.id}`} className="block">
-      <div className="relative h-[232px] w-full overflow-hidden rounded-lg bg-[#d9d9d9]">
+      <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg bg-[#d9d9d9]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={post.image_urls[0]} alt={post.title} loading="lazy" className="h-full w-full object-cover" />
 
