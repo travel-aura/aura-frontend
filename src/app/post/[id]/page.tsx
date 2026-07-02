@@ -445,9 +445,6 @@ export default function PostDetailPage() {
 
           {/* Tags */}
           <div className="flex flex-wrap gap-2">
-            <span className="inline-block rounded-full bg-[#e3e3e3] px-3 py-1 text-[12px] font-medium text-[#1e1e1e]">
-              {post.archetype_tag}
-            </span>
             {post.is_verified && (
               <span className="inline-flex items-center gap-1 rounded-full bg-[#f0faf0] px-3 py-1 text-[12px] font-medium text-[#2e7d32]">
                 📍 Verified
@@ -554,7 +551,7 @@ export default function PostDetailPage() {
                 {perspectives.map((p) => (
                   <Link key={p.id} href={`/post/${p.id}`} className="relative shrink-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={p.image_urls[0]} alt={p.archetype_tag} className="size-24 rounded-xl object-cover" />
+                    <img src={p.image_urls[0]} alt="Perspective" className="size-24 rounded-xl object-cover" />
                     {p.image_urls.length > 1 && (
                       <span className="absolute right-1.5 top-1.5 text-white text-[10px] drop-shadow">⊞</span>
                     )}

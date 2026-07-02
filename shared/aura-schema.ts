@@ -50,7 +50,7 @@ export interface Post {
 export interface AuraUploadMetadata {
   title: string;
   description?: string;
-  archetype_tag: Archetype;
+  archetype_tag?: Archetype;
   lat?: number;                // Optional - only if GPS found
   lng?: number;                // Optional - only if GPS found
   heading?: number;            // Optional - only if GPS found

@@ -6,11 +6,7 @@ import { processAndUploadMultipleAuras, type AuraMetadata, type UploadProgress, 
 import { getToken } from "@/lib/auth";
 import { API_BASE } from "@/lib/api";
 import BottomNav from "@/components/BottomNav";
-import type { Archetype } from "../../../shared/aura-schema";
-
 interface NearbyPost { id: string; title: string; distance_meters: number; }
-
-const CATEGORIES: readonly Archetype[] = ["Photo Spots", "Wanderings", "Indoor Vibes"];
 
 const MAX_TAGS = 5;
 
@@ -42,7 +38,6 @@ export default function UploadPage() {
 
   const [photos, setPhotos] = useState<PhotoFile[]>([]);
   const [gpsPhotoIndex, setGpsPhotoIndex] = useState(0);
-  const [activeCategory, setActiveCategory] = useState<Archetype>("Photo Spots");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -102,7 +97,6 @@ export default function UploadPage() {
       const allFiles = photos.map(p => p.file);
       const metadata: AuraMetadata = {
         title: title.trim(),
-        archetype_tag: activeCategory,
         description: description.trim() || undefined,
         parent_id: parentId ?? null,
         tags: selectedTags.length > 0 ? selectedTags : undefined,
@@ -283,28 +277,6 @@ export default function UploadPage() {
               rows={5}
               className="w-full resize-none rounded-[8px] border border-[#d9d9d9] px-3 py-[10px] text-[16px] text-[#1e1e1e] outline-none placeholder:text-[#b7b7b7] focus:border-[#aaa]"
             />
-          </div>
-
-          {/* Category */}
-          <div className="mt-4 px-3">
-            <p className="text-[16px] font-medium text-black">
-              Choose a Category
-            </p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={`rounded-full px-[10px] py-[4px] text-[12px] transition-colors ${
-                    activeCategory === cat
-                      ? "bg-black font-medium text-white"
-                      : "border border-[#eee] font-normal text-[#7a7a7a]"
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
           </div>
 
           {/* Tags */}

@@ -6,7 +6,7 @@ import type { AuraUploadMetadata, Archetype } from '../../shared/aura-schema';
 
 export interface AuraMetadata {
   title: string;
-  archetype_tag: Archetype;
+  archetype_tag?: Archetype;
   description?: string;
   parent_id?: string | null;
   tags?: string[];

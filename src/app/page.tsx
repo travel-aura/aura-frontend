@@ -6,11 +6,10 @@ import { apiGet } from "@/lib/api";
 import { searchPlaces } from "@/lib/geocoding";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
-import type { Aura, Archetype } from "../../shared/aura-schema";
+import type { Aura } from "../../shared/aura-schema";
 
 const RADIUS = 5000;
 const LIMIT = 10;
-const ARCHETYPES: Archetype[] = ["Photo Spots", "Wanderings", "Indoor Vibes"];
 
 const ALL_TAGS = [
   "Downtown", "Neighborhoods", "Alleyways", "Courtyards",
@@ -26,10 +25,6 @@ const ALL_TAGS = [
   "Cinematic", "Cozy", "Vibrant", "Quiet", "Bustling", "Vintage",
   "Romantic", "Moody",
 ];
-
-function archetypeParam(a: Archetype) {
-  return a.replace(/\s+/g, ""); // "Photo Spots" → "PhotoSpots"
-}
 
 function formatDistance(m: number) {
   return m < 1000 ? `${Math.round(m)}m away` : `${(m / 1000).toFixed(1)}km away`;
@@ -117,11 +112,6 @@ function FeedCard({ post }: { post: Aura }) {
           </div>
         )}
 
-        {/* Archetype badge */}
-        <span className="absolute right-2 top-2 rounded-full bg-[#2c2c2c] px-2 py-0.5 text-[9px] font-medium text-[#f3f3f3]">
-          {post.archetype_tag}
-        </span>
-
         {/* Gradient scrim + title */}
         <div className="absolute inset-x-0 bottom-0 rounded-b-lg bg-gradient-to-t from-black/70 to-transparent px-2.5 pb-2.5 pt-8">
           <p className="line-clamp-2 text-[13px] font-semibold leading-tight text-white drop-shadow">
@@ -154,9 +144,6 @@ export default function AuraFeed() {
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
-
-  // Archetype filter
-  const [activeArchetype, setActiveArchetype] = useState<Archetype | null>(null);
 
   // Tag filter
   const [activeTag, setActiveTag] = useState<string | null>(null);
@@ -237,11 +224,10 @@ export default function AuraFeed() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const buildUrl = useCallback((currentOffset: number, coords: Coords | null, archetype: Archetype | null, following: boolean, tag: string | null, query: string | null) => {
+  const buildUrl = useCallback((currentOffset: number, coords: Coords | null, following: boolean, tag: string | null, query: string | null) => {
     let url = `/api/auras/feed?limit=${LIMIT}&offset=${currentOffset}`;
     if (coords) url += `&lat=${coords.lat}&lng=${coords.lng}&radius=${RADIUS}`;
     if (query) url += `&q=${encodeURIComponent(query)}`;
-    if (archetype) url += `&archetype=${archetypeParam(archetype)}`;
     if (following) url += `&following=true`;
     if (tag) url += `&tag=${encodeURIComponent(tag)}`;
     return url;
@@ -250,13 +236,12 @@ export default function AuraFeed() {
   const fetchPosts = useCallback(async (opts: {
     loadMore?: boolean;
     coords?: Coords | null;
-    archetype?: Archetype | null;
     currentOffset?: number;
     following?: boolean;
     tag?: string | null;
     query?: string | null;
   }) => {
-    const { loadMore = false, coords = null, archetype = null, currentOffset, following = false, tag = null, query = null } = opts;
+    const { loadMore = false, coords = null, currentOffset, following = false, tag = null, query = null } = opts;
     const off = currentOffset ?? (loadMore ? offset : 0);
     try {
       setLoading(true);
@@ -264,7 +249,7 @@ export default function AuraFeed() {
         ok: boolean;
         auras: Aura[];
         pagination: { limit: number; offset: number; count: number };
-      }>(buildUrl(off, coords, archetype, following, tag, query));
+      }>(buildUrl(off, coords, following, tag, query));
 
       if (loadMore) {
         setPosts(prev => [...prev, ...response.auras]);
@@ -281,7 +266,7 @@ export default function AuraFeed() {
   }, [offset, buildUrl]);
 
   useEffect(() => {
-    fetchPosts({ coords: null, archetype: null, currentOffset: 0, following: false });
+    fetchPosts({ coords: null, currentOffset: 0, following: false });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -295,7 +280,7 @@ export default function AuraFeed() {
     setUserCoords(null);
     setSelectedCity(null);
     setOffset(0);
-    fetchPosts({ query: q, coords: null, archetype: activeArchetype, currentOffset: 0, following: isFollowing, tag: activeTag });
+    fetchPosts({ query: q, coords: null, currentOffset: 0, following: isFollowing, tag: activeTag });
   };
 
   const handleTabChange = (tab: Tab) => {
@@ -304,11 +289,10 @@ export default function AuraFeed() {
     setLocationMode("global");
     setUserCoords(null);
     setSelectedCity(null);
-    setActiveArchetype(null);
     setActiveTag(null);
     setActiveQuery(null);
     setSearchQuery("");
-    fetchPosts({ coords: null, archetype: null, currentOffset: 0, following: tab === "following", tag: null, query: null });
+    fetchPosts({ coords: null, currentOffset: 0, following: tab === "following", tag: null, query: null });
   };
 
   const isFollowing = activeTab === "following";
@@ -319,7 +303,7 @@ export default function AuraFeed() {
       setUserCoords(null);
       setSelectedCity(null);
       setOffset(0);
-      fetchPosts({ coords: null, archetype: activeArchetype, currentOffset: 0, following: isFollowing, tag: activeTag });
+      fetchPosts({ coords: null, currentOffset: 0, following: isFollowing, tag: activeTag });
       return;
     }
     setNearMeLoading(true);
@@ -333,7 +317,7 @@ export default function AuraFeed() {
         setActiveQuery(null);
         setLocationMode("nearby");
         setOffset(0);
-        fetchPosts({ coords, archetype: activeArchetype, currentOffset: 0, following: isFollowing, tag: activeTag, query: null });
+        fetchPosts({ coords, currentOffset: 0, following: isFollowing, tag: activeTag, query: null });
         setNearMeLoading(false);
       },
       () => {
@@ -354,7 +338,7 @@ export default function AuraFeed() {
     setSuggestions([]);
     setShowSuggestions(false);
     setOffset(0);
-    fetchPosts({ coords: city, archetype: activeArchetype, currentOffset: 0, following: isFollowing, tag: activeTag, query: null });
+    fetchPosts({ coords: city, currentOffset: 0, following: isFollowing, tag: activeTag, query: null });
   };
 
   const handleClearLocation = () => {
@@ -364,14 +348,7 @@ export default function AuraFeed() {
     setActiveQuery(null);
     setSearchQuery("");
     setOffset(0);
-    fetchPosts({ coords: null, archetype: activeArchetype, currentOffset: 0, following: isFollowing, tag: activeTag, query: null });
-  };
-
-  const handleArchetype = (a: Archetype | null) => {
-    setActiveArchetype(a);
-    const coords = locationMode === "nearby" ? userCoords : locationMode === "city" ? selectedCity : null;
-    setOffset(0);
-    fetchPosts({ coords, archetype: a, currentOffset: 0, following: isFollowing, tag: activeTag, query: activeQuery });
+    fetchPosts({ coords: null, currentOffset: 0, following: isFollowing, tag: activeTag, query: null });
   };
 
   const handleTag = (t: string) => {
@@ -379,14 +356,14 @@ export default function AuraFeed() {
     setShowTagFilter(false);
     const coords = locationMode === "nearby" ? userCoords : locationMode === "city" ? selectedCity : null;
     setOffset(0);
-    fetchPosts({ coords, archetype: activeArchetype, currentOffset: 0, following: isFollowing, tag: t, query: activeQuery });
+    fetchPosts({ coords, currentOffset: 0, following: isFollowing, tag: t, query: activeQuery });
   };
 
   const handleClearTag = () => {
     setActiveTag(null);
     const coords = locationMode === "nearby" ? userCoords : locationMode === "city" ? selectedCity : null;
     setOffset(0);
-    fetchPosts({ coords, archetype: activeArchetype, currentOffset: 0, following: isFollowing, tag: null, query: activeQuery });
+    fetchPosts({ coords, currentOffset: 0, following: isFollowing, tag: null, query: activeQuery });
   };
 
   const activeCoords = locationMode === "nearby" ? userCoords : locationMode === "city" ? selectedCity : null;
@@ -501,27 +478,8 @@ export default function AuraFeed() {
             </div>
           )}
 
-          {/* Archetype chips + Advanced Search */}
-          <div className="mt-2 flex gap-2 overflow-x-auto px-4 pb-1 scrollbar-hide">
-            <button
-              onClick={() => handleArchetype(null)}
-              className={`shrink-0 rounded-full px-3 py-1 text-[13px] font-medium transition-colors ${
-                activeArchetype === null ? "bg-[#2c2c2c] text-white" : "bg-[#f3f3f3] text-[#757575]"
-              }`}
-            >
-              All
-            </button>
-            {ARCHETYPES.map((a) => (
-              <button
-                key={a}
-                onClick={() => handleArchetype(activeArchetype === a ? null : a)}
-                className={`shrink-0 rounded-full px-3 py-1 text-[13px] font-medium transition-colors ${
-                  activeArchetype === a ? "bg-[#2c2c2c] text-white" : "bg-[#f3f3f3] text-[#757575]"
-                }`}
-              >
-                {a}
-              </button>
-            ))}
+          {/* Tag filter / Advanced Search */}
+          <div className="mt-2 flex gap-2 px-4 pb-1">
             <button
               onClick={() => setShowTagFilter(true)}
               className={`shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1 text-[13px] font-medium transition-colors ${
@@ -567,7 +525,7 @@ export default function AuraFeed() {
             {hasMore && (
               <div className="mt-6 flex justify-center">
                 <button
-                  onClick={() => fetchPosts({ loadMore: true, coords: activeCoords, archetype: activeArchetype, following: isFollowing, tag: activeTag, query: activeQuery })}
+                  onClick={() => fetchPosts({ loadMore: true, coords: activeCoords, following: isFollowing, tag: activeTag, query: activeQuery })}
                   disabled={loading}
                   className="rounded-lg bg-[#ededed] px-6 py-2.5 text-[14px] font-medium text-[#1e1e1e] disabled:opacity-50"
                 >

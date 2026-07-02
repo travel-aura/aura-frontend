@@ -103,15 +103,6 @@ export default function ProfilePage() {
     load();
   }, [ready, token]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const topArchetype = (() => {
-    const opts = [
-      { name: "Photo Spots", count: stats.photo_spots },
-      { name: "Wanderings", count: stats.wanderings },
-      { name: "Indoor Vibes", count: stats.indoor_vibes },
-    ].filter(o => o.count > 0).sort((a, b) => b.count - a.count);
-    return opts[0]?.name ?? null;
-  })();
-
   const topTags = stats.top_tags ?? [];
 
   const copyShare = async () => {
@@ -165,14 +156,9 @@ export default function ProfilePage() {
           <p className="mt-2 px-4 text-[13px] leading-relaxed text-[#757575]">{userBio}</p>
         )}
 
-        {/* Tags: top archetype + top user tags */}
-        {(topArchetype || topTags.length > 0) && (
+        {/* Top user tags */}
+        {topTags.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-2 px-4">
-            {topArchetype && (
-              <span className="rounded-full bg-[#ededed] px-2.5 py-1 text-[12px] font-medium text-[#1e1e1e]">
-                {topArchetype}
-              </span>
-            )}
             {topTags.map((tag) => (
               <span key={tag} className="flex items-center gap-1 rounded-full bg-[#fff1c2] px-2.5 py-1 text-[12px] font-medium text-[#595959]">
                 <TagIcon className="size-3" />
