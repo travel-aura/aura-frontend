@@ -169,7 +169,7 @@ export default function PublicProfilePage() {
         {topTags.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-2 px-4">
             {topTags.map((tag) => (
-              <span key={tag} className="flex items-center gap-1 rounded-full bg-[#DEC9A0] px-2.5 py-1 text-[12px] font-medium text-[#5C4A36]">
+              <span key={tag} className="flex items-center gap-1 rounded-full bg-[#EDE6D9] px-2.5 py-1 text-[12px] font-medium text-[#6B5F52]">
                 <TagIcon className="size-3" />
                 {translateTag(tag, language)}
               </span>

@@ -56,8 +56,8 @@ export default function PublicCitiesPage() {
         {!loading && cities.length > 0 && (
           <ul className="mt-2 flex flex-col gap-3">
             {cities.map((city, i) => (
-              <li key={city} className="flex items-center gap-4 rounded-2xl bg-[#F2EDE4] px-4 py-4">
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#FBF6EE]">
+              <li key={city} className="flex items-center gap-4 rounded-2xl bg-[#EDE6D9] px-4 py-4">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#F7F3EC]">
                   <svg className="size-5 text-[#B85C38]" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z" />
                   </svg>

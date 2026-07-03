@@ -471,12 +471,12 @@ export default function PostDetailPage() {
           {/* Tags */}
           <div className="flex flex-wrap gap-2">
             {post.is_verified && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-[#f0faf0] px-3 py-1 text-[12px] font-medium text-[#2e7d32]">
-                📍 Verified
+              <span className="inline-flex items-center rounded-full bg-[#DEC9A0] px-2.5 py-1 text-[13px]">
+                📍
               </span>
             )}
             {(post.tags ?? []).map((tag) => (
-              <span key={tag} className="inline-flex items-center gap-1 rounded-[6px] bg-[#DEC9A0] px-3 py-1 text-[12px] font-medium text-[#5C4A36]">
+              <span key={tag} className="inline-flex items-center gap-1 rounded-[6px] bg-[#EDE6D9] px-3 py-1 text-[12px] font-medium text-[#6B5F52]">
                 <svg className="size-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                   <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
                   <line x1="7" y1="7" x2="7.01" y2="7" />
@@ -544,7 +544,7 @@ export default function PostDetailPage() {
                   <img src={src} alt="Post location map" className="w-full object-cover" />
                 </div>
                 {routeInfo && (
-                  <div className="mt-3 flex items-center gap-4 rounded-xl bg-[#F2EDE4] px-4 py-3">
+                  <div className="mt-3 flex items-center gap-4 rounded-xl bg-[#EDE6D9] px-4 py-3">
                     <div className="flex items-center gap-1.5">
                       <svg className="size-4 shrink-0 text-[#6B5F52]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                         <circle cx="12" cy="12" r="10" />

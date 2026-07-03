@@ -39,7 +39,7 @@ export default function TopBar() {
         {languageLabel(language)}
       </button>
 
-      <span className="text-[20px] font-bold tracking-tight text-[#C9973A]">Aura</span>
+      <span className="text-[20px] font-bold tracking-tight text-[#B85C38]">Aura</span>
       {token && (
         <div className="absolute right-4 flex items-center gap-3">
           <Link href="/friends" aria-label="Find friends">

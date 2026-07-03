@@ -148,7 +148,7 @@ export default function UploadPage() {
                 className="mx-3 mt-4 flex items-center gap-5"
               >
                 <div className="flex h-[122px] w-[98px] shrink-0 items-center justify-center rounded-[10px] border border-[#D4C4A8] bg-gradient-to-b from-[#EDE6D9] to-[#F7F3EC]">
-                  <svg className="size-[37px] text-[#B8A898]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
+                  <svg className="size-[37px] text-[#A09080]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
                     <line x1="12" y1="5" x2="12" y2="19" />
                     <line x1="5" y1="12" x2="19" y2="12" />
                   </svg>
@@ -230,7 +230,7 @@ export default function UploadPage() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Title"
-              className="w-full rounded-[8px] border border-[#D4C4A8] px-3 py-[10px] text-[16px] text-[#1A1613] outline-none placeholder:text-[#B8A898] focus:border-[#B85C38]"
+              className="w-full rounded-[8px] border border-[#D4C4A8] px-3 py-[10px] text-[16px] text-[#1A1613] outline-none placeholder:text-[#A09080] focus:border-[#B85C38]"
             />
           </div>
 
@@ -241,7 +241,7 @@ export default function UploadPage() {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Description(Optional)"
               rows={5}
-              className="w-full resize-none rounded-[8px] border border-[#D4C4A8] px-3 py-[10px] text-[16px] text-[#1A1613] outline-none placeholder:text-[#B8A898] focus:border-[#B85C38]"
+              className="w-full resize-none rounded-[8px] border border-[#D4C4A8] px-3 py-[10px] text-[16px] text-[#1A1613] outline-none placeholder:text-[#A09080] focus:border-[#B85C38]"
             />
           </div>
 
@@ -272,7 +272,7 @@ export default function UploadPage() {
                           }
                           className={`flex items-center gap-1 rounded-[6px] px-[10px] py-[4px] text-[12px] transition-colors ${
                             selected
-                              ? "bg-[#DEC9A0] text-[#5C4A36]"
+                              ? "bg-[#B85C38] text-white"
                               : disabled
                               ? "border border-[#D4C4A8] text-[#A09080]"
                               : "border border-[#D4C4A8] text-[#6B5F52]"

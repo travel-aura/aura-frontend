@@ -381,7 +381,7 @@ export default function AuraFeed() {
               key={t}
               onClick={() => handleTabChange(t)}
               className={`rounded-full px-3 py-0.5 text-[15px] font-medium transition-colors capitalize ${
-                activeTab === t ? "bg-[#3D3328] text-[#F2EDE4]" : "text-[#1A1613]"
+                activeTab === t ? "bg-[#3D3328] text-[#EDE6D9]" : "text-[#1A1613]"
               }`}
             >
               {t === "all" ? "All" : "Following"}
@@ -425,7 +425,7 @@ export default function AuraFeed() {
                     <button
                       key={s.id}
                       onMouseDown={(e) => { e.preventDefault(); handleSelectCity(s); }}
-                      className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-[#F2EDE4]"
+                      className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-[#EDE6D9]"
                     >
                       <PinIcon className="mt-0.5 size-4 shrink-0 text-[#B85C38]" />
                       <div className="min-w-0">
@@ -456,7 +456,7 @@ export default function AuraFeed() {
 
           {/* Context label */}
           {contextLabel && (
-            <div className="mx-4 mt-2 flex items-center justify-between rounded-lg bg-[#FBF6EE] px-3 py-2">
+            <div className="mx-4 mt-2 flex items-center justify-between rounded-lg bg-[#F7F3EC] px-3 py-2">
               <span className="text-[13px] font-medium text-[#1A1613]">{contextLabel}</span>
               <button onClick={handleClearLocation}>
                 <XIcon className="size-4 text-[#6B5F52]" />
@@ -469,7 +469,7 @@ export default function AuraFeed() {
             <button
               onClick={() => setShowTagFilter(true)}
               className={`shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1 text-[13px] font-medium transition-colors ${
-                activeTag ? "bg-[#DEC9A0] text-[#5C4A36]" : "bg-[#EDE6D9] text-[#6B5F52]"
+                activeTag ? "bg-[#B85C38] text-white" : "bg-[#EDE6D9] text-[#6B5F52]"
               }`}
             >
               <SlidersIcon className="size-3.5" />
@@ -477,7 +477,7 @@ export default function AuraFeed() {
               {activeTag && (
                 <span
                   onClick={(e) => { e.stopPropagation(); handleClearTag(); }}
-                  className="ml-0.5 flex size-4 items-center justify-center rounded-full bg-[#C9973A]/20 text-[#5C4A36]"
+                  className="ml-0.5 flex size-4 items-center justify-center rounded-full bg-white/20 text-white"
                 >
                   <XIcon className="size-2.5" />
                 </span>
@@ -574,7 +574,7 @@ export default function AuraFeed() {
                         onClick={() => handleTag(tag)}
                         className={`flex items-center gap-1 rounded-[6px] px-3 py-1.5 text-[13px] font-medium transition-colors ${
                           activeTag === tag
-                            ? "bg-[#DEC9A0] text-[#5C4A36]"
+                            ? "bg-[#B85C38] text-white"
                             : "border border-[#D4C4A8] text-[#6B5F52]"
                         }`}
                       >
