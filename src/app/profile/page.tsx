@@ -147,8 +147,8 @@ export default function ProfilePage() {
                 <span className="text-[17px] font-bold text-[#1A1613]">{stats.city_count}</span>
               </Link>
               <Link href="/profile/followers" className="flex flex-1 flex-col items-center gap-0.5 px-1">
-                <span className="text-[12px] text-[#6B5F52]">Followers</span>
-                <span className="text-[17px] font-bold text-[#1A1613]">{stats.follower_count}</span>
+                <span className="text-[12px] text-[#6B5F52]">Friends</span>
+                <span className="text-[17px] font-bold text-[#1A1613]">{stats.friend_count ?? stats.follower_count}</span>
               </Link>
             </div>
           </div>

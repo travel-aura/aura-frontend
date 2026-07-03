@@ -110,6 +110,7 @@ export interface ArchetypeStats {
   city_count: number;
   verified_count: number;
   follower_count: number;
+  friend_count?: number;  // mutual follows; when present, shown as "Friends" stat
   top_tags: string[];
   cities: string[];
 }
