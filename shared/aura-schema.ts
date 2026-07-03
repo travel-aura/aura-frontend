@@ -1,6 +1,6 @@
 /**
  * SOURCE OF TRUTH: AURA DATA CONTRACT
- * Last verified against DB: 2026-06-07
+ * Last verified against DB: 2026-07-03
  */
 
 export type Archetype = 'Photo Spots' | 'Wanderings' | 'Indoor Vibes';
@@ -27,6 +27,11 @@ export interface Aura {
   like_count: number;
   is_liked: boolean;
   tags: string[];
+  // Extended EXIF metadata (present when backend stores them)
+  taken_at?: string | null;        // EXIF DateTimeOriginal ISO string
+  tz_offset?: string | null;       // e.g. "+08:00" from OffsetTimeOriginal
+  gps_accuracy?: number | null;    // metres from GPSHPositioningError or GPSDOP
+  gps_timestamp?: string | null;   // UTC ISO from GPS clock
 }
 
 // 2. For profile/feed display
@@ -58,6 +63,11 @@ export interface AuraUploadMetadata {
   is_verified: boolean;        // true if GPS, false if no GPS
   parent_id?: string | null;   // null = Anchor, uuid = Perspective
   tags?: string[];             // Up to 5 user-selected tags
+  // Extended EXIF metadata
+  taken_at?: string;           // naive local ISO: EXIF DateTimeOriginal (when photo was taken)
+  tz_offset?: string;          // e.g. "+08:00" from OffsetTimeOriginal
+  gps_accuracy?: number;       // metres: GPSHPositioningError or GPSDOP
+  gps_timestamp?: string;      // UTC ISO from GPS clock (GPSDateStamp + GPSTimeStamp)
 }
 
 // 4. Profile page response
@@ -77,18 +87,25 @@ export interface ProfileData {
   };
 }
 
-// 5. Backend RPC parameters
+// 5. Backend RPC parameters (what backend needs to accept + store)
 export interface InsertAuraParams {
   p_user_id: string;
   p_title: string;
   p_image_urls: string[];
-  p_archetype_tag: Archetype;
+  p_archetype_tag?: Archetype;
   p_description?: string | null;
   p_lat?: number | null;
   p_lng?: number | null;
   p_altitude?: number;
   p_heading?: number;
   p_is_verified: boolean;
+  p_tags?: string[];
+  p_parent_id?: string | null;
+  // Extended EXIF — new columns needed in DB
+  p_taken_at?: string;        // naive local ISO "YYYY-MM-DDTHH:MM:SS" (no TZ suffix)
+  p_tz_offset?: string;       // e.g. "+08:00"
+  p_gps_accuracy?: number;    // metres (GPSHPositioningError or GPSDOP)
+  p_gps_timestamp?: string;   // UTC ISO "YYYY-MM-DDTHH:MM:SSZ" from GPS chip
 }
 
 // 6. Feed response with pagination

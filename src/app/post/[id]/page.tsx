@@ -90,6 +90,28 @@ function PinIcon({ className }: { className?: string }) {
   );
 }
 
+function CameraIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+      <circle cx="12" cy="13" r="4" />
+    </svg>
+  );
+}
+
+// Formats a naive EXIF datetime string "YYYY-MM-DDTHH:MM:SS" (no TZ suffix)
+// into a human-readable string without any timezone conversion.
+function formatTakenAt(takenAt: string): string {
+  const [datePart, timePart] = takenAt.split('T');
+  if (!datePart || !timePart) return takenAt;
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hours, minutes] = timePart.split(':').map(Number);
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  const h12 = hours % 12 || 12;
+  return `${MONTHS[month - 1]} ${day}, ${year} · ${h12}:${String(minutes).padStart(2, '0')} ${ampm}`;
+}
+
 // ── Post Detail Page ───────────────────────────────────────────────────────────
 
 export default function PostDetailPage() {
@@ -474,6 +496,14 @@ export default function PostDetailPage() {
             <div className="mt-1.5 flex items-center gap-1">
               <PinIcon className="size-4 shrink-0 text-[#6B5F52]" />
               <span className="text-[14px] text-[#6B5F52]">{cityLocation}</span>
+            </div>
+          )}
+
+          {/* Time taken (from EXIF DateTimeOriginal) */}
+          {post.taken_at && (
+            <div className="mt-1 flex items-center gap-1">
+              <CameraIcon className="size-4 shrink-0 text-[#6B5F52]" />
+              <span className="text-[14px] text-[#6B5F52]">{formatTakenAt(post.taken_at)}</span>
             </div>
           )}
 
