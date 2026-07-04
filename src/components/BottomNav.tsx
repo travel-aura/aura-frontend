@@ -59,7 +59,7 @@ export default function BottomNav() {
 
   const handleNavClick = (id: string, href: string) => {
     if ((id === "create" || id === "profile") && !token) {
-      router.push("/login");
+      router.push(id === "create" ? "/login?from=upload" : "/login");
       return;
     }
     router.push(href);

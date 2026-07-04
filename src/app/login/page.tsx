@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { apiPost } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
@@ -13,6 +13,8 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromUpload = searchParams.get("from") === "upload";
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,9 +59,16 @@ export default function LoginPage() {
 
       {/* Form */}
       <div className="flex-1 px-4 pt-12">
-        <h1 className="mb-8 text-center text-[24px] font-semibold text-[#1A1613]">
-          Welcome back
-        </h1>
+        {fromUpload ? (
+          <div className="mb-8 text-center">
+            <p className="text-[22px] font-semibold text-[#1A1613]">Log in to upload</p>
+            <p className="mt-1 text-[14px] text-[#6B5F52]">Document and share your photo spots</p>
+          </div>
+        ) : (
+          <h1 className="mb-8 text-center text-[24px] font-semibold text-[#1A1613]">
+            Welcome back
+          </h1>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Email field */}
