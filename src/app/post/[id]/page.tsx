@@ -599,7 +599,7 @@ export default function PostDetailPage() {
       {/* Delete confirmation sheet */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-end" onClick={() => setShowDeleteConfirm(false)}>
-          <div className="w-full rounded-t-2xl bg-[#F7F3EC] px-4 pt-5 pb-8 shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full rounded-t-2xl bg-[#F9F6F0] px-4 pt-5 pb-8 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-1 h-1 w-10 rounded-full bg-[#D4C4A8] mx-auto" />
             <p className="mt-4 text-center text-[17px] font-bold text-[#1A1613]">Delete post?</p>
             <p className="mt-1.5 text-center text-[14px] text-[#6B5F52]">This can't be undone.</p>

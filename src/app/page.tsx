@@ -372,7 +372,7 @@ export default function AuraFeed() {
       {/* ── TopBar + Tabs — always fixed, never moves ── */}
       <div
         ref={topGroupRef}
-        className={`fixed top-0 left-0 right-0 z-50 bg-[#F7F3EC] transition-shadow duration-300 ${scrollDir !== 'top' ? 'shadow-sm' : ''}`}
+        className={`fixed top-0 left-0 right-0 z-50 bg-[#F9F6F0] transition-shadow duration-300 ${scrollDir !== 'top' ? 'shadow-sm' : ''}`}
       >
         <TopBar />
         <div className="mt-2 flex items-center justify-center gap-2">
@@ -420,7 +420,7 @@ export default function AuraFeed() {
 
               {/* Suggestions dropdown */}
               {showSuggestions && (
-                <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-xl border border-[#D4C4A8] bg-[#F7F3EC] shadow-lg">
+                <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-xl border border-[#D4C4A8] bg-[#F9F6F0] shadow-lg">
                   {suggestions.map((s) => (
                     <button
                       key={s.id}
@@ -456,7 +456,7 @@ export default function AuraFeed() {
 
           {/* Context label */}
           {contextLabel && (
-            <div className="mx-4 mt-2 flex items-center justify-between rounded-lg bg-[#F7F3EC] px-3 py-2">
+            <div className="mx-4 mt-2 flex items-center justify-between rounded-lg bg-[#F2E3D5] px-3 py-2">
               <span className="text-[13px] font-medium text-[#1A1613]">{contextLabel}</span>
               <button onClick={handleClearLocation}>
                 <XIcon className="size-4 text-[#6B5F52]" />
@@ -546,7 +546,7 @@ export default function AuraFeed() {
         <div className="fixed inset-0 z-50 flex items-end" onClick={() => setShowTagFilter(false)}>
           <div className="absolute inset-0 bg-black/40" />
           <div
-            className="relative w-full rounded-t-2xl bg-[#F7F3EC] pb-10"
+            className="relative w-full rounded-t-2xl bg-[#F9F6F0] pb-10"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Handle */}

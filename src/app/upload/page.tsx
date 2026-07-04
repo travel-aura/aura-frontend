@@ -316,7 +316,7 @@ export default function UploadPage() {
       {/* Nearby post prompt */}
       {showNearbyPrompt && nearbyPosts.length > 0 && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40">
-          <div className="w-full rounded-t-2xl bg-[#F7F3EC] px-5 pb-10 pt-5">
+          <div className="w-full rounded-t-2xl bg-[#F9F6F0] px-5 pb-10 pt-5">
             <div className="mb-4 h-1 w-10 rounded-full bg-[#D4C4A8] mx-auto" />
             <p className="text-[11px] font-semibold uppercase tracking-widest text-[#B85C38]">📍 You&apos;re nearby</p>
             <h2 className="mt-2 text-[20px] font-bold text-[#1A1613]">
