@@ -139,6 +139,7 @@ export default function PostDetailPage() {
   const [authToast, setAuthToast] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [showMapPicker, setShowMapPicker] = useState(false);
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -499,28 +500,35 @@ export default function PostDetailPage() {
             </div>
           )}
 
-          {/* Time taken (from EXIF DateTimeOriginal) */}
-          {post.taken_at && (
-            <div className="mt-1 flex items-center gap-1">
-              <CameraIcon className="size-4 shrink-0 text-[#6B5F52]" />
-              <span className="text-[14px] text-[#6B5F52]">{formatTakenAt(post.taken_at)}</span>
+          {/* Time taken + Open in map (same row) */}
+          {post.taken_at ? (
+            <div className="mt-1 flex items-center justify-between">
+              <div className="flex items-center gap-1">
+                <CameraIcon className="size-4 shrink-0 text-[#6B5F52]" />
+                <span className="text-[14px] text-[#6B5F52]">{formatTakenAt(post.taken_at)}</span>
+              </div>
+              {post.lat && post.lng && (
+                <button
+                  onClick={() => setShowMapPicker(true)}
+                  className="flex items-center gap-1 rounded-lg bg-[#EDE6D9] px-2.5 py-1 text-[12px] font-medium text-[#1A1613]"
+                >
+                  <PinIcon className="size-3.5 shrink-0" />
+                  Open in map
+                </button>
+              )}
             </div>
-          )}
-
-          {/* Open in Google Maps */}
-          {post.lat && post.lng && (
-            <a
-              href={`https://www.google.com/maps?q=${post.lat},${post.lng}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-[#EDE6D9] px-4 py-2 text-[13px] font-medium text-[#1A1613] transition-colors hover:bg-[#D4C4A8]"
-            >
-              <svg className="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
-                <circle cx="12" cy="9" r="2.5" />
-              </svg>
-              Open in Google Maps
-            </a>
+          ) : (
+            post.lat && post.lng && (
+              <div className="mt-1.5">
+                <button
+                  onClick={() => setShowMapPicker(true)}
+                  className="flex items-center gap-1 rounded-lg bg-[#EDE6D9] px-2.5 py-1 text-[12px] font-medium text-[#1A1613]"
+                >
+                  <PinIcon className="size-3.5 shrink-0" />
+                  Open in map
+                </button>
+              </div>
+            )
           )}
 
           {/* Description */}
@@ -613,6 +621,46 @@ export default function PostDetailPage() {
             <button
               onClick={() => setShowDeleteConfirm(false)}
               className="mt-3 w-full rounded-xl bg-[#EDE6D9] py-3.5 text-[15px] font-semibold text-[#1A1613]"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Map picker sheet */}
+      {showMapPicker && post?.lat && post?.lng && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setShowMapPicker(false)}>
+          <div className="w-full rounded-t-2xl bg-[#F9F6F0] px-4 pt-5 pb-10 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-4 h-1 w-10 rounded-full bg-[#D4C4A8] mx-auto" />
+            <p className="mb-4 text-[16px] font-semibold text-[#1A1613]">Open in Maps</p>
+            <a
+              href={`https://maps.apple.com/?q=${post.lat},${post.lng}`}
+              onClick={() => setShowMapPicker(false)}
+              className="flex w-full items-center gap-3 rounded-xl bg-[#EDE6D9] px-4 py-3.5 text-[15px] font-medium text-[#1A1613]"
+            >
+              <svg className="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
+                <circle cx="12" cy="9" r="2.5" />
+              </svg>
+              Apple Maps
+            </a>
+            <a
+              href={`https://www.google.com/maps?q=${post.lat},${post.lng}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setShowMapPicker(false)}
+              className="mt-3 flex w-full items-center gap-3 rounded-xl bg-[#EDE6D9] px-4 py-3.5 text-[15px] font-medium text-[#1A1613]"
+            >
+              <svg className="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
+                <circle cx="12" cy="9" r="2.5" />
+              </svg>
+              Google Maps
+            </a>
+            <button
+              onClick={() => setShowMapPicker(false)}
+              className="mt-3 w-full py-2.5 text-[14px] text-[#6B5F52]"
             >
               Cancel
             </button>
