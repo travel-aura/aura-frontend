@@ -28,8 +28,14 @@ export default function UploadPage() {
   const { language } = useLanguage();
   const { startUpload } = useUpload();
 
+  const [authed, setAuthed] = useState(false);
+
   useEffect(() => {
-    if (!getToken()) router.replace("/login");
+    if (!getToken()) {
+      router.replace("/login?from=upload");
+    } else {
+      setAuthed(true);
+    }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [photos, setPhotos] = useState<PhotoFile[]>([]);
@@ -122,6 +128,8 @@ export default function UploadPage() {
 
     doUpload();
   };
+
+  if (!authed) return null;
 
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-[#F7F3EC]">
