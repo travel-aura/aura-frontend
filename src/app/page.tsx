@@ -95,6 +95,13 @@ function FeedCard({ post }: { post: Aura }) {
           </div>
         )}
 
+        {/* Verified badge */}
+        {post.is_verified && (
+          <div className="absolute right-2 top-2 flex items-center justify-center rounded-full bg-[#DEC9A0] px-1.5 py-0.5 text-[11px] leading-none drop-shadow">
+            📍
+          </div>
+        )}
+
         {/* Gradient scrim + title */}
         <div className="absolute inset-x-0 bottom-0 rounded-b-lg bg-gradient-to-t from-black/70 to-transparent px-2.5 pb-2.5 pt-8">
           <p className="line-clamp-2 text-[13px] font-semibold leading-tight text-white drop-shadow">
