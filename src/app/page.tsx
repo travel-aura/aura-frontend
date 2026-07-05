@@ -187,6 +187,12 @@ export default function AuraFeed() {
     }, 300);
   }, [searchQuery]);
 
+  // Sync lastScrollY to actual scroll position on mount so scroll-restoration
+  // doesn't trigger a false "scrolled down" detection on first scroll event.
+  useLayoutEffect(() => {
+    lastScrollY.current = window.scrollY;
+  }, []);
+
   // Measure group heights (remeasure when context label appears/disappears)
   useLayoutEffect(() => {
     if (topGroupRef.current) setTopGroupH(topGroupRef.current.offsetHeight);

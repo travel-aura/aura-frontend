@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+import { getToken } from "@/lib/auth";
 
 function HomeIcon({ className }: { className?: string; filled?: boolean }) {
   return (
@@ -54,11 +54,10 @@ function getActive(pathname: string) {
 export default function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
-  const { token } = useAuth();
   const active = getActive(pathname);
 
   const handleNavClick = (id: string, href: string) => {
-    if ((id === "create" || id === "profile") && !token) {
+    if ((id === "create" || id === "profile") && !getToken()) {
       router.push(id === "create" ? "/login?from=upload" : "/login");
       return;
     }
