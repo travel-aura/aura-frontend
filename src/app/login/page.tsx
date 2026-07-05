@@ -40,7 +40,7 @@ function LoginForm() {
         login(response.session.access_token, response.user.id);
       }
 
-      router.push("/profile");
+      router.push(fromUpload ? "/upload" : "/profile");
     } catch (err: unknown) {
       setError((err as Error).message || "Login failed");
     } finally {
