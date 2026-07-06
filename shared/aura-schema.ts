@@ -1,9 +1,26 @@
 /**
  * SOURCE OF TRUTH: AURA DATA CONTRACT
- * Last verified against DB: 2026-07-03
+ * Last verified against DB: 2026-07-06
  */
 
 export type Archetype = 'Photo Spots' | 'Wanderings' | 'Indoor Vibes';
+
+// Place — a location entity that groups posts at the same spot
+export interface Place {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  venue_id: string | null;      // Mapbox POI feature ID
+  cover_post_id: string | null; // FK to the first/featured post at this place
+  verified_count: number;       // # of GPS-verified posts at this place
+}
+
+// Place API response — place info + other posts at this place
+export interface PlaceResponse {
+  place: Place;
+  posts: Aura[];
+}
 
 // 1. Complete database object
 export interface Aura {
@@ -22,6 +39,7 @@ export interface Aura {
   lat: number;
   lng: number;
   parent_id: string | null;
+  place_id?: string | null;         // FK to places table
   distance_meters: number | null;   // null on global feed, metres from search point on spatial search
   perspective_count: number;        // count of child perspectives (0 for perspectives themselves)
   like_count: number;
@@ -32,7 +50,7 @@ export interface Aura {
   tz_offset?: string | null;       // e.g. "+08:00" from OffsetTimeOriginal
   gps_accuracy?: number | null;    // metres from GPSHPositioningError or GPSDOP
   gps_timestamp?: string | null;   // UTC ISO from GPS clock
-  place_name?: string | null;   // name of the venue/store resolved at upload time
+  place_name?: string | null;      // name of the venue/store resolved at upload time
 }
 
 // 2. For profile/feed display
