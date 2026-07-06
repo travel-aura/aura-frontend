@@ -11,7 +11,13 @@ import { TAG_GROUPS, translateTag, translateGroupLabel } from "@/lib/i18n";
 import { useUpload } from "@/context/UploadContext";
 import { searchNearbyPOIs, type NearbyPOI } from "@/lib/geocoding";
 
-interface NearbyPost { id: string; title: string; distance_meters: number; }
+interface NearbyPlace {
+  id: string;
+  name: string;
+  distance_meters: number;
+  verified_count: number;
+  cover_image_url?: string | null;
+}
 
 const MAX_TAGS = 5;
 
@@ -55,19 +61,28 @@ export default function UploadPage() {
   const [description, setDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [nearbyPosts, setNearbyPosts] = useState<NearbyPost[]>([]);
+  const [nearbyPlaces, setNearbyPlaces] = useState<NearbyPlace[]>([]);
   const [showNearbyPrompt, setShowNearbyPrompt] = useState(false);
   const [exifCoords, setExifCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [selectedPlace, setSelectedPlace] = useState<string | null>(null);
+  // Venue (store/restaurant) — Step 1
+  const [selectedVenueName, setSelectedVenueName] = useState<string | null>(null);
+  const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null); // Mapbox POI feature ID
+  const [venueSkipped, setVenueSkipped] = useState(false); // user explicitly said "Not a venue"
   const [nearbyPOIs, setNearbyPOIs] = useState<NearbyPOI[]>([]);
   const [showPlacePicker, setShowPlacePicker] = useState(false);
   const [poisLoading, setPoisLoading] = useState(false);
 
-  // Extract GPS from the anchor photo as soon as it changes so we can offer place search
+  // Extract GPS from the anchor photo; reset venue selection when anchor changes
   useEffect(() => {
-    if (photos.length === 0) { setExifCoords(null); setSelectedPlace(null); return; }
+    if (photos.length === 0) {
+      setExifCoords(null);
+      setSelectedVenueName(null); setSelectedVenueId(null); setVenueSkipped(false);
+      return;
+    }
     const anchor = photos[gpsPhotoIndex];
     if (!anchor) return;
+    // Reset venue choice whenever the GPS anchor changes
+    setSelectedVenueName(null); setSelectedVenueId(null); setVenueSkipped(false);
     let cancelled = false;
     (async () => {
       try {
@@ -78,11 +93,10 @@ export default function UploadPage() {
             setExifCoords({ lat: data.latitude, lng: data.longitude });
           } else {
             setExifCoords(null);
-            setSelectedPlace(null);
           }
         }
       } catch {
-        if (!cancelled) { setExifCoords(null); setSelectedPlace(null); }
+        if (!cancelled) setExifCoords(null);
       }
     })();
     return () => { cancelled = true; };
@@ -127,14 +141,17 @@ export default function UploadPage() {
     else if (gpsPhotoIndex === index) setGpsPhotoIndex(0);
   };
 
-  const doUpload = (parentId?: string | null) => {
+  const doUpload = (placeId?: string | null) => {
     const gpsPhoto = photos[gpsPhotoIndex];
     const metadata: AuraMetadata = {
       title: title.trim(),
       description: description.trim() || undefined,
-      parent_id: parentId ?? null,
+      // Venue path: send venue_id + place_name so backend matches/creates Place by Mapbox ID
+      venue_id: selectedVenueId ?? undefined,
+      place_name: selectedVenueName ?? undefined,
+      // Generic spot path: send place_id of existing spot chosen from nearby prompt
+      place_id: placeId ?? undefined,
       tags: selectedTags.length > 0 ? selectedTags : undefined,
-      place_name: selectedPlace ?? undefined,
     };
     startUpload(photos.map(p => p.file), gpsPhoto.file, metadata);
     router.push("/");
@@ -144,7 +161,13 @@ export default function UploadPage() {
     if (photos.length === 0) { setError("Please select at least one photo"); return; }
     if (!title.trim()) { setError("Please enter a title"); return; }
 
-    // Check for nearby posts before uploading
+    // Step 1 result: venue selected → backend handles Place via venue_id, skip nearby check
+    if (selectedVenueId) {
+      doUpload();
+      return;
+    }
+
+    // Step 2: no venue — check for nearby generic spots
     try {
       const { default: exifr } = await import("exifr");
       const exifData = await exifr.parse(photos[gpsPhotoIndex].file, { gps: true });
@@ -153,20 +176,20 @@ export default function UploadPage() {
         const headers: Record<string, string> = {};
         if (token) headers.Authorization = `Bearer ${token}`;
         const res = await fetch(
-          `${API_BASE}/api/auras/check-nearby?lat=${exifData.latitude}&lng=${exifData.longitude}`,
+          `${API_BASE}/api/places/nearby?lat=${exifData.latitude}&lng=${exifData.longitude}`,
           { headers }
         );
         if (res.ok) {
           const data = await res.json();
-          const nearby: NearbyPost[] = data.nearby ?? [];
+          const nearby: NearbyPlace[] = data.places ?? [];
           if (nearby.length > 0) {
-            setNearbyPosts(nearby);
+            setNearbyPlaces(nearby);
             setShowNearbyPrompt(true);
-            return; // Pause — wait for user to confirm in the prompt
+            return; // Pause — wait for user choice in the prompt
           }
         }
       }
-    } catch { /* no GPS or check-nearby not available — proceed normally */ }
+    } catch { /* no GPS or places/nearby not yet available — proceed normally */ }
 
     doUpload();
   };
@@ -356,45 +379,50 @@ export default function UploadPage() {
             </div>
           </div>
 
-          {/* Place */}
-          {exifCoords && (
+          {/* Step 1 — Venue question (shown when GPS available and not yet answered) */}
+          {exifCoords && !venueSkipped && (
             <div className="mt-5 px-3">
               <div className="rounded-2xl border border-[#D4C4A8] bg-[#F9F6F0] px-4 py-4">
                 <div className="flex items-start gap-3">
-                  <span className="text-[20px] leading-none mt-0.5">📍</span>
+                  <span className="text-[20px] leading-none mt-0.5">🏪</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-[15px] font-semibold text-[#1A1613]">
-                      Is this post at a specific place?
+                      Is this at a restaurant, café, or store?
                     </p>
                     <p className="mt-0.5 text-[12px] text-[#6B5F52]">
-                      Restaurant, café, store, museum, gym…
+                      We'll link your post to that venue
                     </p>
                   </div>
                 </div>
 
-                {selectedPlace ? (
+                {selectedVenueName ? (
+                  /* Venue selected — show name with Change button */
                   <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-[#EDE6D9] px-3 py-2.5">
                     <div className="flex items-center gap-2 min-w-0">
                       <StoreIcon className="size-4 shrink-0 text-[#6B5F52]" />
-                      <span className="text-[14px] font-medium text-[#1A1613] truncate">{selectedPlace}</span>
+                      <span className="text-[14px] font-medium text-[#1A1613] truncate">{selectedVenueName}</span>
                     </div>
-                    <button onClick={() => setSelectedPlace(null)} className="shrink-0 text-[12px] text-[#A09080]">
+                    <button
+                      onClick={() => { setSelectedVenueName(null); setSelectedVenueId(null); }}
+                      className="shrink-0 text-[12px] text-[#A09080]"
+                    >
                       Change
                     </button>
                   </div>
                 ) : (
+                  /* Not yet answered */
                   <div className="mt-3 flex gap-2">
                     <button
                       onClick={handleFindPlace}
                       className="flex-1 rounded-xl bg-[#1A1613] py-2.5 text-[13px] font-medium text-white"
                     >
-                      Yes, find the place
+                      Yes, find it
                     </button>
                     <button
-                      onClick={() => setExifCoords(null)}
+                      onClick={() => setVenueSkipped(true)}
                       className="flex-1 rounded-xl border border-[#D4C4A8] py-2.5 text-[13px] font-medium text-[#6B5F52]"
                     >
-                      Skip
+                      Not a venue
                     </button>
                   </div>
                 )}
@@ -443,7 +471,11 @@ export default function UploadPage() {
                 {nearbyPOIs.map((poi) => (
                   <button
                     key={poi.id}
-                    onClick={() => { setSelectedPlace(poi.name); setShowPlacePicker(false); }}
+                    onClick={() => {
+                      setSelectedVenueName(poi.name);
+                      setSelectedVenueId(poi.id); // Mapbox feature ID → sent as venue_id to backend
+                      setShowPlacePicker(false);
+                    }}
                     className="flex w-full items-center gap-3 rounded-xl bg-[#EDE6D9] px-4 py-3 text-left"
                   >
                     <StoreIcon className="size-5 shrink-0 text-[#6B5F52]" />
@@ -467,33 +499,84 @@ export default function UploadPage() {
         </div>
       )}
 
-      {/* Nearby post prompt */}
-      {showNearbyPrompt && nearbyPosts.length > 0 && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40">
-          <div className="w-full rounded-t-2xl bg-[#F9F6F0] px-5 pb-10 pt-5">
+      {/* Nearby places prompt */}
+      {showNearbyPrompt && nearbyPlaces.length > 0 && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setShowNearbyPrompt(false)}>
+          <div
+            className="w-full rounded-t-2xl bg-[#F9F6F0] px-4 pt-5 pb-10 shadow-xl overflow-y-auto"
+            style={{ maxHeight: '80vh' }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="mb-4 h-1 w-10 rounded-full bg-[#D4C4A8] mx-auto" />
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-[#B85C38]">📍 You&apos;re nearby</p>
-            <h2 className="mt-2 text-[20px] font-bold text-[#1A1613]">
-              "{nearbyPosts[0].title}" is {Math.round(nearbyPosts[0].distance_meters)}m away
-            </h2>
-            <p className="mt-1 text-[14px] text-[#6B5F52]">
-              Add your photo as a Perspective of this spot, or start a new Anchor.
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-[#B85C38]">📍 Nearby spot</p>
+            <h2 className="mt-1.5 text-[20px] font-bold text-[#1A1613]">Add to an existing spot?</h2>
+            <p className="mt-1 mb-4 text-[14px] text-[#6B5F52]">
+              These spots are nearby — add your shot to one, or create a new spot.
             </p>
-            <button
-              onClick={() => { setShowNearbyPrompt(false); doUpload(nearbyPosts[0].id); }}
-              className="mt-5 w-full rounded-[40px] bg-[#1A1613] py-[13px] text-[17px] font-medium text-white"
-            >
-              Add as Perspective
-            </button>
+
+            {/* List of nearby places */}
+            <div className="space-y-2">
+              {nearbyPlaces.map((place) => (
+                <button
+                  key={place.id}
+                  onClick={() => { setShowNearbyPrompt(false); doUpload(place.id); }}
+                  className="flex w-full items-center gap-3 rounded-2xl bg-[#EDE6D9] px-4 py-3 text-left"
+                >
+                  {/* Cover thumbnail */}
+                  {place.cover_image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={place.cover_image_url}
+                      alt={place.name}
+                      className="size-14 shrink-0 rounded-xl object-cover"
+                    />
+                  ) : (
+                    <div className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-[#D4C4A8]">
+                      <svg className="size-6 text-[#6B5F52]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
+                        <circle cx="12" cy="9" r="2.5" />
+                      </svg>
+                    </div>
+                  )}
+
+                  {/* Info */}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[15px] font-semibold text-[#1A1613] truncate">{place.name}</p>
+                    <div className="mt-0.5 flex items-center gap-2">
+                      <span className="text-[12px] text-[#6B5F52]">
+                        {place.distance_meters < 1000
+                          ? `${Math.round(place.distance_meters)}m away`
+                          : `${(place.distance_meters / 1000).toFixed(1)}km away`}
+                      </span>
+                      {place.verified_count > 0 && (
+                        <>
+                          <span className="text-[#D4C4A8]">·</span>
+                          <span className="text-[12px] text-[#6B5F52]">
+                            {place.verified_count} verified {place.verified_count === 1 ? "shot" : "shots"}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Arrow */}
+                  <svg className="size-4 shrink-0 text-[#A09080]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+              ))}
+            </div>
+
+            {/* Create new spot */}
             <button
               onClick={() => { setShowNearbyPrompt(false); doUpload(null); }}
-              className="mt-3 w-full rounded-[40px] border border-[#D4C4A8] py-[13px] text-[17px] font-medium text-[#1A1613]"
+              className="mt-3 w-full rounded-2xl border border-[#D4C4A8] bg-[#F7F3EC] py-3.5 text-[15px] font-medium text-[#1A1613]"
             >
-              No, new Anchor
+              Create new spot
             </button>
             <button
               onClick={() => setShowNearbyPrompt(false)}
-              className="mt-2 w-full py-2 text-[14px] text-[#999]"
+              className="mt-2 w-full py-2.5 text-[13px] text-[#A09080]"
             >
               Cancel
             </button>

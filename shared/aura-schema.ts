@@ -80,14 +80,16 @@ export interface AuraUploadMetadata {
   heading?: number;            // Optional - only if GPS found
   altitude?: number;           // Optional - only if GPS found (formerly alt)
   is_verified: boolean;        // true if GPS, false if no GPS
-  parent_id?: string | null;   // null = Anchor, uuid = Perspective
+  place_id?: string | null;    // uuid of existing generic Place to join; omit → backend creates one
+  venue_id?: string | null;    // Mapbox POI feature ID (e.g. "poi.abc123") — backend matches/creates Place by this
+  parent_id?: string | null;   // legacy Anchor/Perspective — kept for backward compat
   tags?: string[];             // Up to 5 user-selected tags
   // Extended EXIF metadata
   taken_at?: string;           // naive local ISO: EXIF DateTimeOriginal (when photo was taken)
   tz_offset?: string;          // e.g. "+08:00" from OffsetTimeOriginal
   gps_accuracy?: number;       // metres: GPSHPositioningError or GPSDOP
   gps_timestamp?: string;      // UTC ISO from GPS clock (GPSDateStamp + GPSTimeStamp)
-  place_name?: string;          // venue name chosen by user during upload
+  place_name?: string;         // venue display name chosen by user during upload
 }
 
 // 4. Profile page response

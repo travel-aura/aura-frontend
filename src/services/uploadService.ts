@@ -8,9 +8,11 @@ export interface AuraMetadata {
   title: string;
   archetype_tag?: Archetype;
   description?: string;
-  parent_id?: string | null;
+  place_id?: string | null;    // existing generic Place to join; omit → backend creates one
+  venue_id?: string | null;    // Mapbox POI feature ID → backend matches/creates Place by this
+  parent_id?: string | null;   // legacy — kept for backward compat
   tags?: string[];
-  place_name?: string;          // venue/store name chosen by user
+  place_name?: string;         // venue display name chosen by user
 }
 
 export interface UploadProgress {
