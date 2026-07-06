@@ -32,6 +32,7 @@ export interface Aura {
   tz_offset?: string | null;       // e.g. "+08:00" from OffsetTimeOriginal
   gps_accuracy?: number | null;    // metres from GPSHPositioningError or GPSDOP
   gps_timestamp?: string | null;   // UTC ISO from GPS clock
+  place_name?: string | null;   // name of the venue/store resolved at upload time
 }
 
 // 2. For profile/feed display
@@ -68,6 +69,7 @@ export interface AuraUploadMetadata {
   tz_offset?: string;          // e.g. "+08:00" from OffsetTimeOriginal
   gps_accuracy?: number;       // metres: GPSHPositioningError or GPSDOP
   gps_timestamp?: string;      // UTC ISO from GPS clock (GPSDateStamp + GPSTimeStamp)
+  place_name?: string;          // venue name chosen by user during upload
 }
 
 // 4. Profile page response
@@ -106,6 +108,7 @@ export interface InsertAuraParams {
   p_tz_offset?: string;       // e.g. "+08:00"
   p_gps_accuracy?: number;    // metres (GPSHPositioningError or GPSDOP)
   p_gps_timestamp?: string;   // UTC ISO "YYYY-MM-DDTHH:MM:SSZ" from GPS chip
+  p_place_name?: string;        // venue/store name
 }
 
 // 6. Feed response with pagination

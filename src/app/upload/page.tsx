@@ -9,6 +9,7 @@ import BottomNav from "@/components/BottomNav";
 import { useLanguage } from "@/hooks/useLanguage";
 import { TAG_GROUPS, translateTag, translateGroupLabel } from "@/lib/i18n";
 import { useUpload } from "@/context/UploadContext";
+import { searchNearbyPOIs, type NearbyPOI } from "@/lib/geocoding";
 
 interface NearbyPost { id: string; title: string; distance_meters: number; }
 
@@ -19,6 +20,16 @@ const MAX_TAGS = 5;
 interface PhotoFile {
   file: File;
   preview: string;
+}
+
+function StoreIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z" />
+      <path d="M3 9l2.45-4.9A2 2 0 0 1 7.24 3h9.52a2 2 0 0 1 1.8 1.1L21 9" />
+      <line x1="12" y1="3" x2="12" y2="9" />
+    </svg>
+  );
 }
 
 export default function UploadPage() {
@@ -46,6 +57,36 @@ export default function UploadPage() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [nearbyPosts, setNearbyPosts] = useState<NearbyPost[]>([]);
   const [showNearbyPrompt, setShowNearbyPrompt] = useState(false);
+  const [exifCoords, setExifCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [selectedPlace, setSelectedPlace] = useState<string | null>(null);
+  const [nearbyPOIs, setNearbyPOIs] = useState<NearbyPOI[]>([]);
+  const [showPlacePicker, setShowPlacePicker] = useState(false);
+  const [poisLoading, setPoisLoading] = useState(false);
+
+  // Extract GPS from the anchor photo as soon as it changes so we can offer place search
+  useEffect(() => {
+    if (photos.length === 0) { setExifCoords(null); setSelectedPlace(null); return; }
+    const anchor = photos[gpsPhotoIndex];
+    if (!anchor) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { default: exifr } = await import('exifr');
+        const data = await exifr.parse(anchor.file, { gps: true });
+        if (!cancelled) {
+          if (data?.latitude && data?.longitude) {
+            setExifCoords({ lat: data.latitude, lng: data.longitude });
+          } else {
+            setExifCoords(null);
+            setSelectedPlace(null);
+          }
+        }
+      } catch {
+        if (!cancelled) { setExifCoords(null); setSelectedPlace(null); }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [photos, gpsPhotoIndex]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -93,6 +134,7 @@ export default function UploadPage() {
       description: description.trim() || undefined,
       parent_id: parentId ?? null,
       tags: selectedTags.length > 0 ? selectedTags : undefined,
+      place_name: selectedPlace ?? undefined,
     };
     startUpload(photos.map(p => p.file), gpsPhoto.file, metadata);
     router.push("/");
@@ -127,6 +169,20 @@ export default function UploadPage() {
     } catch { /* no GPS or check-nearby not available — proceed normally */ }
 
     doUpload();
+  };
+
+  const handleFindPlace = async () => {
+    if (!exifCoords) return;
+    setShowPlacePicker(true);
+    setPoisLoading(true);
+    try {
+      const pois = await searchNearbyPOIs(exifCoords.lat, exifCoords.lng);
+      setNearbyPOIs(pois);
+    } catch {
+      setNearbyPOIs([]);
+    } finally {
+      setPoisLoading(false);
+    }
   };
 
   if (!authed) return null;
@@ -300,6 +356,52 @@ export default function UploadPage() {
             </div>
           </div>
 
+          {/* Place */}
+          {exifCoords && (
+            <div className="mt-5 px-3">
+              <div className="rounded-2xl border border-[#D4C4A8] bg-[#F9F6F0] px-4 py-4">
+                <div className="flex items-start gap-3">
+                  <span className="text-[20px] leading-none mt-0.5">📍</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[15px] font-semibold text-[#1A1613]">
+                      Is this post at a specific place?
+                    </p>
+                    <p className="mt-0.5 text-[12px] text-[#6B5F52]">
+                      Restaurant, café, store, museum, gym…
+                    </p>
+                  </div>
+                </div>
+
+                {selectedPlace ? (
+                  <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-[#EDE6D9] px-3 py-2.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <StoreIcon className="size-4 shrink-0 text-[#6B5F52]" />
+                      <span className="text-[14px] font-medium text-[#1A1613] truncate">{selectedPlace}</span>
+                    </div>
+                    <button onClick={() => setSelectedPlace(null)} className="shrink-0 text-[12px] text-[#A09080]">
+                      Change
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      onClick={handleFindPlace}
+                      className="flex-1 rounded-xl bg-[#1A1613] py-2.5 text-[13px] font-medium text-white"
+                    >
+                      Yes, find the place
+                    </button>
+                    <button
+                      onClick={() => setExifCoords(null)}
+                      className="flex-1 rounded-xl border border-[#D4C4A8] py-2.5 text-[13px] font-medium text-[#6B5F52]"
+                    >
+                      Skip
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Error message */}
           {error && (
             <div className="mx-3 mt-4 rounded-lg bg-red-50 px-4 py-3">
@@ -320,6 +422,50 @@ export default function UploadPage() {
         </div>
 
       <BottomNav />
+
+      {/* Place picker sheet */}
+      {showPlacePicker && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setShowPlacePicker(false)}>
+          <div
+            className="w-full rounded-t-2xl bg-[#F9F6F0] px-4 pt-5 pb-10 shadow-xl overflow-y-auto"
+            style={{ maxHeight: '70vh' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 h-1 w-10 rounded-full bg-[#D4C4A8] mx-auto" />
+            <p className="text-[16px] font-semibold text-[#1A1613]">Select a place</p>
+            <p className="mt-0.5 mb-4 text-[12px] text-[#6B5F52]">Places near where this photo was taken</p>
+            {poisLoading ? (
+              <p className="py-8 text-center text-[14px] text-[#6B5F52]">Finding nearby places…</p>
+            ) : nearbyPOIs.length === 0 ? (
+              <p className="py-8 text-center text-[14px] text-[#6B5F52]">No places found nearby</p>
+            ) : (
+              <div className="space-y-2">
+                {nearbyPOIs.map((poi) => (
+                  <button
+                    key={poi.id}
+                    onClick={() => { setSelectedPlace(poi.name); setShowPlacePicker(false); }}
+                    className="flex w-full items-center gap-3 rounded-xl bg-[#EDE6D9] px-4 py-3 text-left"
+                  >
+                    <StoreIcon className="size-5 shrink-0 text-[#6B5F52]" />
+                    <div className="min-w-0">
+                      <p className="text-[14px] font-medium text-[#1A1613]">{poi.name}</p>
+                      {poi.category && (
+                        <p className="text-[12px] capitalize text-[#A09080]">{poi.category}</p>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+            <button
+              onClick={() => setShowPlacePicker(false)}
+              className="mt-4 w-full py-2.5 text-[14px] text-[#6B5F52]"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Nearby post prompt */}
       {showNearbyPrompt && nearbyPosts.length > 0 && (

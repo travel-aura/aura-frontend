@@ -81,6 +81,39 @@ export async function getCityFromCoordinates(
   }
 }
 
+export interface NearbyPOI {
+  id: string;
+  name: string;
+  category: string;
+  address: string;
+}
+
+/**
+ * Find points of interest near the given coordinates using Mapbox Geocoding API v5.
+ */
+export async function searchNearbyPOIs(lat: number, lng: number): Promise<NearbyPOI[]> {
+  const token = await getMapboxToken();
+  if (!token) return [];
+  try {
+    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?types=poi&proximity=${lng},${lat}&limit=8&access_token=${token}`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.features ?? []).map((f: {
+      id: string;
+      text: string;
+      properties: { category?: string; address?: string };
+    }) => ({
+      id: f.id,
+      name: f.text,
+      category: (f.properties?.category ?? '').split(',')[0].trim(),
+      address: f.properties?.address ?? '',
+    }));
+  } catch {
+    return [];
+  }
+}
+
 /**
  * Search for places by query string using Mapbox Geocoding API
  */

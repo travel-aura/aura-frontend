@@ -10,6 +10,7 @@ export interface AuraMetadata {
   description?: string;
   parent_id?: string | null;
   tags?: string[];
+  place_name?: string;          // venue/store name chosen by user
 }
 
 export interface UploadProgress {
