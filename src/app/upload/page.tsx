@@ -46,6 +46,7 @@ export default function UploadPage() {
   const { startUpload } = useUpload();
 
   const [authed, setAuthed] = useState(false);
+  const [prefilledPlaceId, setPrefilledPlaceId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!getToken()) {
@@ -53,6 +54,10 @@ export default function UploadPage() {
     } else {
       setAuthed(true);
     }
+    // Read place_id from URL — arriving from "Add your shot of this spot" on post detail
+    const params = new URLSearchParams(window.location.search);
+    const pid = params.get("place_id");
+    if (pid) setPrefilledPlaceId(pid);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [photos, setPhotos] = useState<PhotoFile[]>([]);
@@ -160,6 +165,12 @@ export default function UploadPage() {
   const handleUpload = async () => {
     if (photos.length === 0) { setError("Please select at least one photo"); return; }
     if (!title.trim()) { setError("Please enter a title"); return; }
+
+    // Arrived from "Add your shot of this spot" — place already known, skip all place questions
+    if (prefilledPlaceId) {
+      doUpload(prefilledPlaceId);
+      return;
+    }
 
     // Step 1 result: venue selected → backend handles Place via venue_id, skip nearby check
     if (selectedVenueId) {
@@ -379,8 +390,8 @@ export default function UploadPage() {
             </div>
           </div>
 
-          {/* Step 1 — Venue question (shown when GPS available and not yet answered) */}
-          {exifCoords && !venueSkipped && (
+          {/* Step 1 — Venue question (hidden when coming from a known place) */}
+          {exifCoords && !venueSkipped && !prefilledPlaceId && (
             <div className="mt-5 px-3">
               <div className="rounded-2xl border border-[#D4C4A8] bg-[#F9F6F0] px-4 py-4">
                 <div className="flex items-start gap-3">

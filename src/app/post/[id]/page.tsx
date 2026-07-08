@@ -77,11 +77,12 @@ function StoreIcon({ className }: { className?: string }) {
   );
 }
 
-function CameraIcon({ className }: { className?: string }) {
+function CameraAddIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
       <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-      <circle cx="12" cy="13" r="4" />
+      <line x1="12" y1="11" x2="12" y2="17" />
+      <line x1="9" y1="14" x2="15" y2="14" />
     </svg>
   );
 }
@@ -536,12 +537,12 @@ export default function PostDetailPage() {
 
         {/* ── Add your shot of this spot ────────────────────────────────────────── */}
         {place && (
-          <div className="px-4 pt-5 pb-10">
+          <div className="px-4 pt-4 pb-10">
             <button
               onClick={() => { if (requireAuth("Sign up to add a shot")) router.push(`/upload?place_id=${place.id}`); }}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#1A1613] py-4 text-[15px] font-semibold text-white"
+              className="flex w-full items-center justify-center gap-2.5 rounded-full border-2 border-dashed border-[#D4C4A8] bg-[#F9F6F0] py-4 text-[15px] font-medium text-[#6B5F52]"
             >
-              <CameraIcon className="size-5" />
+              <CameraAddIcon className="size-5 shrink-0" />
               Add your shot of this spot
             </button>
           </div>
