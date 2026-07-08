@@ -15,6 +15,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const fromUpload = searchParams.get("from") === "upload";
+  const redirectTo = searchParams.get("redirect") || (fromUpload ? "/upload" : "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,7 +41,7 @@ function LoginForm() {
         login(response.session.access_token, response.user.id);
       }
 
-      router.push(fromUpload ? "/upload" : "/profile");
+      router.push(redirectTo || "/profile");
     } catch (err: unknown) {
       setError((err as Error).message || "Login failed");
     } finally {

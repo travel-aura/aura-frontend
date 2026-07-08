@@ -1,20 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { apiPost } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
 // ── Register Page ──────────────────────────────────────────────────────────────
 
-export default function RegisterPage() {
+function RegisterForm() {
   const { login } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showNameError, setShowNameError] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") || "";
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,7 +48,7 @@ export default function RegisterPage() {
         login(response.session.access_token, response.user.id);
       }
 
-      router.push("/profile");
+      router.push(redirectTo || "/profile");
     } catch (err: unknown) {
       setError((err as Error).message || "Register failed");
     } finally {
@@ -166,7 +168,7 @@ export default function RegisterPage() {
           <p className="text-[14px] text-[#6B5F52]">
             Already have an account?{" "}
             <Link
-              href="/login"
+              href={redirectTo ? `/login?redirect=${encodeURIComponent(redirectTo)}` : "/login"}
               className="font-semibold text-[#B85C38] hover:underline"
             >
               Log in
@@ -175,5 +177,13 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterForm />
+    </Suspense>
   );
 }

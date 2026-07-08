@@ -167,10 +167,32 @@ export interface InsertAuraParams {
   p_gps_timestamp?: string;       // UTC ISO "YYYY-MM-DDTHH:MM:SSZ"
 }
 
-// 6. Feed response with pagination
+// 6. Aura feed response (legacy — post-based feed)
 export interface FeedResponse {
   ok: true;
   auras: Aura[];
+  pagination: {
+    limit: number;
+    offset: number;
+    count: number;
+  };
+}
+
+// 6b. Place feed item — one card per place, backed by its cover post
+export interface PlaceFeedItem {
+  id: string;               // place id
+  cover_post_id: string;    // id of the cover/first post at this place
+  cover_image_url: string;  // first image of the cover post
+  cover_title: string;      // title of the cover post
+  shot_count: number;       // total number of posts at this place
+  verified_count: number;   // GPS-verified posts at this place
+  distance_meters?: number | null;
+}
+
+// GET /api/places/feed response
+export interface PlaceFeedResponse {
+  ok: true;
+  places: PlaceFeedItem[];
   pagination: {
     limit: number;
     offset: number;

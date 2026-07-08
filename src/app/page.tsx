@@ -8,7 +8,7 @@ import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import { useLanguage } from "@/hooks/useLanguage";
 import { TAG_GROUPS, translateTag, translateGroupLabel } from "@/lib/i18n";
-import type { Aura } from "../../shared/aura-schema";
+import type { PlaceFeedItem, PlaceFeedResponse } from "../../shared/aura-schema";
 
 const RADIUS = 5000;
 const LIMIT = 10;
@@ -81,22 +81,22 @@ type LocationMode = "global" | "nearby" | "city" | "text";
 
 // ── Feed Card ─────────────────────────────────────────────────────────────────
 
-function FeedCard({ post }: { post: Aura }) {
+function FeedCard({ place }: { place: PlaceFeedItem }) {
   return (
-    <Link href={`/post/${post.id}`} className="block">
+    <Link href={`/post/${place.cover_post_id}`} className="block">
       <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg bg-[#D4C4A8]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={post.image_urls[0]} alt={post.title} loading="lazy" className="h-full w-full object-cover" />
+        <img src={place.cover_image_url} alt={place.cover_title} loading="lazy" className="h-full w-full object-cover" />
 
-        {/* Multi-image indicator */}
-        {post.image_urls.length > 1 && (
+        {/* Multiple shots indicator */}
+        {place.shot_count > 1 && (
           <div className="absolute left-2 top-2">
             <LayersIcon className="size-5 text-white drop-shadow-lg" />
           </div>
         )}
 
         {/* Verified badge */}
-        {post.is_verified && (
+        {place.verified_count > 0 && (
           <div className="absolute right-2 top-2 flex items-center justify-center rounded-full bg-[#DEC9A0] px-1.5 py-0.5 text-[11px] leading-none drop-shadow">
             📍
           </div>
@@ -105,7 +105,7 @@ function FeedCard({ post }: { post: Aura }) {
         {/* Gradient scrim + title */}
         <div className="absolute inset-x-0 bottom-0 rounded-b-lg bg-gradient-to-t from-black/70 to-transparent px-2.5 pb-2.5 pt-8">
           <p className="line-clamp-2 text-[13px] font-semibold leading-tight text-white drop-shadow">
-            {post.title}
+            {place.cover_title}
           </p>
         </div>
       </div>
@@ -143,7 +143,7 @@ export default function AuraFeed() {
   const [showTagFilter, setShowTagFilter] = useState(false);
 
   // Feed state
-  const [posts, setPosts] = useState<Aura[]>([]);
+  const [places, setPlaces] = useState<PlaceFeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
@@ -224,7 +224,7 @@ export default function AuraFeed() {
   }, []);
 
   const buildUrl = useCallback((currentOffset: number, coords: Coords | null, following: boolean, tag: string | null, query: string | null) => {
-    let url = `/api/auras/feed?limit=${LIMIT}&offset=${currentOffset}`;
+    let url = `/api/places/feed?limit=${LIMIT}&offset=${currentOffset}`;
     if (coords) url += `&lat=${coords.lat}&lng=${coords.lng}&radius=${RADIUS}`;
     if (query) url += `&q=${encodeURIComponent(query)}`;
     if (following) url += `&following=true`;
@@ -244,19 +244,15 @@ export default function AuraFeed() {
     const off = currentOffset ?? (loadMore ? offset : 0);
     try {
       setLoading(true);
-      const response = await apiGet<{
-        ok: boolean;
-        auras: Aura[];
-        pagination: { limit: number; offset: number; count: number };
-      }>(buildUrl(off, coords, following, tag, query));
+      const response = await apiGet<PlaceFeedResponse>(buildUrl(off, coords, following, tag, query));
 
       if (loadMore) {
-        setPosts(prev => [...prev, ...response.auras]);
+        setPlaces(prev => [...prev, ...response.places]);
       } else {
-        setPosts(response.auras);
+        setPlaces(response.places);
       }
-      setOffset(off + response.auras.length);
-      setHasMore(response.auras.length === LIMIT);
+      setOffset(off + response.places.length);
+      setHasMore(response.places.length === LIMIT);
     } catch (err) {
       setError((err as Error).message || "Failed to load feed");
     } finally {
@@ -367,8 +363,8 @@ export default function AuraFeed() {
 
   const activeCoords = locationMode === "nearby" ? userCoords : locationMode === "city" ? selectedCity : null;
 
-  const leftPosts = posts.filter((_, i) => i % 2 === 0);
-  const rightPosts = posts.filter((_, i) => i % 2 === 1);
+  const leftPlaces = places.filter((_, i) => i % 2 === 0);
+  const rightPlaces = places.filter((_, i) => i % 2 === 1);
 
   const contextLabel =
     locationMode === "nearby" ? "📍 Showing nearby posts" :
@@ -511,14 +507,14 @@ export default function AuraFeed() {
             <p className="text-[14px] text-red-500">{error}</p>
           </div>
         )}
-        {!error && posts.length > 0 && (
+        {!error && places.length > 0 && (
           <>
             <div className="flex gap-2">
               <div className="flex flex-1 flex-col gap-4">
-                {leftPosts.map((post) => <FeedCard key={post.id} post={post} />)}
+                {leftPlaces.map((place) => <FeedCard key={place.id} place={place} />)}
               </div>
               <div className="flex flex-1 flex-col gap-4">
-                {rightPosts.map((post) => <FeedCard key={post.id} post={post} />)}
+                {rightPlaces.map((place) => <FeedCard key={place.id} place={place} />)}
               </div>
             </div>
             {hasMore && (
@@ -534,7 +530,7 @@ export default function AuraFeed() {
             )}
           </>
         )}
-        {!loading && !error && posts.length === 0 && (
+        {!loading && !error && places.length === 0 && (
           <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
             {locationMode !== "global" ? (
               <>

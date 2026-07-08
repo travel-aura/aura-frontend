@@ -107,6 +107,7 @@ export default function PostDetailPage() {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [authToast, setAuthToast] = useState<string | null>(null);
+  const [authRedirect, setAuthRedirect] = useState<string>("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [showMapPicker, setShowMapPicker] = useState(false);
@@ -218,9 +219,10 @@ export default function PostDetailPage() {
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
-  const requireAuth = (msg: string): boolean => {
+  const requireAuth = (msg: string, redirect?: string): boolean => {
     if (getToken()) return true;
     setAuthToast(msg);
+    setAuthRedirect(redirect ?? "");
     setTimeout(() => setAuthToast(null), 2500);
     return false;
   };
@@ -487,7 +489,11 @@ export default function PostDetailPage() {
                   {/* Confirmed count OR "Be the first to verify" */}
                   {showBeFirst ? (
                     <button
-                      onClick={() => { if (requireAuth("Sign up to verify this place")) router.push(`/upload${place ? `?place_id=${place.id}` : ''}`); }}
+                      onClick={() => {
+                        const placeId = place?.id ?? post.place_id;
+                        const dest = placeId ? `/upload?place_id=${placeId}` : '/upload';
+                        if (requireAuth("Sign up to verify this place", dest)) router.push(dest);
+                      }}
                       className={`flex flex-col items-center justify-center gap-1 rounded-xl bg-white px-3 py-3.5 text-center ${hasGPS ? "flex-1" : "w-full"}`}
                     >
                       <svg className="size-4 shrink-0 text-[#B85C38]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -548,17 +554,43 @@ export default function PostDetailPage() {
         {place && placePosts.length > 0 && (
           <div className="mt-5 border-t border-[#EDE6D9] pt-5">
             <p className="px-4 text-[15px] font-bold text-[#1A1613]">More shots of this spot</p>
-            <div className="mt-3 grid grid-cols-3 gap-0.5">
+            <div className="mt-3 space-y-5">
               {placePosts.map((p) => (
-                <Link key={p.id} href={`/post/${p.id}`} className="relative block aspect-square overflow-hidden">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={p.image_urls[0]} alt={p.title} className="h-full w-full object-cover" />
-                  {p.image_urls.length > 1 && (
-                    <span className="absolute right-1.5 top-1.5 text-white text-[10px] drop-shadow-sm">⊞</span>
+                <Link key={p.id} href={`/post/${p.id}`} className="block">
+                  {/* Avatar + username + title */}
+                  <div className="flex items-center gap-2 px-4">
+                    <div className="size-7 shrink-0 overflow-hidden rounded-full bg-[#EDE6D9]">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={p.user_avatar_url || DEFAULT_AVATAR}
+                        alt={p.user_name || ""}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <span className="text-[13px] font-semibold text-[#1A1613]">{p.user_name || "User"}</span>
+                    <span className="truncate text-[13px] text-[#1A1613]">{p.title}</span>
+                  </div>
+
+                  {/* Description */}
+                  {p.description && (
+                    <p className="mt-1.5 px-4 text-[13px] leading-relaxed text-[#6B5F52] line-clamp-3">
+                      {p.description}
+                    </p>
                   )}
-                  {p.is_verified && (
-                    <span className="absolute bottom-1.5 left-1.5 text-[11px] leading-none">📍</span>
-                  )}
+
+                  {/* Horizontally scrollable photo strip */}
+                  <div className="mt-2 flex gap-2 overflow-x-auto pl-4 scrollbar-hide">
+                    {p.image_urls.map((url, i) => (
+                      <div
+                        key={i}
+                        className="aspect-[3/4] w-[44%] shrink-0 overflow-hidden rounded-2xl"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={url} alt={p.title} className="h-full w-full object-cover" />
+                      </div>
+                    ))}
+                    <div className="w-4 shrink-0" />
+                  </div>
                 </Link>
               ))}
             </div>
@@ -570,8 +602,10 @@ export default function PostDetailPage() {
           <div className="px-4 pt-4 pb-10">
             <button
               onClick={() => {
-                if (requireAuth("Sign up to add a shot"))
-                  router.push(place ? `/upload?place_id=${place.id}` : "/upload");
+                // Use place.id if loaded, fall back to post.place_id embedded in the post object
+                const placeId = place?.id ?? post.place_id;
+                const dest = placeId ? `/upload?place_id=${placeId}` : "/upload";
+                if (requireAuth("Sign up to add a shot", dest)) router.push(dest);
               }}
               className="flex w-full items-center justify-center gap-2.5 rounded-full border-2 border-dashed border-[#D4C4A8] bg-[#F9F6F0] py-4 text-[15px] font-medium text-[#6B5F52]"
             >
@@ -647,10 +681,16 @@ export default function PostDetailPage() {
         <div className="fixed bottom-8 left-4 right-4 z-50 flex items-center justify-between rounded-2xl bg-[#1A1613] px-5 py-4 shadow-xl">
           <p className="text-[14px] font-medium text-white">{authToast}</p>
           <div className="flex shrink-0 gap-2">
-            <Link href="/register" className="rounded-full border border-white/30 px-3 py-1.5 text-[12px] font-semibold text-white">
+            <Link
+              href={authRedirect ? `/register?redirect=${encodeURIComponent(authRedirect)}` : "/register"}
+              className="rounded-full border border-white/30 px-3 py-1.5 text-[12px] font-semibold text-white"
+            >
               Sign up
             </Link>
-            <Link href="/login" className="rounded-full bg-[#B85C38] px-3 py-1.5 text-[12px] font-semibold text-white">
+            <Link
+              href={authRedirect ? `/login?redirect=${encodeURIComponent(authRedirect)}` : "/login"}
+              className="rounded-full bg-[#B85C38] px-3 py-1.5 text-[12px] font-semibold text-white"
+            >
               Log in
             </Link>
           </div>
