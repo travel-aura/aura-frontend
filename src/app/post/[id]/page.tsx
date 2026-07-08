@@ -429,74 +429,104 @@ export default function PostDetailPage() {
             </div>
           )}
 
-          {/* Location label (place name > city) */}
-          {displayLocation && (
-            <div className="mt-2.5 flex items-center gap-1.5">
-              {(place?.name || post.place_name)
-                ? <StoreIcon className="size-4 shrink-0 text-[#6B5F52]" />
-                : <PinIcon className="size-4 shrink-0 text-[#6B5F52]" />
-              }
-              <span className="text-[14px] text-[#6B5F52]">{displayLocation}</span>
-            </div>
-          )}
+          {/* ── Info card ────────────────────────────────────────────────────────── */}
+          {(place || (post.lat && post.lng)) && (() => {
+            const hasGPS = !!(post.lat && post.lng);
+            // Count starts at 1 if this post itself is verified, ensuring it's never zero for verified posts
+            const verifiedCount = Math.max(place?.verified_count ?? 0, post.is_verified ? 1 : 0);
+            const showBeFirst = verifiedCount === 0;
 
-          {/* ── Info rectangle — only when GPS available ─────────────────────────── */}
-          {post.lat && post.lng && (
-            <div className="mt-4 flex items-stretch overflow-hidden rounded-2xl border border-[#D4C4A8] bg-[#F9F6F0]">
+            return (
+              <div className="mt-4 rounded-2xl bg-[#EDE6D9] px-4 py-4">
 
-              {/* Walk time OR distance (show distance if walk > 30 min) */}
-              <div className="flex flex-1 flex-col items-center justify-center gap-0.5 px-3 py-4">
-                {routeInfo ? (
-                  routeInfo.durationS < 1800 ? (
-                    <>
-                      <span className="text-[20px] font-bold text-[#1A1613]">
-                        {Math.round(routeInfo.durationS / 60)}
-                      </span>
-                      <span className="text-[11px] text-[#6B5F52]">min walk</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-[20px] font-bold text-[#1A1613]">
-                        {routeInfo.distanceM < 1000
-                          ? `${Math.round(routeInfo.distanceM)}m`
-                          : `${(routeInfo.distanceM / 1000).toFixed(1)}km`}
-                      </span>
-                      <span className="text-[11px] text-[#6B5F52]">away</span>
-                    </>
-                  )
-                ) : (
-                  <>
-                    <span className="text-[20px] font-bold text-[#1A1613]">—</span>
-                    <span className="text-[11px] text-[#6B5F52]">walk</span>
-                  </>
-                )}
-              </div>
-
-              {/* # verified at this place — only when place data is loaded */}
-              {place && (
-                <>
-                  <div className="w-px self-stretch bg-[#D4C4A8]" />
-                  <div className="flex flex-1 flex-col items-center justify-center gap-0.5 px-3 py-4">
-                    <span className="text-[20px] font-bold text-[#1A1613]">{place.verified_count}</span>
-                    <span className="text-[11px] text-[#6B5F52]">verified</span>
+                {/* Place name + city */}
+                {displayLocation && (
+                  <div className="mb-3">
+                    <p className="text-[17px] font-bold leading-snug text-[#1A1613]">
+                      {displayLocation}
+                    </p>
+                    {/* Show city as subtitle only when place name is different from city */}
+                    {place?.name && cityLocation && place.name !== cityLocation && (
+                      <div className="mt-0.5 flex items-center gap-1">
+                        <PinIcon className="size-3 shrink-0 text-[#6B5F52]" />
+                        <span className="text-[12px] text-[#6B5F52]">{cityLocation}</span>
+                      </div>
+                    )}
                   </div>
-                </>
-              )}
+                )}
 
-              {/* Go button — opens map picker */}
-              <div className="w-px self-stretch bg-[#D4C4A8]" />
-              <button
-                onClick={() => setShowMapPicker(true)}
-                className="flex flex-1 flex-col items-center justify-center gap-0.5 px-3 py-4 bg-[#B85C38]"
-              >
-                <svg className="size-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="7" y1="17" x2="17" y2="7" />
-                  <polyline points="7 7 17 7 17 17" />
-                </svg>
-                <span className="text-[11px] font-semibold text-white">Go</span>
-              </button>
-            </div>
-          )}
+                {/* Sub-cards row */}
+                <div className="flex gap-2">
+
+                  {/* Walk time — only when GPS */}
+                  {hasGPS && (
+                    <div className="flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl bg-white px-2 py-3.5">
+                      {routeInfo ? (
+                        routeInfo.durationS < 1800 ? (
+                          <>
+                            <span className="text-[16px] font-bold text-[#1A1613]">{Math.round(routeInfo.durationS / 60)} min</span>
+                            <span className="text-[11px] text-[#6B5F52]">walk</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-[16px] font-bold text-[#1A1613]">
+                              {routeInfo.distanceM < 1000 ? `${Math.round(routeInfo.distanceM)}m` : `${(routeInfo.distanceM / 1000).toFixed(1)}km`}
+                            </span>
+                            <span className="text-[11px] text-[#6B5F52]">away</span>
+                          </>
+                        )
+                      ) : (
+                        <>
+                          <span className="text-[16px] font-bold text-[#1A1613]">—</span>
+                          <span className="text-[11px] text-[#6B5F52]">walk</span>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Confirmed count OR "Be the first to verify" */}
+                  {showBeFirst ? (
+                    <button
+                      onClick={() => { if (requireAuth("Sign up to verify this place")) router.push(`/upload${place ? `?place_id=${place.id}` : ''}`); }}
+                      className={`flex flex-col items-center justify-center gap-1 rounded-xl bg-white px-3 py-3.5 text-center ${hasGPS ? "flex-1" : "w-full"}`}
+                    >
+                      <svg className="size-4 shrink-0 text-[#B85C38]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                        <line x1="12" y1="11" x2="12" y2="17" /><line x1="9" y1="14" x2="15" y2="14" />
+                      </svg>
+                      <span className="text-[10px] font-semibold leading-snug text-[#B85C38]">Be the first to verify</span>
+                    </button>
+                  ) : (
+                    <div className="flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl bg-white px-2 py-3.5">
+                      <div className="flex items-center gap-1">
+                        {/* Green verified badge */}
+                        <svg className="size-4 shrink-0" viewBox="0 0 24 24">
+                          <circle cx="12" cy="12" r="10" fill="#2D7D46" />
+                          <path d="M7 12.5l3.5 3.5 6.5-7" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        <span className="text-[17px] font-bold text-[#2D7D46]">{verifiedCount}</span>
+                      </div>
+                      <span className="text-[11px] text-[#6B5F52]">confirmed</span>
+                    </div>
+                  )}
+
+                  {/* Go button — only when GPS */}
+                  {hasGPS && (
+                    <button
+                      onClick={() => setShowMapPicker(true)}
+                      className="flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl bg-[#1A1613] px-2 py-3.5"
+                    >
+                      {/* Navigation triangle */}
+                      <svg className="size-4 text-white" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2L4 21h16z" />
+                      </svg>
+                      <span className="text-[11px] font-semibold text-white">Go</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* ── Static map ───────────────────────────────────────────────────────── */}
           {post.lat && post.lng && mapToken && (() => {
@@ -536,10 +566,13 @@ export default function PostDetailPage() {
         )}
 
         {/* ── Add your shot of this spot ────────────────────────────────────────── */}
-        {place && (
+        {(place || post.is_verified) && (
           <div className="px-4 pt-4 pb-10">
             <button
-              onClick={() => { if (requireAuth("Sign up to add a shot")) router.push(`/upload?place_id=${place.id}`); }}
+              onClick={() => {
+                if (requireAuth("Sign up to add a shot"))
+                  router.push(place ? `/upload?place_id=${place.id}` : "/upload");
+              }}
               className="flex w-full items-center justify-center gap-2.5 rounded-full border-2 border-dashed border-[#D4C4A8] bg-[#F9F6F0] py-4 text-[15px] font-medium text-[#6B5F52]"
             >
               <CameraAddIcon className="size-5 shrink-0" />
@@ -548,7 +581,7 @@ export default function PostDetailPage() {
           </div>
         )}
 
-        {!place && <div className="h-10" />}
+        {!place && !post.is_verified && <div className="h-10" />}
       </div>
 
       {/* ── Delete confirmation sheet ─────────────────────────────────────────── */}
