@@ -82,6 +82,7 @@ type LocationMode = "global" | "nearby" | "city" | "text";
 // ── Feed Card ─────────────────────────────────────────────────────────────────
 
 function FeedCard({ place }: { place: PlaceFeedItem }) {
+  if (!place.cover_post_id) return null;
   return (
     <Link href={`/post/${place.cover_post_id}`} className="block">
       <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg bg-[#D4C4A8]">
@@ -363,8 +364,9 @@ export default function AuraFeed() {
 
   const activeCoords = locationMode === "nearby" ? userCoords : locationMode === "city" ? selectedCity : null;
 
-  const leftPlaces = places.filter((_, i) => i % 2 === 0);
-  const rightPlaces = places.filter((_, i) => i % 2 === 1);
+  const validPlaces = places.filter((p) => p.cover_post_id);
+  const leftPlaces = validPlaces.filter((_, i) => i % 2 === 0);
+  const rightPlaces = validPlaces.filter((_, i) => i % 2 === 1);
 
   const contextLabel =
     locationMode === "nearby" ? "📍 Showing nearby posts" :

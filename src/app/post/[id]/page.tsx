@@ -554,45 +554,42 @@ export default function PostDetailPage() {
         {place && placePosts.length > 0 && (
           <div className="mt-5 border-t border-[#EDE6D9] pt-5">
             <p className="px-4 text-[15px] font-bold text-[#1A1613]">More shots of this spot</p>
-            <div className="mt-3 space-y-5">
+
+            {/* Horizontal scroll — cards match main carousel size */}
+            <div className="mt-3 flex gap-3 overflow-x-auto pl-4 snap-x snap-mandatory scrollbar-hide">
               {placePosts.map((p) => (
-                <Link key={p.id} href={`/post/${p.id}`} className="block">
+                <Link
+                  key={p.id}
+                  href={`/post/${p.id}`}
+                  className="flex aspect-[3/4] w-[62%] shrink-0 snap-start flex-col overflow-hidden rounded-2xl bg-white"
+                >
                   {/* Avatar + username + title */}
-                  <div className="flex items-center gap-2 px-4">
-                    <div className="size-7 shrink-0 overflow-hidden rounded-full bg-[#EDE6D9]">
+                  <div className="flex items-center gap-1.5 px-3 pt-3 pb-1">
+                    <div className="size-6 shrink-0 overflow-hidden rounded-full bg-[#EDE6D9]">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={p.user_avatar_url || DEFAULT_AVATAR}
-                        alt={p.user_name || ""}
-                        className="h-full w-full object-cover"
-                      />
+                      <img src={p.user_avatar_url || DEFAULT_AVATAR} alt="" className="h-full w-full object-cover" />
                     </div>
-                    <span className="text-[13px] font-semibold text-[#1A1613]">{p.user_name || "User"}</span>
-                    <span className="truncate text-[13px] text-[#1A1613]">{p.title}</span>
+                    <span className="text-[11px] font-semibold text-[#1A1613] shrink-0">{p.user_name || "User"}</span>
+                    <span className="min-w-0 truncate text-[11px] text-[#6B5F52]">{p.title}</span>
                   </div>
 
                   {/* Description */}
-                  {p.description && (
-                    <p className="mt-1.5 px-4 text-[13px] leading-relaxed text-[#6B5F52] line-clamp-3">
-                      {p.description}
-                    </p>
-                  )}
+                  <p className="px-3 pb-2 text-[11px] leading-snug text-[#6B5F52] line-clamp-2">
+                    {p.description || p.title}
+                  </p>
 
-                  {/* Horizontally scrollable photo strip */}
-                  <div className="mt-2 flex gap-2 overflow-x-auto pl-4 scrollbar-hide">
-                    {p.image_urls.map((url, i) => (
-                      <div
-                        key={i}
-                        className="aspect-[3/4] w-[44%] shrink-0 overflow-hidden rounded-2xl"
-                      >
+                  {/* Photos — fill remaining card height */}
+                  <div className="mx-3 mb-3 flex flex-1 gap-1 overflow-hidden rounded-xl">
+                    {p.image_urls.slice(0, 3).map((url, i) => (
+                      <div key={i} className="flex-1 overflow-hidden">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={url} alt={p.title} className="h-full w-full object-cover" />
                       </div>
                     ))}
-                    <div className="w-4 shrink-0" />
                   </div>
                 </Link>
               ))}
+              <div className="w-4 shrink-0" />
             </div>
           </div>
         )}
