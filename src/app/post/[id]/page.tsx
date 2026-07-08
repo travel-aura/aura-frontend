@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { apiGet, API_BASE } from "@/lib/api";
@@ -8,6 +8,7 @@ import { getToken, getUserId } from "@/lib/auth";
 import { getCityFromCoordinates } from "@/lib/geocoding";
 import { useLanguage } from "@/hooks/useLanguage";
 import { translateTag } from "@/lib/i18n";
+import BottomNav from "@/components/BottomNav";
 import type { AuraWithUser, Aura, Place } from "../../../../shared/aura-schema";
 
 const DEFAULT_AVATAR = "https://www.figma.com/api/mcp/asset/e4add399-8205-4c2a-8782-3da6c9f7bf60";
@@ -114,6 +115,8 @@ export default function PostDetailPage() {
   const [shareCopied, setShareCopied] = useState(false);
   const [place, setPlace] = useState<Place | null>(null);
   const [placePosts, setPlacePosts] = useState<Aura[]>([]);
+  const [navVisible, setNavVisible] = useState(false);
+  const lastScrollTop = useRef(0);
 
   // ── Main data fetch ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -363,7 +366,14 @@ export default function PostDetailPage() {
       </div>
 
       {/* ── Scrollable body ─────────────────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto pb-safe">
+      <div
+        className="flex-1 overflow-y-auto pb-safe"
+        onScroll={(e) => {
+          const y = e.currentTarget.scrollTop;
+          setNavVisible(y < lastScrollTop.current && y > 40);
+          lastScrollTop.current = y;
+        }}
+      >
 
         {/* ── Photo carousel ────────────────────────────────────────────────────── */}
         <div className="relative pl-4">
@@ -552,7 +562,7 @@ export default function PostDetailPage() {
 
         {/* ── More shots of this spot ───────────────────────────────────────────── */}
         {place && placePosts.length > 0 && (
-          <div className="mt-5 border-t border-[#EDE6D9] pt-5">
+          <div className="mt-5 border-t border-[#EDE6D9] pt-5 pb-4">
             <p className="px-4 text-[15px] font-bold text-[#1A1613]">More shots of this spot</p>
 
             {/* Horizontal scroll — cards match main carousel size */}
@@ -743,6 +753,11 @@ export default function PostDetailPage() {
           )}
         </div>
       )}
+
+      {/* ── Bottom nav — hidden on entry, slides in on scroll up ─────────────── */}
+      <div className={`transition-transform duration-300 ${navVisible ? "translate-y-0" : "translate-y-full"}`}>
+        <BottomNav />
+      </div>
     </div>
   );
 }
