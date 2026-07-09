@@ -755,7 +755,7 @@ export default function PostDetailPage() {
       )}
 
       {/* ── Bottom nav — hidden on entry, slides in on scroll up ─────────────── */}
-      <div className={`transition-transform duration-300 ${navVisible ? "translate-y-0" : "translate-y-full"}`}>
+      <div className={`fixed bottom-0 left-0 right-0 z-40 transition-transform duration-300 ease-in-out ${navVisible ? "translate-y-0" : "translate-y-full"}`}>
         <BottomNav />
       </div>
     </div>
