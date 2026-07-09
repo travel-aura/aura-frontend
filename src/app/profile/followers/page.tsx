@@ -6,20 +6,12 @@ import Link from "next/link";
 import { API_BASE, apiGet } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { useAuth } from "@/context/AuthContext";
-import type { UserProfile } from "../../../../shared/aura-schema";
+import type { UserProfile, FollowUser, FollowersResponse, FollowingResponse } from "../../../../shared/aura-schema";
 
 const DEFAULT_AVATAR =
   "https://www.figma.com/api/mcp/asset/e4add399-8205-4c2a-8782-3da6c9f7bf60";
 
 type Tab = "followers" | "following";
-
-interface FollowUser {
-  id: string;
-  name: string;
-  email?: string;
-  avatar_url: string | null;
-  is_following: boolean;
-}
 
 // ── Followers / Following Page ─────────────────────────────────────────────────
 
@@ -51,15 +43,15 @@ export default function FollowersPage() {
         const [userRes, followersRes, followingRes] = await Promise.allSettled([
           apiGet<{ ok: boolean; user: UserProfile }>("/me"),
           fetch(`${API_BASE}/api/follows/followers`, { headers }).then((r) =>
-            r.ok ? r.json() : { users: [] }
+            r.ok ? r.json() as Promise<FollowersResponse> : { users: [] as FollowUser[] }
           ),
           fetch(`${API_BASE}/api/follows/following`, { headers }).then((r) =>
-            r.ok ? r.json() : { users: [] }
+            r.ok ? r.json() as Promise<FollowingResponse> : { users: [] as FollowUser[] }
           ),
         ]);
 
         if (userRes.status === "fulfilled") {
-          setUserName(userRes.value.user.name || userRes.value.user.email?.split("@")[0] || "");
+          setUserName(userRes.value.user.name || "");
         } else {
           const msg = (userRes.reason as Error).message || "";
           if (msg.includes("401") || msg.includes("Unauthorized")) {
@@ -68,15 +60,10 @@ export default function FollowersPage() {
         }
 
         if (followersRes.status === "fulfilled") {
-          const raw = followersRes.value;
-          setFollowers(raw.users ?? raw.followers ?? []);
+          setFollowers(followersRes.value.users ?? []);
         }
         if (followingRes.status === "fulfilled") {
-          const raw = followingRes.value;
-          const list: FollowUser[] = (raw.users ?? raw.following ?? []).map(
-            (u: FollowUser) => ({ ...u, is_following: true })
-          );
-          setFollowing(list);
+          setFollowing((followingRes.value.users ?? []).map((u) => ({ ...u, is_following: true })));
         }
       } catch (err) {
         const msg = (err as Error).message;

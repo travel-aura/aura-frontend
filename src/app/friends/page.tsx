@@ -5,21 +5,14 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { API_BASE } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import type { UserSearchResult, UserSearchResponse } from "../../../shared/aura-schema";
 
 const DEFAULT_AVATAR = "https://www.figma.com/api/mcp/asset/e4add399-8205-4c2a-8782-3da6c9f7bf60";
-
-interface UserResult {
-  id: string;
-  name?: string;
-  email: string;
-  avatar_url?: string | null;
-  is_following: boolean;
-}
 
 export default function FriendsPage() {
   const router = useRouter();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<UserResult[]>([]);
+  const [results, setResults] = useState<UserSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [followPending, setFollowPending] = useState<Record<string, boolean>>({});
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -38,7 +31,7 @@ export default function FriendsPage() {
         if (token) headers.Authorization = `Bearer ${token}`;
         const res = await fetch(`${API_BASE}/api/users/search?q=${encodeURIComponent(query.trim())}`, { headers });
         if (res.ok) {
-          const data = await res.json();
+          const data = await res.json() as UserSearchResponse;
           setResults(data.users ?? []);
         } else {
           setResults([]);
@@ -52,7 +45,7 @@ export default function FriendsPage() {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [query]);
 
-  const handleFollow = async (user: UserResult) => {
+  const handleFollow = async (user: UserSearchResult) => {
     if (followPending[user.id]) return;
     setFollowPending((p) => ({ ...p, [user.id]: true }));
     const token = getToken();
@@ -73,7 +66,7 @@ export default function FriendsPage() {
     }
   };
 
-  const displayName = (u: UserResult) => u.name || u.email.split("@")[0];
+  const displayName = (u: UserSearchResult) => u.name || u.email.split("@")[0];
 
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-[#F7F3EC]">

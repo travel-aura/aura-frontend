@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiPost } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import type { AuthResponse } from "../../../shared/aura-schema";
 
 // ── Login Page ─────────────────────────────────────────────────────────────────
 
@@ -25,17 +26,7 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      const response = await apiPost<{
-        ok: boolean;
-        user: { id: string; email: string };
-        session?: { access_token: string };
-      }>(
-        "/auth/login",
-        {
-          email,
-          password,
-        },
-      );
+      const response = await apiPost<AuthResponse>("/auth/login", { email, password });
 
       if (response.session?.access_token && response.user?.id) {
         login(response.session.access_token, response.user.id);

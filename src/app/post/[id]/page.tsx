@@ -8,8 +8,7 @@ import { getToken, getUserId } from "@/lib/auth";
 import { getCityFromCoordinates } from "@/lib/geocoding";
 import { useLanguage } from "@/hooks/useLanguage";
 import { translateTag } from "@/lib/i18n";
-import BottomNav from "@/components/BottomNav";
-import type { AuraWithUser, Aura, Place } from "../../../../shared/aura-schema";
+import type { AuraWithUser, Aura, Place, PlaceResponse } from "../../../../shared/aura-schema";
 
 const DEFAULT_AVATAR = "https://www.figma.com/api/mcp/asset/e4add399-8205-4c2a-8782-3da6c9f7bf60";
 
@@ -136,7 +135,7 @@ export default function PostDetailPage() {
         if (!foundPost) { setError("Post not found"); return; }
 
         setPost(foundPost);
-        if (foundPost.is_saved !== undefined) setIsSaved(foundPost.is_saved);
+        setIsSaved(foundPost.is_saved);
 
         const token = getToken();
         const authHeader: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
@@ -155,11 +154,8 @@ export default function PostDetailPage() {
             ? fetch(`${API_BASE}/api/users/${foundPost.user_id}`, { headers: authHeader })
                 .then((r) => r.ok ? r.json() : null)
             : Promise.resolve(null),
-          // 2: save state (only if not already embedded in post)
-          foundPost.is_saved === undefined
-            ? fetch(`${API_BASE}/api/saves/check?aura_id=${foundPost.id}`, { headers: authHeader })
-                .then((r) => r.ok ? r.json() : { saved: false })
-            : Promise.resolve(null),
+          // 2: unused slot (save state now always embedded from GET /api/auras/:id)
+          Promise.resolve(null),
           // 3: place data — graceful 404 if backend not yet ready
           foundPost.place_id
             ? fetch(`${API_BASE}/api/places/${foundPost.place_id}`, { headers: authHeader })
@@ -178,11 +174,9 @@ export default function PostDetailPage() {
           const avatar = pd.profile?.avatar_url ?? null;
           if (name) setPost((prev) => prev ? { ...prev, user: { id: prev.user_id, name, email: "", avatar_url: avatar } } : prev);
         }
-        if (saveResult.status === "fulfilled" && saveResult.value && foundPost.is_saved === undefined) {
-          setIsSaved((saveResult.value as { saved: boolean }).saved ?? false);
-        }
+        void saveResult; // save state embedded in post from GET /api/auras/:id
         if (placeResult.status === "fulfilled" && placeResult.value) {
-          const pd = placeResult.value as { place?: Place; posts?: Aura[] };
+          const pd = placeResult.value as PlaceResponse;
           if (pd.place) {
             setPlace(pd.place);
             setPlacePosts((pd.posts ?? []).filter((p) => p.id !== foundPost!.id));
@@ -566,7 +560,8 @@ export default function PostDetailPage() {
             <p className="px-4 text-[15px] font-bold text-[#1A1613]">More shots of this spot</p>
 
             {/* Horizontal scroll — cards match main carousel size */}
-            <div className="mt-3 flex gap-3 overflow-x-auto pl-4 snap-x snap-mandatory scrollbar-hide">
+            <div className="mt-3 pl-4">
+            <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide">
               {placePosts.map((p) => (
                 <Link
                   key={p.id}
@@ -600,6 +595,7 @@ export default function PostDetailPage() {
                 </Link>
               ))}
               <div className="w-4 shrink-0" />
+            </div>
             </div>
           </div>
         )}
@@ -755,8 +751,46 @@ export default function PostDetailPage() {
       )}
 
       {/* ── Bottom nav — hidden on entry, slides in on scroll up ─────────────── */}
-      <div className={`fixed bottom-0 left-0 right-0 z-40 transition-transform duration-300 ease-in-out ${navVisible ? "translate-y-0" : "translate-y-full"}`}>
-        <BottomNav />
+      <div className={`fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-center border-t border-[#D4C4A8] bg-[#F9F6F0] shadow-[0px_-2px_4px_0px_rgba(0,0,0,0.12)] transition-transform duration-300 ease-in-out ${navVisible ? "translate-y-0" : "translate-y-full"}`}>
+        <div className="flex w-[291px] items-center justify-between">
+          {([
+            { id: "home", label: "Home", href: "/" },
+            { id: "create", label: "Create", href: "/upload" },
+            { id: "profile", label: "Profile", href: "/profile" },
+          ] as const).map(({ id, label, href }) => (
+            <button
+              key={id}
+              onClick={() => {
+                if ((id === "create" || id === "profile") && !getToken()) {
+                  router.push(id === "create" ? "/login?from=upload" : "/login");
+                  return;
+                }
+                router.push(href);
+              }}
+              className="flex w-[37px] flex-col items-center"
+            >
+              {id === "home" && (
+                <svg className="size-6 text-[#1A1613]" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M10.707 2.293a1 1 0 0 1 1.414 0l8 8A1 1 0 0 1 20 12h-1v9a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1v-9H3a1 1 0 0 1-.707-1.707l8-8Z" />
+                </svg>
+              )}
+              {id === "create" && (
+                <svg className="size-6 text-[#1A1613]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
+                  <rect x="3" y="3" width="18" height="18" rx="3" />
+                  <line x1="12" y1="8" x2="12" y2="16" />
+                  <line x1="8" y1="12" x2="16" y2="12" />
+                </svg>
+              )}
+              {id === "profile" && (
+                <svg className="size-6 text-[#1A1613]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              )}
+              <span className="text-[11px] leading-[1.5] text-[#1A1613]">{label}</span>
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

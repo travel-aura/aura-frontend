@@ -8,7 +8,7 @@ import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import { useLanguage } from "@/hooks/useLanguage";
 import { TAG_GROUPS, translateTag, translateGroupLabel } from "@/lib/i18n";
-import type { PlaceFeedItem, PlaceFeedResponse } from "../../shared/aura-schema";
+import type { PlaceFeedItem, PlacesFeedResponse } from "../../shared/aura-schema";
 
 const RADIUS = 5000;
 const LIMIT = 10;
@@ -87,7 +87,7 @@ function FeedCard({ place }: { place: PlaceFeedItem }) {
     <Link href={`/post/${place.cover_post_id}`} className="block">
       <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg bg-[#D4C4A8]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={place.cover_image_url} alt={place.cover_title} loading="lazy" className="h-full w-full object-cover" />
+        <img src={place.cover_image_url ?? undefined} alt={place.cover_title ?? undefined} loading="lazy" className="h-full w-full object-cover" />
 
         {/* Multiple shots indicator */}
         {place.shot_count > 1 && (
@@ -245,7 +245,7 @@ export default function AuraFeed() {
     const off = currentOffset ?? (loadMore ? offset : 0);
     try {
       setLoading(true);
-      const response = await apiGet<PlaceFeedResponse>(buildUrl(off, coords, following, tag, query));
+      const response = await apiGet<PlacesFeedResponse>(buildUrl(off, coords, following, tag, query));
 
       if (loadMore) {
         setPlaces(prev => [...prev, ...response.places]);

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiPost } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import type { AuthResponse } from "../../../shared/aura-schema";
 
 // ── Register Page ──────────────────────────────────────────────────────────────
 
@@ -31,18 +32,7 @@ function RegisterForm() {
 
     try {
       // backend MVP ignores name for now — we still send it (future-proof)
-      const response = await apiPost<{
-        ok: boolean;
-        user: { id: string; email: string };
-        session?: { access_token: string };
-      }>(
-        "/auth/register",
-        {
-          name,
-          email,
-          password,
-        },
-      );
+      const response = await apiPost<AuthResponse>("/auth/register", { name, email, password });
 
       if (response.session?.access_token && response.user?.id) {
         login(response.session.access_token, response.user.id);

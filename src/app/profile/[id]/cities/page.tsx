@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { API_BASE } from "@/lib/api";
 import { getToken } from "@/lib/auth";
-import type { PublicProfileResponse } from "../../../../../shared/aura-schema";
 
 export default function PublicCitiesPage() {
   const params = useParams();
@@ -19,8 +18,8 @@ export default function PublicCitiesPage() {
     const headers: Record<string, string> = {};
     if (token) headers.Authorization = `Bearer ${token}`;
     fetch(`${API_BASE}/api/users/${userId}`, { headers, signal: controller.signal })
-      .then((r) => r.ok ? r.json() : { stats: null })
-      .then((data: PublicProfileResponse) => setCities(data.stats?.cities ?? []))
+      .then((r) => r.ok ? r.json() : null)
+      .then((data: { stats?: { cities?: string[] } } | null) => setCities(data?.stats?.cities ?? []))
       .catch(() => {})
       .finally(() => setLoading(false));
     return () => controller.abort();

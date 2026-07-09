@@ -41,9 +41,38 @@ export interface NearbyPlace {
 }
 
 // GET /api/places/:place_id response
+export interface PlacePost extends Aura {
+  is_saved: boolean;
+  user_name: string;
+  user_avatar_url: string | null;
+}
+
 export interface PlaceResponse {
+  ok: true;
   place: Place;
-  posts: Aura[];                // other posts at this place (excluding the requested post)
+  posts: PlacePost[];
+}
+
+// GET /api/places/feed item
+export interface PlaceFeedItem {
+  id: string;
+  cover_post_id: string | null;
+  cover_image_url: string | null;
+  cover_title: string | null;
+  shot_count: number;
+  verified_count: number;
+  distance_meters: number | null;
+}
+
+// GET /api/places/feed response
+export interface PlacesFeedResponse {
+  ok: true;
+  places: PlaceFeedItem[];
+  pagination: {
+    limit: number;
+    offset: number;
+    count: number;
+  };
 }
 
 // ── Aura (post) ───────────────────────────────────────────────────────────────
@@ -167,32 +196,10 @@ export interface InsertAuraParams {
   p_gps_timestamp?: string;       // UTC ISO "YYYY-MM-DDTHH:MM:SSZ"
 }
 
-// 6. Aura feed response (legacy — post-based feed)
+// 6. Feed response with pagination
 export interface FeedResponse {
   ok: true;
   auras: Aura[];
-  pagination: {
-    limit: number;
-    offset: number;
-    count: number;
-  };
-}
-
-// 6b. Place feed item — one card per place, backed by its cover post
-export interface PlaceFeedItem {
-  id: string;               // place id
-  cover_post_id: string;    // id of the cover/first post at this place
-  cover_image_url: string;  // first image of the cover post
-  cover_title: string;      // title of the cover post
-  shot_count: number;       // total number of posts at this place
-  verified_count: number;   // GPS-verified posts at this place
-  distance_meters?: number | null;
-}
-
-// GET /api/places/feed response
-export interface PlaceFeedResponse {
-  ok: true;
-  places: PlaceFeedItem[];
   pagination: {
     limit: number;
     offset: number;
@@ -293,4 +300,42 @@ export interface PublicProfileResponse {
   profile: PublicProfile;
   posts: Aura[];
   stats: ArchetypeStats;
+}
+
+// 16. Auth response (POST /auth/login and POST /auth/register)
+// Note: auth endpoints return user.id (not user_id) — different from GET /me → UserProfile
+export interface AuthResponse {
+  ok: boolean;
+  user: { id: string; email: string };
+  session?: { access_token: string };
+}
+
+// 17. Follow user entry (GET /api/follows/followers and GET /api/follows/following)
+export interface FollowUser {
+  id: string;
+  name: string;
+  email?: string;
+  avatar_url: string | null;
+  is_following: boolean;
+}
+
+export interface FollowersResponse {
+  users: FollowUser[];
+}
+
+export interface FollowingResponse {
+  users: FollowUser[];
+}
+
+// 18. User search (GET /api/users/search?q=)
+export interface UserSearchResult {
+  id: string;
+  name?: string;
+  email: string;
+  avatar_url?: string | null;
+  is_following: boolean;
+}
+
+export interface UserSearchResponse {
+  users: UserSearchResult[];
 }

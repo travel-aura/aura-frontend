@@ -66,7 +66,7 @@ export default function EditProfilePage() {
         const response = await apiGet<{ ok: boolean; user: UserProfile }>("/me");
         const userProfile = response.user;
         setProfile(userProfile);
-        setName(userProfile.name || userProfile.email?.split("@")[0] || "");
+        setName(userProfile.name || "");
         setBio(userProfile.bio || "");
       } catch (err) {
         const errorMessage = (err as Error).message || "Failed to load profile";

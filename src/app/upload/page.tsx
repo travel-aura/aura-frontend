@@ -10,14 +10,7 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { TAG_GROUPS, translateTag, translateGroupLabel } from "@/lib/i18n";
 import { useUpload } from "@/context/UploadContext";
 import { searchNearbyPOIs, type NearbyPOI } from "@/lib/geocoding";
-
-interface NearbyPlace {
-  id: string;
-  name: string;
-  distance_meters: number;
-  verified_count: number;
-  cover_image_url?: string | null;
-}
+import type { NearbyPlace } from "../../../shared/aura-schema";
 
 const MAX_TAGS = 5;
 
