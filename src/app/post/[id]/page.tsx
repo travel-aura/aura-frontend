@@ -297,7 +297,7 @@ export default function PostDetailPage() {
   const displayLocation = place?.name ?? post.place_name ?? cityLocation;
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col bg-[#F7F3EC]">
+    <div className="relative flex h-screen w-full flex-col overflow-hidden bg-[#F7F3EC]">
 
       {/* ── Header ─────────────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between px-4 py-3">
