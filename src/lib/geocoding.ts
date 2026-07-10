@@ -89,25 +89,29 @@ export interface NearbyPOI {
 }
 
 /**
- * Find points of interest near the given coordinates using Mapbox Geocoding API v5.
+ * Find points of interest near the given coordinates using Mapbox Search Box API v1.
  */
 export async function searchNearbyPOIs(lat: number, lng: number): Promise<NearbyPOI[]> {
   const token = await getMapboxToken();
   if (!token) return [];
   try {
-    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?types=poi&proximity=${lng},${lat}&limit=8&access_token=${token}`;
+    const url = `https://api.mapbox.com/search/searchbox/v1/reverse?longitude=${lng}&latitude=${lat}&access_token=${token}&types=poi&limit=8`;
     const res = await fetch(url);
     if (!res.ok) return [];
     const data = await res.json();
     return (data.features ?? []).map((f: {
-      id: string;
-      text: string;
-      properties: { category?: string; address?: string };
+      properties: {
+        mapbox_id?: string;
+        name: string;
+        poi_category?: string[];
+        address?: string;
+        full_address?: string;
+      };
     }) => ({
-      id: f.id,
-      name: f.text,
-      category: (f.properties?.category ?? '').split(',')[0].trim(),
-      address: f.properties?.address ?? '',
+      id: f.properties.mapbox_id ?? f.properties.name,
+      name: f.properties.name,
+      category: (f.properties.poi_category?.[0] ?? '').replace(/_/g, ' '),
+      address: f.properties.address ?? f.properties.full_address ?? '',
     }));
   } catch {
     return [];
