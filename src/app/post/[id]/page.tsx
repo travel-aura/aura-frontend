@@ -445,6 +445,18 @@ export default function PostDetailPage() {
             return (
               <div className="mt-4 rounded-2xl bg-[#EDE6D9] px-4 py-4">
 
+                {/* Unverified notice */}
+                {!post.is_verified && (
+                  <div className="mb-3 flex items-center gap-2 rounded-xl bg-[#F7F3EC] px-3 py-2">
+                    <svg className="size-3.5 shrink-0 text-[#A09080]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    <p className="text-[12px] text-[#6B5F52]">
+                      Not verified · Approximate location only
+                    </p>
+                  </div>
+                )}
+
                 {/* Place name + city */}
                 {displayLocation && (
                   <div className="mb-3">
@@ -504,7 +516,7 @@ export default function PostDetailPage() {
                         <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
                         <line x1="12" y1="11" x2="12" y2="17" /><line x1="9" y1="14" x2="15" y2="14" />
                       </svg>
-                      <span className="text-[10px] font-semibold leading-snug text-[#B85C38]">Be the first to verify</span>
+                      <span className="text-[10px] font-semibold leading-snug text-[#B85C38]">Be the first to find this place</span>
                     </button>
                   ) : (
                     <div className="flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl bg-white px-2 py-3.5">
