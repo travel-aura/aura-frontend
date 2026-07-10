@@ -127,9 +127,8 @@ export async function searchPlaces(query: string): Promise<Array<{ name: string;
   if (!token) return [];
 
   try {
-    // Use Search Box v1 forward endpoint — works with secret token and supports poi types
-    const sessionToken = Math.random().toString(36).slice(2);
-    const url = `https://api.mapbox.com/search/searchbox/v1/forward?q=${encodeURIComponent(query)}&access_token=${token}&session_token=${sessionToken}&types=poi,place,locality,neighborhood&limit=5`;
+    // Search Box v1 forward — works with secret token, supports poi types
+    const url = `https://api.mapbox.com/search/searchbox/v1/forward?q=${encodeURIComponent(query)}&access_token=${token}&types=poi,place,locality,neighborhood&limit=5`;
     const response = await fetch(url);
 
     if (!response.ok) return [];
@@ -140,12 +139,10 @@ export async function searchPlaces(query: string): Promise<Array<{ name: string;
         name: string;
         place_formatted?: string;
         full_address?: string;
-        coordinates?: { longitude: number; latitude: number };
       };
-      geometry?: { coordinates: [number, number] };
+      geometry: { coordinates: [number, number] };
     }) => {
-      const lng = f.properties.coordinates?.longitude ?? f.geometry?.coordinates[0] ?? 0;
-      const lat = f.properties.coordinates?.latitude ?? f.geometry?.coordinates[1] ?? 0;
+      const [lng, lat] = f.geometry.coordinates;
       const label = [f.properties.name, f.properties.place_formatted ?? f.properties.full_address]
         .filter(Boolean).join(', ');
       return { name: label, lat, lng };
