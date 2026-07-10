@@ -119,24 +119,37 @@ export async function searchNearbyPOIs(lat: number, lng: number): Promise<Nearby
 }
 
 /**
- * Search for places by query string using Mapbox Geocoding API
+ * Search for places and POIs by query string using Mapbox Search Box v1 forward endpoint.
+ * Supports searching by store name, restaurant, city, neighborhood, etc.
  */
 export async function searchPlaces(query: string): Promise<Array<{ name: string; lat: number; lng: number }>> {
   const token = await getMapboxToken();
   if (!token) return [];
 
   try {
-    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${token}&types=country,region,place,locality,neighborhood&limit=5`;
+    // Use Search Box v1 forward endpoint — works with secret token and supports poi types
+    const sessionToken = Math.random().toString(36).slice(2);
+    const url = `https://api.mapbox.com/search/searchbox/v1/forward?q=${encodeURIComponent(query)}&access_token=${token}&session_token=${sessionToken}&types=poi,place,locality,neighborhood&limit=5`;
     const response = await fetch(url);
 
     if (!response.ok) return [];
 
     const data = await response.json();
-    return (data.features ?? []).map((f: { place_name: string; center: [number, number] }) => ({
-      name: f.place_name,
-      lat: f.center[1],
-      lng: f.center[0],
-    }));
+    return (data.features ?? []).map((f: {
+      properties: {
+        name: string;
+        place_formatted?: string;
+        full_address?: string;
+        coordinates?: { longitude: number; latitude: number };
+      };
+      geometry?: { coordinates: [number, number] };
+    }) => {
+      const lng = f.properties.coordinates?.longitude ?? f.geometry?.coordinates[0] ?? 0;
+      const lat = f.properties.coordinates?.latitude ?? f.geometry?.coordinates[1] ?? 0;
+      const label = [f.properties.name, f.properties.place_formatted ?? f.properties.full_address]
+        .filter(Boolean).join(', ');
+      return { name: label, lat, lng };
+    });
   } catch {
     return [];
   }
