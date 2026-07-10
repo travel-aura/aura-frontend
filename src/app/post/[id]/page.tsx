@@ -361,8 +361,10 @@ export default function PostDetailPage() {
       <div
         className="flex-1 overflow-y-auto pb-safe"
         onScroll={(e) => {
-          const y = e.currentTarget.scrollTop;
-          setNavVisible(y < lastScrollTop.current && y > 40);
+          const el = e.currentTarget;
+          const y = el.scrollTop;
+          const atBottom = y + el.clientHeight >= el.scrollHeight - 20;
+          setNavVisible(!atBottom && y < lastScrollTop.current && y > 40);
           lastScrollTop.current = y;
         }}
       >
