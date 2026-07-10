@@ -36,7 +36,7 @@ export default function UploadPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { language } = useLanguage();
-  const { startUpload } = useUpload();
+  const { startUpload, status: uploadStatus } = useUpload();
 
   const [authed, setAuthed] = useState(false);
   const [prefilledPlaceId, setPrefilledPlaceId] = useState<string | null>(null);
@@ -568,10 +568,10 @@ export default function UploadPage() {
           <div className="mb-6 mt-8 px-3">
             <button
               onClick={handleUpload}
-              disabled={photos.length === 0}
+              disabled={photos.length === 0 || uploadStatus === "uploading"}
               className="w-full rounded-[40px] bg-[#1A1613] py-[13px] text-[20px] font-medium text-white transition-opacity disabled:opacity-50"
             >
-              {photos.length > 1 ? `Upload ${photos.length} Photos` : "Upload"}
+              {uploadStatus === "uploading" ? "Uploading..." : photos.length > 1 ? `Upload ${photos.length} Photos` : "Upload"}
             </button>
           </div>
         </div>
@@ -647,7 +647,8 @@ export default function UploadPage() {
                 <button
                   key={place.id}
                   onClick={() => { setShowNearbyPrompt(false); doUpload(place.id); }}
-                  className="flex w-full items-center gap-3 rounded-2xl bg-[#EDE6D9] px-4 py-3 text-left"
+                  disabled={uploadStatus === "uploading"}
+                  className="flex w-full items-center gap-3 rounded-2xl bg-[#EDE6D9] px-4 py-3 text-left disabled:opacity-50"
                 >
                   {/* Cover thumbnail */}
                   {place.cover_image_url ? (
@@ -697,7 +698,8 @@ export default function UploadPage() {
             {/* Create new spot */}
             <button
               onClick={() => { setShowNearbyPrompt(false); doUpload(null); }}
-              className="mt-3 w-full rounded-2xl border border-[#D4C4A8] bg-[#F7F3EC] py-3.5 text-[15px] font-medium text-[#1A1613]"
+              disabled={uploadStatus === "uploading"}
+              className="mt-3 w-full rounded-2xl border border-[#D4C4A8] bg-[#F7F3EC] py-3.5 text-[15px] font-medium text-[#1A1613] disabled:opacity-50"
             >
               Create new spot
             </button>
