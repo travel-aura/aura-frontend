@@ -134,14 +134,16 @@ export default function PostDetailPage() {
 
         if (!foundPost) { setError("Post not found"); return; }
 
+        // Show post immediately — don't wait for secondary data
         setPost(foundPost);
         setIsSaved(foundPost.is_saved);
+        setLoading(false);
 
+        // Secondary requests fire in background — page is already visible
         const token = getToken();
         const authHeader: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
-        // Fire all secondary requests in parallel
-        const [cityTokenResult, userProfileResult, saveResult, placeResult] = await Promise.allSettled([
+        const [cityTokenResult, userProfileResult, placeResult] = await Promise.allSettled([
           // 0: reverse geocode + mapbox token
           foundPost.lat && foundPost.lng
             ? Promise.all([
@@ -154,9 +156,7 @@ export default function PostDetailPage() {
             ? fetch(`${API_BASE}/api/users/${foundPost.user_id}`, { headers: authHeader })
                 .then((r) => r.ok ? r.json() : null)
             : Promise.resolve(null),
-          // 2: unused slot (save state now always embedded from GET /api/auras/:id)
-          Promise.resolve(null),
-          // 3: place data — graceful 404 if backend not yet ready
+          // 2: place data — graceful 404 if backend not yet ready
           foundPost.place_id
             ? fetch(`${API_BASE}/api/places/${foundPost.place_id}`, { headers: authHeader })
                 .then((r) => r.ok ? r.json() : null)
@@ -174,7 +174,6 @@ export default function PostDetailPage() {
           const avatar = pd.profile?.avatar_url ?? null;
           if (name) setPost((prev) => prev ? { ...prev, user: { id: prev.user_id, name, email: "", avatar_url: avatar } } : prev);
         }
-        void saveResult; // save state embedded in post from GET /api/auras/:id
         if (placeResult.status === "fulfilled" && placeResult.value) {
           const pd = placeResult.value as PlaceResponse;
           if (pd.place) {
@@ -184,7 +183,6 @@ export default function PostDetailPage() {
         }
       } catch (err) {
         setError((err as Error).message || "Failed to load post");
-      } finally {
         setLoading(false);
       }
     };

@@ -8,6 +8,7 @@ import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import { useLanguage } from "@/hooks/useLanguage";
 import { TAG_GROUPS, translateTag, translateGroupLabel } from "@/lib/i18n";
+import { useUpload } from "@/context/UploadContext";
 import type { PlaceFeedItem, PlacesFeedResponse } from "../../shared/aura-schema";
 
 const RADIUS = 5000;
@@ -139,6 +140,9 @@ export default function AuraFeed() {
   // Language
   const { language } = useLanguage();
 
+  // Re-fetch when a background upload finishes
+  const { status: uploadStatus } = useUpload();
+
   // Tag filter
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [showTagFilter, setShowTagFilter] = useState(false);
@@ -265,6 +269,14 @@ export default function AuraFeed() {
     fetchPosts({ coords: null, currentOffset: 0, following: false });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // When a background upload completes, refresh the feed so the new post appears
+  useEffect(() => {
+    if (uploadStatus !== "success") return;
+    const coords = userCoords ?? (selectedCity ? { lat: selectedCity.lat, lng: selectedCity.lng } : null);
+    fetchPosts({ coords, currentOffset: 0, following: activeTab === "following", tag: activeTag, query: activeQuery });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uploadStatus]);
 
   const handleSearch = () => {
     const q = searchQuery.trim();
