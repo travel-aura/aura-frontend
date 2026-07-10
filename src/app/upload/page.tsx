@@ -9,7 +9,7 @@ import BottomNav from "@/components/BottomNav";
 import { useLanguage } from "@/hooks/useLanguage";
 import { TAG_GROUPS, translateTag, translateGroupLabel } from "@/lib/i18n";
 import { useUpload } from "@/context/UploadContext";
-import { searchNearbyPOIs, type NearbyPOI } from "@/lib/geocoding";
+import { searchNearbyPOIs, searchPlaces, getCityFromCoordinates, type NearbyPOI } from "@/lib/geocoding";
 import type { NearbyPlace } from "../../../shared/aura-schema";
 
 const MAX_TAGS = 5;
@@ -62,6 +62,14 @@ export default function UploadPage() {
   const [nearbyPlaces, setNearbyPlaces] = useState<NearbyPlace[]>([]);
   const [showNearbyPrompt, setShowNearbyPrompt] = useState(false);
   const [exifCoords, setExifCoords] = useState<{ lat: number; lng: number } | null>(null);
+  // Manual location for no-GPS photos
+  const [manualLocation, setManualLocation] = useState<{ lat: number; lng: number; name: string } | null>(null);
+  const [locationSearch, setLocationSearch] = useState('');
+  const [locationSuggestions, setLocationSuggestions] = useState<Array<{ name: string; lat: number; lng: number }>>([]);
+  const [showLocationSearch, setShowLocationSearch] = useState(false);
+  const [locationGeoLoading, setLocationGeoLoading] = useState(false);
+  const locationDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Venue (store/restaurant) — Step 1
   const [selectedVenueName, setSelectedVenueName] = useState<string | null>(null);
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null); // Mapbox POI feature ID
@@ -81,6 +89,7 @@ export default function UploadPage() {
     if (!anchor) return;
     // Reset venue choice whenever the GPS anchor changes
     setSelectedVenueName(null); setSelectedVenueId(null); setVenueSkipped(false);
+    setManualLocation(null); setLocationSearch(''); setShowLocationSearch(false);
     let cancelled = false;
     (async () => {
       try {
@@ -144,12 +153,13 @@ export default function UploadPage() {
     const metadata: AuraMetadata = {
       title: title.trim(),
       description: description.trim() || undefined,
-      // Venue path: send venue_id + place_name so backend matches/creates Place by Mapbox ID
       venue_id: selectedVenueId ?? undefined,
       place_name: selectedVenueName ?? undefined,
-      // Generic spot path: send place_id of existing spot chosen from nearby prompt
       place_id: placeId ?? undefined,
       tags: selectedTags.length > 0 ? selectedTags : undefined,
+      // Manual location for no-GPS photos — upload service uses these when EXIF has no coords
+      lat: manualLocation?.lat,
+      lng: manualLocation?.lng,
     };
     startUpload(photos.map(p => p.file), gpsPhoto.file, metadata);
     router.push("/");
@@ -382,6 +392,119 @@ export default function UploadPage() {
               ))}
             </div>
           </div>
+
+          {/* No-GPS location picker */}
+          {!exifCoords && photos.length > 0 && (
+            <div className="mt-5 px-3">
+              <div className="rounded-2xl border border-[#D4C4A8] bg-[#F9F6F0] px-4 py-4">
+                <div className="flex items-start gap-3">
+                  <span className="text-[20px] leading-none mt-0.5">📍</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[15px] font-semibold text-[#1A1613]">Add a location</p>
+                    <p className="mt-0.5 text-[12px] text-[#6B5F52]">No GPS found — add a rough location</p>
+                  </div>
+                </div>
+
+                {manualLocation ? (
+                  /* Location confirmed */
+                  <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-[#EDE6D9] px-3 py-2.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <svg className="size-4 shrink-0 text-[#6B5F52]" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>
+                      <span className="text-[14px] font-medium text-[#1A1613] truncate">{manualLocation.name}</span>
+                    </div>
+                    <button
+                      onClick={() => { setManualLocation(null); setLocationSearch(''); setShowLocationSearch(false); }}
+                      className="shrink-0 text-[12px] text-[#A09080]"
+                    >
+                      Change
+                    </button>
+                  </div>
+                ) : showLocationSearch ? (
+                  /* Search input */
+                  <div className="mt-3">
+                    <input
+                      type="text"
+                      value={locationSearch}
+                      onChange={(e) => {
+                        const q = e.target.value;
+                        setLocationSearch(q);
+                        if (locationDebounceRef.current) clearTimeout(locationDebounceRef.current);
+                        if (!q.trim()) { setLocationSuggestions([]); return; }
+                        locationDebounceRef.current = setTimeout(async () => {
+                          const results = await searchPlaces(q);
+                          setLocationSuggestions(results);
+                        }, 300);
+                      }}
+                      placeholder="Search city, country…"
+                      autoFocus
+                      className="w-full rounded-xl border border-[#D4C4A8] bg-[#F7F3EC] px-3 py-2.5 text-[14px] text-[#1A1613] placeholder:text-[#A09080] outline-none focus:border-[#B85C38]"
+                    />
+                    {locationSuggestions.length > 0 && (
+                      <div className="mt-1 overflow-hidden rounded-xl border border-[#D4C4A8] bg-[#F9F6F0]">
+                        {locationSuggestions.map((s, i) => (
+                          <button
+                            key={i}
+                            onClick={() => {
+                              setManualLocation({ lat: s.lat, lng: s.lng, name: s.name.split(',')[0] });
+                              setLocationSearch('');
+                              setLocationSuggestions([]);
+                              setShowLocationSearch(false);
+                            }}
+                            className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[13px] text-[#1A1613] hover:bg-[#EDE6D9] border-t border-[#D4C4A8] first:border-t-0"
+                          >
+                            <svg className="size-3.5 shrink-0 text-[#A09080]" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>
+                            <span className="truncate">{s.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <button
+                      onClick={() => { setShowLocationSearch(false); setLocationSearch(''); setLocationSuggestions([]); }}
+                      className="mt-2 text-[12px] text-[#A09080]"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  /* Two action buttons */
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      onClick={async () => {
+                        if (!navigator.geolocation) return;
+                        setLocationGeoLoading(true);
+                        navigator.geolocation.getCurrentPosition(
+                          async (pos) => {
+                            const { latitude: lat, longitude: lng } = pos.coords;
+                            const name = await getCityFromCoordinates(lat, lng);
+                            setManualLocation({ lat, lng, name });
+                            setLocationGeoLoading(false);
+                          },
+                          () => setLocationGeoLoading(false)
+                        );
+                      }}
+                      disabled={locationGeoLoading}
+                      className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#1A1613] py-2.5 text-[13px] font-medium text-white disabled:opacity-60"
+                    >
+                      {locationGeoLoading ? (
+                        <span>Locating…</span>
+                      ) : (
+                        <>
+                          <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+                          Use my location
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => setShowLocationSearch(true)}
+                      className="flex-1 rounded-xl border border-[#D4C4A8] py-2.5 text-[13px] font-medium text-[#6B5F52]"
+                    >
+                      Search
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Step 1 — Venue question (hidden when coming from a known place) */}
           {exifCoords && !venueSkipped && !prefilledPlaceId && (

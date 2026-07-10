@@ -13,6 +13,8 @@ export interface AuraMetadata {
   parent_id?: string | null;   // legacy — kept for backward compat
   tags?: string[];
   place_name?: string;         // venue display name chosen by user
+  lat?: number;                // manual location (no-GPS photos) — is_verified stays false
+  lng?: number;
 }
 
 export interface UploadProgress {
@@ -64,6 +66,10 @@ export const processAndUploadMultipleAuras = async (
     gpsFields.lng = exifData.longitude;
     gpsFields.altitude = exifData.altitude ?? 0;
     gpsFields.heading = exifData.GPSImgDirection ?? 0;
+  } else if (userMetadata.lat && userMetadata.lng) {
+    // Manual location provided by user — not EXIF verified, is_verified stays false
+    gpsFields.lat = userMetadata.lat;
+    gpsFields.lng = userMetadata.lng;
   }
 
   // Extended date/time + GPS metadata
