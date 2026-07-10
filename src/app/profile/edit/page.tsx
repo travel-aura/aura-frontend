@@ -1,14 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { apiGet, apiPut } from "@/lib/api";
+import imageCompression from "browser-image-compression";
+import { apiGet, apiPut, API_BASE } from "@/lib/api";
+import { getToken } from "@/lib/auth";
 import { useAuth } from "@/context/AuthContext";
 import type { UserProfile, ProfileUpdatePayload } from "../../../../shared/aura-schema";
-
-const AVATAR =
-  "https://www.figma.com/api/mcp/asset/e4add399-8205-4c2a-8782-3da6c9f7bf60";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -56,6 +55,9 @@ export default function EditProfilePage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showNameError, setShowNameError] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!ready) return;
@@ -127,6 +129,49 @@ export default function EditProfilePage() {
     }
   };
 
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Show preview immediately from local file
+    setAvatarPreview(URL.createObjectURL(file));
+    setAvatarUploading(true);
+    setError(null);
+
+    try {
+      const compressed = await imageCompression(file, {
+        maxSizeMB: 0.5,
+        maxWidthOrHeight: 512,
+        fileType: "image/webp",
+      });
+
+      const formData = new FormData();
+      formData.append("avatar", compressed, "avatar.webp");
+
+      const res = await fetch(`${API_BASE}/api/profile/avatar`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${getToken()}` },
+        credentials: "include",
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error("Upload failed");
+
+      const data = await res.json();
+      if (data.avatar_url) {
+        setProfile((prev) => prev ? { ...prev, avatar_url: data.avatar_url } : prev);
+        setAvatarPreview(data.avatar_url);
+      }
+    } catch {
+      setError("Failed to upload photo. Please try again.");
+      setAvatarPreview(null);
+    } finally {
+      setAvatarUploading(false);
+      // Reset input so the same file can be re-selected if needed
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -176,17 +221,45 @@ export default function EditProfilePage() {
           {/* Avatar with edit icon */}
           <div className="mt-6 flex justify-center">
             <div className="relative">
-              <div className="size-[101px] overflow-hidden rounded-full border-2 border-white shadow-md">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={AVATAR}
-                  alt="Profile avatar"
-                  className="h-full w-full object-cover"
-                />
+              <div className="size-[101px] overflow-hidden rounded-full border-2 border-white shadow-md bg-[#EDE6D9]">
+                {(avatarPreview ?? profile?.avatar_url) ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={avatarPreview ?? profile!.avatar_url!}
+                    alt="Profile avatar"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center">
+                    <span className="text-[32px] font-semibold text-[#B85C38]">
+                      {(name || profile?.email || "?")[0].toUpperCase()}
+                    </span>
+                  </div>
+                )}
+                {avatarUploading && (
+                  <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40">
+                    <svg className="size-6 animate-spin text-white" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                    </svg>
+                  </div>
+                )}
               </div>
-              <button className="absolute bottom-0 right-0 flex size-8 items-center justify-center rounded-full bg-[#B85C38] shadow-md">
+              <button
+                type="button"
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={avatarUploading}
+                className="absolute bottom-0 right-0 flex size-8 items-center justify-center rounded-full bg-[#B85C38] shadow-md disabled:opacity-50"
+              >
                 <PencilIcon className="size-4 text-white" />
               </button>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
             </div>
           </div>
 
