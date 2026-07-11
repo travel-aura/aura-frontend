@@ -13,9 +13,6 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { translateTag } from "@/lib/i18n";
 import type { Post, UserProfile, ArchetypeStats, SavedAurasResponse } from "../../../shared/aura-schema";
 
-const AVATAR =
-  "https://www.figma.com/api/mcp/asset/e4add399-8205-4c2a-8782-3da6c9f7bf60";
-
 // ── Profile Page ───────────────────────────────────────────────────────────────
 
 const TABS = ["Uploaded", "Saved"] as const;
@@ -32,6 +29,7 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [userName, setUserName] = useState("");
   const [userBio, setUserBio] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [shareCopied, setShareCopied] = useState(false);
   const [stats, setStats] = useState<ArchetypeStats>({
@@ -58,6 +56,7 @@ export default function ProfilePage() {
           const userInfo = userRes.value.user;
           setUserName(userInfo.name || userInfo.email?.split('@')[0] || '');
           setUserBio(userInfo.bio ?? null);
+          setAvatarUrl(userInfo.avatar_url ?? null);
           const uid = userInfo.user_id;
           if (uid) { setUserId(uid); saveUserId(uid); }
         } else {
@@ -120,9 +119,17 @@ export default function ProfilePage() {
         {/* ── Profile header ── */}
         <div className="flex items-start gap-4 px-4 pt-5">
           {/* Avatar */}
-          <div className="size-[80px] shrink-0 overflow-hidden rounded-full border border-[#D4C4A8]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={AVATAR} alt={userName} className="h-full w-full object-cover" />
+          <div className="size-[80px] shrink-0 overflow-hidden rounded-full border border-[#D4C4A8] bg-[#EDE6D9]">
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={avatarUrl} alt={userName} className="h-full w-full object-cover" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center">
+                <span className="text-[28px] font-semibold text-[#B85C38]">
+                  {(userName || "?")[0].toUpperCase()}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Name + stats */}
