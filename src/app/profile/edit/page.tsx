@@ -56,7 +56,7 @@ export default function EditProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [showNameError, setShowNameError] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -106,6 +106,24 @@ export default function EditProfilePage() {
       setSaving(true);
       setError(null);
 
+      // Upload avatar first if one was selected
+      if (pendingAvatarFile) {
+        const compressed = await imageCompression(pendingAvatarFile, {
+          maxSizeMB: 0.5,
+          maxWidthOrHeight: 512,
+          fileType: "image/webp",
+        });
+        const formData = new FormData();
+        formData.append("avatar", compressed, "avatar.webp");
+        const res = await fetch(`${API_BASE}/api/profile/avatar`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${getToken()}` },
+          credentials: "include",
+          body: formData,
+        });
+        if (!res.ok) throw new Error("Failed to upload avatar");
+      }
+
       const payload: ProfileUpdatePayload = {
         name: name.trim(),
         bio: bio.trim() || undefined,
@@ -129,47 +147,12 @@ export default function EditProfilePage() {
     }
   };
 
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // Show preview immediately from local file
+    setPendingAvatarFile(file);
     setAvatarPreview(URL.createObjectURL(file));
-    setAvatarUploading(true);
-    setError(null);
-
-    try {
-      const compressed = await imageCompression(file, {
-        maxSizeMB: 0.5,
-        maxWidthOrHeight: 512,
-        fileType: "image/webp",
-      });
-
-      const formData = new FormData();
-      formData.append("avatar", compressed, "avatar.webp");
-
-      const res = await fetch(`${API_BASE}/api/profile/avatar`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${getToken()}` },
-        credentials: "include",
-        body: formData,
-      });
-
-      if (!res.ok) throw new Error("Upload failed");
-
-      const data = await res.json();
-      if (data.avatar_url) {
-        setProfile((prev) => prev ? { ...prev, avatar_url: data.avatar_url } : prev);
-        setAvatarPreview(data.avatar_url);
-      }
-    } catch {
-      setError("Failed to upload photo. Please try again.");
-      setAvatarPreview(null);
-    } finally {
-      setAvatarUploading(false);
-      // Reset input so the same file can be re-selected if needed
-      if (avatarInputRef.current) avatarInputRef.current.value = "";
-    }
+    if (avatarInputRef.current) avatarInputRef.current.value = "";
   };
 
   if (loading) {
@@ -236,19 +219,11 @@ export default function EditProfilePage() {
                     </span>
                   </div>
                 )}
-                {avatarUploading && (
-                  <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40">
-                    <svg className="size-6 animate-spin text-white" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                    </svg>
-                  </div>
-                )}
               </div>
               <button
                 type="button"
                 onClick={() => avatarInputRef.current?.click()}
-                disabled={avatarUploading}
+                disabled={saving}
                 className="absolute bottom-0 right-0 flex size-8 items-center justify-center rounded-full bg-[#B85C38] shadow-md disabled:opacity-50"
               >
                 <PencilIcon className="size-4 text-white" />
