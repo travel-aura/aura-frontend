@@ -617,10 +617,12 @@ export default function PostDetailPage() {
                     <span className="min-w-0 truncate text-[12px] text-[#6B5F52]">{p.title}</span>
                   </div>
 
-                  {/* Description — exactly 2 lines */}
-                  <p className="px-3 pb-2.5 text-[11px] leading-snug text-[#6B5F52] line-clamp-2">
-                    {p.description || ""}
-                  </p>
+                  {/* Description — reserved height = exactly 2 lines at 11px × line-height 1.375 */}
+                  <div className="px-3 pb-2.5" style={{ height: 'calc(2 * 11px * 1.375 + 10px)' }}>
+                    <p className="text-[11px] text-[#6B5F52] line-clamp-2" style={{ lineHeight: 1.375 }}>
+                      {p.description || ""}
+                    </p>
+                  </div>
 
                   {/* Photos — 3:4 ratio, scrollable like main carousel */}
                   <div className="overflow-hidden pl-3 pb-3">
