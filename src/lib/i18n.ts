@@ -38,6 +38,11 @@ export interface TagGroup {
 
 export const TAG_GROUPS: TagGroup[] = [
   {
+    key: "frame",
+    label: { en: "Frame", "zh-CN": "构图", "zh-TW": "構圖" },
+    tags: ["Portrait", "Landscape", "Both"],
+  },
+  {
     key: "light",
     label: { en: "Light & Time", "zh-CN": "光线 & 时间", "zh-TW": "光線 & 時間" },
     tags: ["Sunrise", "Golden hour", "Sunset", "Twilight", "Blue hour", "Night", "Midday"],
@@ -67,13 +72,13 @@ export const TAG_GROUPS: TagGroup[] = [
     label: { en: "Vibe", "zh-CN": "氛围", "zh-TW": "氛圍" },
     tags: [
       "Cozy", "Hidden", "Quiet", "Peaceful", "Romantic", "Dreamy", "Moody",
-      "Vintage", "Rustic", "Charming", "Lively", "Minimal", "Elegant", "Scenic", "Aesthetic",
+      "Vintage", "Rustic", "Charming", "Lively", "Minimal", "Elegant", "Scenic", "Authentic",
     ],
   },
   {
     key: "aesthetic",
     label: { en: "Aesthetic", "zh-CN": "美学", "zh-TW": "美學" },
-    tags: ["Euro summer", "Mediterranean", "Tropical", "Coastal", "Countryside", "Cottagecore", "Old money", "Fairytale", "Pastel"],
+    tags: ["Euro summer", "Mediterranean", "Tropical", "Coastal", "Countryside", "Cottagecore", "Fairytale", "Pastel"],
   },
   {
     key: "colour",
@@ -89,6 +94,10 @@ export const ALL_TAGS: string[] = TAG_GROUPS.flatMap((g) => g.tags);
 type Translations = Record<string, { "zh-CN": string; "zh-TW": string }>;
 
 export const TAG_TRANSLATIONS: Translations = {
+  // Frame
+  Portrait:       { "zh-CN": "人像",      "zh-TW": "人像" },
+  Landscape:      { "zh-CN": "风景",      "zh-TW": "風景" },
+  Both:           { "zh-CN": "皆有",      "zh-TW": "皆有" },
   // Light & Time
   Sunrise:        { "zh-CN": "日出",      "zh-TW": "日出" },
   "Golden hour":  { "zh-CN": "黄金时刻",  "zh-TW": "黃金時刻" },
@@ -155,7 +164,7 @@ export const TAG_TRANSLATIONS: Translations = {
   Minimal:        { "zh-CN": "极简",      "zh-TW": "極簡" },
   Elegant:        { "zh-CN": "优雅",      "zh-TW": "優雅" },
   Scenic:         { "zh-CN": "风景优美",  "zh-TW": "風景優美" },
-  Aesthetic:      { "zh-CN": "高颜值",    "zh-TW": "高顏值" },
+  Authentic:      { "zh-CN": "地道",      "zh-TW": "道地" },
   // Aesthetic group
   "Euro summer":  { "zh-CN": "欧式夏日",  "zh-TW": "歐式夏日" },
   Mediterranean:  { "zh-CN": "地中海风",  "zh-TW": "地中海風" },
@@ -163,7 +172,6 @@ export const TAG_TRANSLATIONS: Translations = {
   Coastal:        { "zh-CN": "海岸风",    "zh-TW": "海岸風" },
   Countryside:    { "zh-CN": "乡村风光",  "zh-TW": "鄉村風光" },
   Cottagecore:    { "zh-CN": "田园风",    "zh-TW": "田園風" },
-  "Old money":    { "zh-CN": "老钱风",    "zh-TW": "老錢風" },
   Fairytale:      { "zh-CN": "童话风",    "zh-TW": "童話風" },
   Pastel:         { "zh-CN": "马卡龙色",  "zh-TW": "馬卡龍色" },
   // Colour
