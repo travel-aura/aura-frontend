@@ -6,6 +6,7 @@ import { type AuraMetadata } from "@/services/uploadService";
 import { getToken } from "@/lib/auth";
 import { API_BASE } from "@/lib/api";
 import BottomNav from "@/components/BottomNav";
+import EmojiStickerEditor from "@/components/EmojiStickerEditor";
 import { useLanguage } from "@/hooks/useLanguage";
 import { TAG_GROUPS, translateTag, translateGroupLabel } from "@/lib/i18n";
 import { useUpload } from "@/context/UploadContext";
@@ -55,6 +56,7 @@ export default function UploadPage() {
 
   const [photos, setPhotos] = useState<PhotoFile[]>([]);
   const [gpsPhotoIndex, setGpsPhotoIndex] = useState(0);
+  const [editingPhotoIndex, setEditingPhotoIndex] = useState<number | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -306,6 +308,13 @@ export default function UploadPage() {
                         /* Unselected: white/semi-transparent ring */
                         <span className="flex size-[16px] items-center justify-center rounded-full border border-[#D4C4A8] bg-[#F7F3EC]/80" />
                       )}
+                    </button>
+                    {/* Sticker editor — bottom-left */}
+                    <button
+                      onClick={() => setEditingPhotoIndex(i)}
+                      className="absolute left-[5px] bottom-[5px] flex size-[22px] items-center justify-center rounded-full bg-black/50 text-[12px]"
+                    >
+                      😊
                     </button>
                     {/* Remove — top-right */}
                     <button
@@ -576,6 +585,26 @@ export default function UploadPage() {
         </div>
 
       <BottomNav />
+
+      {/* Emoji sticker editor */}
+      {editingPhotoIndex !== null && photos[editingPhotoIndex] && (
+        <EmojiStickerEditor
+          imageFile={photos[editingPhotoIndex].file}
+          onDone={(editedFile) => {
+            setPhotos((prev) => {
+              const next = [...prev];
+              URL.revokeObjectURL(next[editingPhotoIndex].preview);
+              next[editingPhotoIndex] = {
+                file: editedFile,
+                preview: URL.createObjectURL(editedFile),
+              };
+              return next;
+            });
+            setEditingPhotoIndex(null);
+          }}
+          onCancel={() => setEditingPhotoIndex(null)}
+        />
+      )}
 
       {/* Place picker sheet */}
       {showPlacePicker && (
