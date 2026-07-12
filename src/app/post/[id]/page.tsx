@@ -262,7 +262,8 @@ export default function PostDetailPage() {
     try {
       const res = await fetch(`${API_BASE}/api/auras/${post.id}`, { method: "DELETE", headers });
       if (!res.ok) throw new Error("Failed to delete post");
-      router.push("/profile");
+      const fromSameApp = document.referrer && new URL(document.referrer).origin === window.location.origin;
+      fromSameApp ? router.back() : router.push("/");
     } catch {
       setDeleteLoading(false);
       setShowDeleteConfirm(false);
@@ -409,6 +410,18 @@ export default function PostDetailPage() {
 
           {/* Title */}
           <h1 className="text-[22px] font-bold leading-tight text-[#1A1613]">{post.title}</h1>
+
+          {/* Capture timestamp — only shown when EXIF data exists */}
+          {post.taken_at && (() => {
+            const date = new Date(post.taken_at);
+            const formatted = date.toLocaleString(undefined, {
+              year: "numeric", month: "short", day: "numeric",
+              hour: "2-digit", minute: "2-digit",
+            });
+            return (
+              <p className="mt-1.5 text-[12px] text-[#A09080]">Taken {formatted}</p>
+            );
+          })()}
 
           {/* Description */}
           {post.description && (
@@ -580,29 +593,38 @@ export default function PostDetailPage() {
                   href={`/post/${p.id}`}
                   className="flex aspect-[3/4] w-[62%] shrink-0 snap-start flex-col overflow-hidden rounded-2xl bg-white"
                 >
-                  {/* Avatar + username + title */}
-                  <div className="flex items-center gap-1.5 px-3 pt-3 pb-1">
-                    <div className="size-6 shrink-0 overflow-hidden rounded-full bg-[#EDE6D9]">
+                  {/* Avatar + name */}
+                  <div className="flex items-center gap-2 px-3 pt-3 pb-1">
+                    <div className="size-7 shrink-0 overflow-hidden rounded-full bg-[#EDE6D9]">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={p.user_avatar_url || DEFAULT_AVATAR} alt="" className="h-full w-full object-cover" />
                     </div>
-                    <span className="text-[11px] font-semibold text-[#1A1613] shrink-0">{p.user_name || "User"}</span>
-                    <span className="min-w-0 truncate text-[11px] text-[#6B5F52]">{p.title}</span>
+                    <span className="text-[12px] font-semibold text-[#1A1613]">{p.user_name || "User"}</span>
                   </div>
 
+                  {/* Title */}
+                  <p className="px-3 pb-1 text-[13px] font-bold leading-snug text-[#1A1613] line-clamp-1">{p.title}</p>
+
                   {/* Description */}
-                  <p className="px-3 pb-2 text-[11px] leading-snug text-[#6B5F52] line-clamp-2">
-                    {p.description || p.title}
+                  <p className="px-3 pb-2.5 text-[11px] leading-snug text-[#6B5F52] line-clamp-3">
+                    {p.description || ""}
                   </p>
 
-                  {/* Photos — fill remaining card height */}
-                  <div className="mx-3 mb-3 flex flex-1 gap-1 overflow-hidden rounded-xl">
-                    {p.image_urls.slice(0, 3).map((url, i) => (
-                      <div key={i} className="flex-1 overflow-hidden">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={url} alt={p.title} className="h-full w-full object-cover" />
-                      </div>
-                    ))}
+                  {/* Photos — fill remaining card height, scrollable if multiple */}
+                  <div className="relative mx-3 mb-3 flex-1 overflow-hidden rounded-xl">
+                    <div className="flex h-full w-full overflow-x-auto snap-x snap-mandatory scrollbar-hide">
+                      {p.image_urls.map((url, i) => (
+                        <div key={i} className="relative h-full min-w-full shrink-0 snap-start">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={url} alt={p.title} className="h-full w-full object-cover" />
+                        </div>
+                      ))}
+                    </div>
+                    {p.image_urls.length > 1 && (
+                      <span className="absolute bottom-2 right-2 rounded-full bg-black/50 px-2 py-0.5 text-[10px] font-medium text-white">
+                        1/{p.image_urls.length}
+                      </span>
+                    )}
                   </div>
                 </Link>
               ))}
