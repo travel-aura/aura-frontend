@@ -114,30 +114,29 @@ export default function UploadPage() {
     if (!files || files.length === 0) return;
 
     const MAX_PHOTOS = 3;
-    const newPhotos: PhotoFile[] = [];
+    const incoming: PhotoFile[] = [];
 
-    // Only take first 3 photos
-    for (let i = 0; i < files.length && i < MAX_PHOTOS; i++) {
+    for (let i = 0; i < files.length; i++) {
       const file = files[i];
       if (file.type.startsWith('image/')) {
-        newPhotos.push({
-          file,
-          preview: URL.createObjectURL(file),
-        });
+        incoming.push({ file, preview: URL.createObjectURL(file) });
       }
     }
 
-    // Show warning if user selected more than 3
-    if (files.length > MAX_PHOTOS) {
-      setError(`Maximum ${MAX_PHOTOS} photos allowed. First ${MAX_PHOTOS} selected.`);
-      setTimeout(() => setError(null), 4000);
-    } else {
+    setPhotos((prev) => {
+      const combined = [...prev, ...incoming];
+      if (combined.length > MAX_PHOTOS) {
+        // Revoke URLs for photos that get dropped
+        combined.slice(MAX_PHOTOS).forEach((p) => URL.revokeObjectURL(p.preview));
+        setError(`Maximum ${MAX_PHOTOS} photos allowed.`);
+        setTimeout(() => setError(null), 4000);
+        return combined.slice(0, MAX_PHOTOS);
+      }
       setError(null);
-    }
+      return combined;
+    });
 
-    setPhotos(newPhotos);
-
-    // Reset file input
+    // Reset file input so the same file can be re-selected if needed
     event.target.value = '';
   };
 
