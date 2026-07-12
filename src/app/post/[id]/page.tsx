@@ -591,40 +591,34 @@ export default function PostDetailPage() {
                 <Link
                   key={p.id}
                   href={`/post/${p.id}`}
-                  className="flex aspect-[3/4] w-[62%] shrink-0 snap-start flex-col overflow-hidden rounded-2xl bg-white"
+                  className="flex w-[72%] shrink-0 snap-start flex-col overflow-hidden rounded-2xl bg-white"
                 >
-                  {/* Avatar + name */}
-                  <div className="flex items-center gap-2 px-3 pt-3 pb-1">
-                    <div className="size-7 shrink-0 overflow-hidden rounded-full bg-[#EDE6D9]">
+                  {/* Avatar + name + title — single line */}
+                  <div className="flex items-center gap-2 px-3 pt-3 pb-1.5">
+                    <div className="size-6 shrink-0 overflow-hidden rounded-full bg-[#EDE6D9]">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={p.user_avatar_url || DEFAULT_AVATAR} alt="" className="h-full w-full object-cover" />
                     </div>
-                    <span className="text-[12px] font-semibold text-[#1A1613]">{p.user_name || "User"}</span>
+                    <span className="shrink-0 text-[12px] font-semibold text-[#1A1613]">{p.user_name || "User"}</span>
+                    <span className="min-w-0 truncate text-[12px] text-[#6B5F52]">{p.title}</span>
                   </div>
 
-                  {/* Title */}
-                  <p className="px-3 pb-1 text-[13px] font-bold leading-snug text-[#1A1613] line-clamp-1">{p.title}</p>
-
-                  {/* Description */}
-                  <p className="px-3 pb-2.5 text-[11px] leading-snug text-[#6B5F52] line-clamp-3">
+                  {/* Description — exactly 2 lines */}
+                  <p className="px-3 pb-2.5 text-[11px] leading-snug text-[#6B5F52] line-clamp-2">
                     {p.description || ""}
                   </p>
 
-                  {/* Photos — fill remaining card height, scrollable if multiple */}
-                  <div className="relative mx-3 mb-3 flex-1 overflow-hidden rounded-xl">
-                    <div className="flex h-full w-full overflow-x-auto snap-x snap-mandatory scrollbar-hide">
+                  {/* Photos — 3:4 ratio, scrollable like main carousel */}
+                  <div className="overflow-hidden pl-3 pb-3">
+                    <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory scrollbar-hide">
                       {p.image_urls.map((url, i) => (
-                        <div key={i} className="relative h-full min-w-full shrink-0 snap-start">
+                        <div key={i} className="aspect-[3/4] w-[82%] shrink-0 snap-start overflow-hidden rounded-xl">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={url} alt={p.title} className="h-full w-full object-cover" />
                         </div>
                       ))}
+                      <div className="w-1 shrink-0" />
                     </div>
-                    {p.image_urls.length > 1 && (
-                      <span className="absolute bottom-2 right-2 rounded-full bg-black/50 px-2 py-0.5 text-[10px] font-medium text-white">
-                        1/{p.image_urls.length}
-                      </span>
-                    )}
                   </div>
                 </Link>
               ))}
