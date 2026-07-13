@@ -25,14 +25,7 @@ function RegisterForm() {
   const [error, setError] = useState<string | null>(null);
   const { language } = useLanguage();
 
-  const [clientId, setClientId] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch("/api/google-client-id")
-      .then((r) => r.json())
-      .then((d) => { if (d.clientId) setClientId(d.clientId); })
-      .catch(() => {});
-  }, []);
+  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || null;
 
   const handleGoogleCredential = async (credential: string) => {
     setGoogleLoading(true);
