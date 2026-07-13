@@ -7,9 +7,9 @@ import { t } from "@/lib/i18n";
 interface Sticker {
   id: number;
   emoji: string;
-  x: number; // 0–1 relative to container width
-  y: number; // 0–1 relative to container height
-  size: number; // px on screen
+  x: number;     // 0–1 relative to container width
+  y: number;     // 0–1 relative to container height
+  size: number;  // px on screen
 }
 
 interface Props {
@@ -26,6 +26,8 @@ const EMOJI_OPTIONS = [
 ];
 
 const DEFAULT_SIZE = 72;
+const MIN_SIZE = 32;
+const MAX_SIZE = 180;
 
 export default function EmojiStickerEditor({ imageFile, onDone, onCancel }: Props) {
   const [imageUrl, setImageUrl] = useState("");
@@ -37,12 +39,16 @@ export default function EmojiStickerEditor({ imageFile, onDone, onCancel }: Prop
 
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
-  const dragRef = useRef<{
+
+  // Unified gesture ref — covers both move and resize
+  const gestureRef = useRef<{
+    type: "move" | "resize";
     id: number;
     startTouchX: number;
     startTouchY: number;
     startStickerX: number;
     startStickerY: number;
+    startSize: number;
   } | null>(null);
 
   useEffect(() => {
@@ -51,66 +57,91 @@ export default function EmojiStickerEditor({ imageFile, onDone, onCancel }: Prop
     return () => URL.revokeObjectURL(url);
   }, [imageFile]);
 
-  // ── Sticker management ─────────────────────────────────────────────────────
+  // Native non-passive touchmove so preventDefault() actually works
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (!gestureRef.current) return;
+      e.preventDefault();
+      const touch = e.touches[0];
+      const rect = container.getBoundingClientRect();
+      const g = gestureRef.current;
+
+      if (g.type === "move") {
+        const newX = Math.max(0.05, Math.min(0.95, g.startStickerX + (touch.clientX - g.startTouchX) / rect.width));
+        const newY = Math.max(0.05, Math.min(0.95, g.startStickerY + (touch.clientY - g.startTouchY) / rect.height));
+        setStickers((prev) => prev.map((s) => s.id === g.id ? { ...s, x: newX, y: newY } : s));
+      } else {
+        // resize: diagonal drag distance → size delta
+        const dx = touch.clientX - g.startTouchX;
+        const dy = touch.clientY - g.startTouchY;
+        const delta = (Math.abs(dx) > Math.abs(dy) ? dx : dy);
+        const newSize = Math.max(MIN_SIZE, Math.min(MAX_SIZE, g.startSize + delta));
+        setStickers((prev) => prev.map((s) => s.id === g.id ? { ...s, size: newSize } : s));
+      }
+    };
+
+    const onTouchEnd = () => { gestureRef.current = null; };
+
+    container.addEventListener("touchmove", onTouchMove, { passive: false });
+    container.addEventListener("touchend", onTouchEnd);
+    container.addEventListener("touchcancel", onTouchEnd);
+    return () => {
+      container.removeEventListener("touchmove", onTouchMove);
+      container.removeEventListener("touchend", onTouchEnd);
+      container.removeEventListener("touchcancel", onTouchEnd);
+    };
+  }, []);
 
   const addSticker = (emoji: string) => {
-    setStickers((prev) => [
-      ...prev,
-      { id: nextId, emoji, x: 0.5, y: 0.38, size: DEFAULT_SIZE },
-    ]);
+    setStickers((prev) => [...prev, { id: nextId, emoji, x: 0.5, y: 0.38, size: DEFAULT_SIZE }]);
     setNextId((n) => n + 1);
     setShowPicker(false);
   };
 
   const removeSticker = (id: number) => setStickers((prev) => prev.filter((s) => s.id !== id));
 
-  // ── Touch drag ────────────────────────────────────────────────────────────
-
-  const onStickerTouchStart = (e: React.TouchEvent, id: number) => {
+  const onStickerTouchStart = (e: React.TouchEvent, id: number, type: "move" | "resize") => {
     e.stopPropagation();
     const touch = e.touches[0];
     const sticker = stickers.find((s) => s.id === id);
     if (!sticker) return;
-    dragRef.current = {
+    gestureRef.current = {
+      type,
       id,
       startTouchX: touch.clientX,
       startTouchY: touch.clientY,
       startStickerX: sticker.x,
       startStickerY: sticker.y,
+      startSize: sticker.size,
     };
   };
 
-  const onContainerTouchMove = (e: React.TouchEvent) => {
-    if (!dragRef.current || !containerRef.current) return;
-    e.preventDefault();
-    const touch = e.touches[0];
-    const rect = containerRef.current.getBoundingClientRect();
-    const dx = (touch.clientX - dragRef.current.startTouchX) / rect.width;
-    const dy = (touch.clientY - dragRef.current.startTouchY) / rect.height;
-    const newX = Math.max(0.05, Math.min(0.95, dragRef.current.startStickerX + dx));
-    const newY = Math.max(0.05, Math.min(0.95, dragRef.current.startStickerY + dy));
-    setStickers((prev) =>
-      prev.map((s) => (s.id === dragRef.current!.id ? { ...s, x: newX, y: newY } : s))
-    );
-  };
-
-  const onContainerTouchEnd = () => { dragRef.current = null; };
-
-  // Mouse fallback (desktop testing)
-  const onStickerMouseDown = (e: React.MouseEvent, id: number) => {
+  // Mouse fallback for desktop testing
+  const onStickerMouseDown = (e: React.MouseEvent, id: number, type: "move" | "resize") => {
     e.stopPropagation();
     const sticker = stickers.find((s) => s.id === id);
     if (!sticker || !containerRef.current) return;
     const startX = e.clientX, startY = e.clientY;
-    const sx = sticker.x, sy = sticker.y;
+    const sx = sticker.x, sy = sticker.y, ss = sticker.size;
     const onMove = (ev: MouseEvent) => {
-      if (!containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const newX = Math.max(0.05, Math.min(0.95, sx + (ev.clientX - startX) / rect.width));
-      const newY = Math.max(0.05, Math.min(0.95, sy + (ev.clientY - startY) / rect.height));
-      setStickers((prev) => prev.map((s) => (s.id === id ? { ...s, x: newX, y: newY } : s)));
+      const rect = containerRef.current!.getBoundingClientRect();
+      if (type === "move") {
+        const newX = Math.max(0.05, Math.min(0.95, sx + (ev.clientX - startX) / rect.width));
+        const newY = Math.max(0.05, Math.min(0.95, sy + (ev.clientY - startY) / rect.height));
+        setStickers((prev) => prev.map((s) => s.id === id ? { ...s, x: newX, y: newY } : s));
+      } else {
+        const delta = ev.clientX - startX;
+        const newSize = Math.max(MIN_SIZE, Math.min(MAX_SIZE, ss + delta));
+        setStickers((prev) => prev.map((s) => s.id === id ? { ...s, size: newSize } : s));
+      }
     };
-    const onUp = () => { document.removeEventListener("mousemove", onMove); document.removeEventListener("mouseup", onUp); };
+    const onUp = () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseup", onUp);
   };
@@ -134,17 +165,12 @@ export default function EmojiStickerEditor({ imageFile, onDone, onCancel }: Prop
       if (stickers.length > 0 && containerRef.current && imgRef.current) {
         const containerRect = containerRef.current.getBoundingClientRect();
         const imgRect = imgRef.current.getBoundingClientRect();
-
-        // Scale factor: natural px per displayed px
         const scaleX = img.naturalWidth / imgRect.width;
         const scaleY = img.naturalHeight / imgRect.height;
-
-        // Offset of the rendered image within the container (object-contain letterboxing)
         const offsetLeft = imgRect.left - containerRect.left;
         const offsetTop = imgRect.top - containerRect.top;
 
         for (const sticker of stickers) {
-          // Convert 0–1 container coords → pixels on displayed image → natural image pixels
           const screenX = sticker.x * containerRect.width - offsetLeft;
           const screenY = sticker.y * containerRect.height - offsetTop;
           const canvasX = screenX * scaleX;
@@ -161,12 +187,7 @@ export default function EmojiStickerEditor({ imageFile, onDone, onCancel }: Prop
       const blob = await new Promise<Blob>((res) =>
         canvas.toBlob((b) => res(b!), "image/webp", 0.92)
       );
-      const edited = new File(
-        [blob],
-        imageFile.name.replace(/\.[^.]+$/, ".webp"),
-        { type: "image/webp" }
-      );
-      onDone(edited);
+      onDone(new File([blob], imageFile.name.replace(/\.[^.]+$/, ".webp"), { type: "image/webp" }));
     } catch {
       onDone(imageFile);
     } finally {
@@ -179,25 +200,20 @@ export default function EmojiStickerEditor({ imageFile, onDone, onCancel }: Prop
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-12 pb-3">
         <button onClick={onCancel} className="text-[14px] text-white/60">
-          {t('cancel', language)}
+          {t("cancel", language)}
         </button>
-        <p className="text-[15px] font-semibold text-white">{t('addStickerTitle', language)}</p>
+        <p className="text-[15px] font-semibold text-white">{t("addStickerTitle", language)}</p>
         <button
           onClick={handleDone}
           disabled={processing}
           className="text-[14px] font-semibold text-[#B85C38] disabled:opacity-50"
         >
-          {processing ? t('savingDots', language) : t('done', language)}
+          {processing ? t("savingDots", language) : t("done", language)}
         </button>
       </div>
 
-      {/* Image canvas area */}
-      <div
-        ref={containerRef}
-        className="relative flex-1 overflow-hidden"
-        onTouchMove={onContainerTouchMove}
-        onTouchEnd={onContainerTouchEnd}
-      >
+      {/* Image + sticker canvas */}
+      <div ref={containerRef} className="relative flex-1 overflow-hidden">
         {imageUrl && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -222,18 +238,31 @@ export default function EmojiStickerEditor({ imageFile, onDone, onCancel }: Prop
               touchAction: "none",
               cursor: "grab",
             }}
-            onTouchStart={(e) => onStickerTouchStart(e, sticker.id)}
-            onMouseDown={(e) => onStickerMouseDown(e, sticker.id)}
+            onTouchStart={(e) => onStickerTouchStart(e, sticker.id, "move")}
+            onMouseDown={(e) => onStickerMouseDown(e, sticker.id, "move")}
           >
             {sticker.emoji}
-            {/* Remove ✕ */}
+
+            {/* Remove ✕ — top-left */}
             <button
-              className="absolute -right-1.5 -top-1.5 flex size-[18px] items-center justify-center rounded-full bg-black/70 text-[9px] font-bold text-white"
+              className="absolute -left-1 -top-1 flex size-[18px] items-center justify-center rounded-full bg-black/70 text-[9px] font-bold text-white"
               onTouchStart={(e) => { e.stopPropagation(); removeSticker(sticker.id); }}
               onClick={(e) => { e.stopPropagation(); removeSticker(sticker.id); }}
             >
               ✕
             </button>
+
+            {/* Resize handle — bottom-right */}
+            <div
+              className="absolute -bottom-1 -right-1 flex size-[20px] cursor-nwse-resize items-center justify-center rounded-full bg-white/80"
+              onTouchStart={(e) => onStickerTouchStart(e, sticker.id, "resize")}
+              onMouseDown={(e) => onStickerMouseDown(e, sticker.id, "resize")}
+            >
+              <svg viewBox="0 0 10 10" className="size-[10px]" fill="none" stroke="#333" strokeWidth={1.5} strokeLinecap="round">
+                <line x1="3" y1="9" x2="9" y2="3" />
+                <line x1="6" y1="9" x2="9" y2="6" />
+              </svg>
+            </div>
           </div>
         ))}
       </div>
@@ -247,7 +276,7 @@ export default function EmojiStickerEditor({ imageFile, onDone, onCancel }: Prop
                 <button
                   key={emoji}
                   onClick={() => addSticker(emoji)}
-                  className="text-[38px] active:scale-125 transition-transform"
+                  className="text-[38px] transition-transform active:scale-125"
                 >
                   {emoji}
                 </button>
@@ -257,7 +286,7 @@ export default function EmojiStickerEditor({ imageFile, onDone, onCancel }: Prop
               onClick={() => setShowPicker(false)}
               className="mt-3 w-full py-2 text-[13px] text-white/50"
             >
-              {t('cancel', language)}
+              {t("cancel", language)}
             </button>
           </>
         ) : (
@@ -267,7 +296,7 @@ export default function EmojiStickerEditor({ imageFile, onDone, onCancel }: Prop
               className="flex items-center gap-2 rounded-full bg-white/15 px-6 py-3 text-[14px] font-medium text-white"
             >
               <span className="text-[20px]">😊</span>
-              {t('addSticker', language)}
+              {t("addSticker", language)}
             </button>
           </div>
         )}
