@@ -7,7 +7,7 @@ import { API_BASE } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import PostGrid from "@/components/PostGrid";
 import { useLanguage } from "@/hooks/useLanguage";
-import { translateTag } from "@/lib/i18n";
+import { translateTag, t } from "@/lib/i18n";
 import type { PublicProfileResponse, ArchetypeStats, Aura } from "../../../../shared/aura-schema";
 
 
@@ -89,7 +89,7 @@ export default function PublicProfilePage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F7F3EC]">
-        <p className="text-[15px] text-[#6B5F52]">Loading...</p>
+        <p className="text-[15px] text-[#6B5F52]">{t('loading', language)}</p>
       </div>
     );
   }
@@ -97,9 +97,9 @@ export default function PublicProfilePage() {
   if (error || !profile) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-[#F7F3EC] px-4">
-        <p className="text-[15px] font-semibold text-red-600">{error || "User not found"}</p>
+        <p className="text-[15px] font-semibold text-red-600">{error || t('userNotFound', language)}</p>
         <button onClick={() => router.back()} className="mt-4 rounded-lg bg-[#EDE6D9] px-4 py-2 text-[14px] font-medium text-[#1A1613]">
-          Go Back
+          {t('goBack', language)}
         </button>
       </div>
     );
@@ -183,13 +183,13 @@ export default function PublicProfilePage() {
                 : "bg-[#B85C38] text-white"
             }`}
           >
-            {profile.is_following ? "Following" : "Follow"}
+            {profile.is_following ? t('followingBtn', language) : t('follow', language)}
           </button>
           <button
             onClick={copyShare}
             className="flex-1 rounded-lg bg-[#EDE6D9] py-[8px] text-[13px] font-medium text-[#1A1613] transition-colors"
           >
-            {shareCopied ? "Copied!" : "Share profile"}
+            {shareCopied ? t('copied', language) : t('shareProfile', language)}
           </button>
         </div>
 
@@ -198,8 +198,8 @@ export default function PublicProfilePage() {
         <div className="px-0.5 py-0.5">
           <PostGrid
             posts={posts}
-            emptyTitle="No posts yet"
-            emptyMessage="This user hasn't uploaded anything yet."
+            emptyTitle={t('noPostsYet', language)}
+            emptyMessage={t('noUserPosts', language)}
           />
         </div>
       </div>

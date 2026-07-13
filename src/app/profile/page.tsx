@@ -10,7 +10,7 @@ import TopBar from "@/components/TopBar";
 import PostGrid from "@/components/PostGrid";
 import BottomNav from "@/components/BottomNav";
 import { useLanguage } from "@/hooks/useLanguage";
-import { translateTag } from "@/lib/i18n";
+import { translateTag, t } from "@/lib/i18n";
 import type { Post, UserProfile, ArchetypeStats, SavedAurasResponse } from "../../../shared/aura-schema";
 
 // ── Profile Page ───────────────────────────────────────────────────────────────
@@ -178,13 +178,13 @@ export default function ProfilePage() {
             href="/profile/edit"
             className="flex-1 rounded-lg bg-[#EDE6D9] py-[8px] text-center text-[13px] font-semibold text-[#1A1613]"
           >
-            Edit profile
+            {t('editProfile', language)}
           </Link>
           <button
             onClick={copyShare}
             className="flex-1 rounded-lg bg-[#EDE6D9] py-[8px] text-[13px] font-semibold text-[#1A1613] transition-colors"
           >
-            {shareCopied ? "Copied!" : "Share profile"}
+            {shareCopied ? t('copied', language) : t('shareProfile', language)}
           </button>
         </div>
 
@@ -196,7 +196,7 @@ export default function ProfilePage() {
               onClick={() => setActiveTab(tab)}
               className="relative flex-1 py-[10px] text-[14px] font-medium text-[#1A1613]"
             >
-              {tab}
+              {tab === "Uploaded" ? t('uploaded', language) : t('saved', language)}
               {activeTab === tab && (
                 <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#B85C38]" />
               )}
@@ -208,7 +208,7 @@ export default function ProfilePage() {
         <div className="px-0.5 py-0.5">
           {loading && (
             <div className="flex items-center justify-center py-24">
-              <p className="text-[15px] text-[#6B5F52]">Loading...</p>
+              <p className="text-[15px] text-[#6B5F52]">{t('loading', language)}</p>
             </div>
           )}
           {error && !loading && (
@@ -219,15 +219,15 @@ export default function ProfilePage() {
           {!loading && !error && activeTab === "Uploaded" && (
             <PostGrid
               posts={uploadedPosts}
-              emptyTitle="No posts yet"
-              emptyMessage="You haven't uploaded anything yet."
+              emptyTitle={t('noPostsYet', language)}
+              emptyMessage={t('noPostsDesc', language)}
             />
           )}
           {!loading && !error && activeTab === "Saved" && (
             <PostGrid
               posts={savedPosts}
-              emptyTitle="No saved posts"
-              emptyMessage="You haven't saved anything yet."
+              emptyTitle={t('noSavedPosts', language)}
+              emptyMessage={t('noSavedDesc', language)}
             />
           )}
         </div>

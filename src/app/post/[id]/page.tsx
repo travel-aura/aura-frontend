@@ -7,7 +7,7 @@ import { apiGet, API_BASE } from "@/lib/api";
 import { getToken, getUserId } from "@/lib/auth";
 import { getCityFromCoordinates } from "@/lib/geocoding";
 import { useLanguage } from "@/hooks/useLanguage";
-import { translateTag } from "@/lib/i18n";
+import { translateTag, t } from "@/lib/i18n";
 import type { AuraWithUser, Aura, Place, PlaceResponse } from "../../../../shared/aura-schema";
 
 const DEFAULT_AVATAR = "https://www.figma.com/api/mcp/asset/e4add399-8205-4c2a-8782-3da6c9f7bf60";
@@ -284,7 +284,7 @@ export default function PostDetailPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F7F3EC]">
-        <p className="text-[15px] text-[#6B5F52]">Loading...</p>
+        <p className="text-[15px] text-[#6B5F52]">{t('loading', language)}</p>
       </div>
     );
   }
@@ -292,9 +292,9 @@ export default function PostDetailPage() {
   if (error || !post) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-[#F7F3EC] px-4">
-        <p className="text-[15px] font-semibold text-red-600">{error || "Post not found"}</p>
+        <p className="text-[15px] font-semibold text-red-600">{error || t('postNotFound', language)}</p>
         <button onClick={() => router.back()} className="mt-4 rounded-lg bg-[#EDE6D9] px-4 py-2 text-[14px] font-medium text-[#1A1613]">
-          Go Back
+          {t('goBack', language)}
         </button>
       </div>
     );
@@ -352,7 +352,7 @@ export default function PostDetailPage() {
             </>
           ) : (
             <button
-              onClick={() => { if (requireAuth("Sign up to save posts")) handleSave(); }}
+              onClick={() => { if (requireAuth(t('signUpToSave', language))) handleSave(); }}
               disabled={savePending}
               className="flex items-center justify-center disabled:opacity-50"
             >
@@ -365,7 +365,7 @@ export default function PostDetailPage() {
 
           <button onClick={handleShare} className="flex items-center justify-center">
             {shareCopied
-              ? <span className="text-[12px] font-semibold text-[#B85C38]">Copied!</span>
+              ? <span className="text-[12px] font-semibold text-[#B85C38]">{t('copied', language)}</span>
               : <ShareIcon className="size-5 text-[#1A1613]" />
             }
           </button>
@@ -433,7 +433,7 @@ export default function PostDetailPage() {
               hour: "2-digit", minute: "2-digit",
             });
             return (
-              <p className="mt-1.5 text-[12px] text-[#A09080]">Taken {formatted}</p>
+              <p className="mt-1.5 text-[12px] text-[#A09080]">{`${t('taken', language)} ${formatted}`}</p>
             );
           })()}
 
@@ -479,7 +479,7 @@ export default function PostDetailPage() {
                       <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
                     </svg>
                     <p className="text-[12px] text-[#6B5F52]">
-                      Not verified · Approximate location only
+                      {t('notVerified', language)}
                     </p>
                   </div>
                 )}
@@ -510,20 +510,20 @@ export default function PostDetailPage() {
                         routeInfo.durationS < 1800 ? (
                           <>
                             <span className="text-[16px] font-bold text-[#1A1613]">{Math.round(routeInfo.durationS / 60)} min</span>
-                            <span className="text-[11px] text-[#6B5F52]">walk</span>
+                            <span className="text-[11px] text-[#6B5F52]">{t('walk', language)}</span>
                           </>
                         ) : (
                           <>
                             <span className="text-[16px] font-bold text-[#1A1613]">
                               {routeInfo.distanceM < 1000 ? `${Math.round(routeInfo.distanceM)}m` : `${(routeInfo.distanceM / 1000).toFixed(1)}km`}
                             </span>
-                            <span className="text-[11px] text-[#6B5F52]">away</span>
+                            <span className="text-[11px] text-[#6B5F52]">{t('away', language)}</span>
                           </>
                         )
                       ) : (
                         <>
                           <span className="text-[16px] font-bold text-[#1A1613]">—</span>
-                          <span className="text-[11px] text-[#6B5F52]">walk</span>
+                          <span className="text-[11px] text-[#6B5F52]">{t('walk', language)}</span>
                         </>
                       )}
                     </div>
@@ -535,7 +535,7 @@ export default function PostDetailPage() {
                       onClick={() => {
                         const placeId = place?.id ?? post.place_id;
                         const dest = placeId ? `/upload?place_id=${placeId}` : '/upload';
-                        if (requireAuth("Sign up to verify this place", dest)) router.push(dest);
+                        if (requireAuth(t('signUpToVerify', language), dest)) router.push(dest);
                       }}
                       className={`flex flex-col items-center justify-center gap-1 rounded-xl bg-white px-3 py-3.5 text-center ${hasGPS ? "flex-1" : "w-full"}`}
                     >
@@ -543,7 +543,7 @@ export default function PostDetailPage() {
                         <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
                         <line x1="12" y1="11" x2="12" y2="17" /><line x1="9" y1="14" x2="15" y2="14" />
                       </svg>
-                      <span className="text-[10px] font-semibold leading-snug text-[#B85C38]">Be the first to find this place</span>
+                      <span className="text-[10px] font-semibold leading-snug text-[#B85C38]">{t('beFirstToFind', language)}</span>
                     </button>
                   ) : (
                     <div className="flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl bg-white px-2 py-3.5">
@@ -555,7 +555,7 @@ export default function PostDetailPage() {
                         </svg>
                         <span className="text-[17px] font-bold text-[#2D7D46]">{verifiedCount}</span>
                       </div>
-                      <span className="text-[11px] text-[#6B5F52]">confirmed</span>
+                      <span className="text-[11px] text-[#6B5F52]">{t('confirmed', language)}</span>
                     </div>
                   )}
 
@@ -569,7 +569,7 @@ export default function PostDetailPage() {
                       <svg className="size-4 text-white" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 2L4 21h16z" />
                       </svg>
-                      <span className="text-[11px] font-semibold text-white">Go</span>
+                      <span className="text-[11px] font-semibold text-white">{t('go', language)}</span>
                     </button>
                   )}
                 </div>
@@ -596,7 +596,7 @@ export default function PostDetailPage() {
         {/* ── More shots of this spot ───────────────────────────────────────────── */}
         {place && placePosts.length > 0 && (
           <div className="mt-5 border-t border-[#EDE6D9] pt-5 pb-4">
-            <p className="px-4 text-[15px] font-bold text-[#1A1613]">More shots of this spot</p>
+            <p className="px-4 text-[15px] font-bold text-[#1A1613]">{t('moreShotsOfSpot', language)}</p>
 
             {/* Horizontal scroll — cards match main carousel size */}
             <div className="mt-3 pl-4">
@@ -652,12 +652,12 @@ export default function PostDetailPage() {
                 // Use place.id if loaded, fall back to post.place_id embedded in the post object
                 const placeId = place?.id ?? post.place_id;
                 const dest = placeId ? `/upload?place_id=${placeId}` : "/upload";
-                if (requireAuth("Sign up to add a shot", dest)) router.push(dest);
+                if (requireAuth(t('signUpToAdd', language), dest)) router.push(dest);
               }}
               className="flex w-full items-center justify-center gap-2.5 rounded-full border-2 border-dashed border-[#D4C4A8] bg-[#F9F6F0] py-4 text-[15px] font-medium text-[#6B5F52]"
             >
               <CameraAddIcon className="size-5 shrink-0" />
-              Add your shot of this spot
+              {t('addYourShot', language)}
             </button>
           </div>
         )}
@@ -670,20 +670,20 @@ export default function PostDetailPage() {
         <div className="fixed inset-0 z-50 flex items-end" onClick={() => setShowDeleteConfirm(false)}>
           <div className="w-full rounded-t-2xl bg-[#F9F6F0] px-4 pt-5 pb-8 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-1 mx-auto h-1 w-10 rounded-full bg-[#D4C4A8]" />
-            <p className="mt-4 text-center text-[17px] font-bold text-[#1A1613]">Delete post?</p>
-            <p className="mt-1.5 text-center text-[14px] text-[#6B5F52]">This can&apos;t be undone.</p>
+            <p className="mt-4 text-center text-[17px] font-bold text-[#1A1613]">{t('deletePost', language)}</p>
+            <p className="mt-1.5 text-center text-[14px] text-[#6B5F52]">{t('deleteCannotUndo', language)}</p>
             <button
               onClick={handleDelete}
               disabled={deleteLoading}
               className="mt-5 w-full rounded-xl bg-red-500 py-3.5 text-[15px] font-semibold text-white disabled:opacity-60"
             >
-              {deleteLoading ? "Deleting..." : "Delete"}
+              {deleteLoading ? t('deleting', language) : t('delete', language)}
             </button>
             <button
               onClick={() => setShowDeleteConfirm(false)}
               className="mt-3 w-full rounded-xl bg-[#EDE6D9] py-3.5 text-[15px] font-semibold text-[#1A1613]"
             >
-              Cancel
+              {t('cancel', language)}
             </button>
           </div>
         </div>
@@ -694,14 +694,14 @@ export default function PostDetailPage() {
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setShowMapPicker(false)}>
           <div className="w-full rounded-t-2xl bg-[#F9F6F0] px-4 pt-5 pb-10 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 mx-auto h-1 w-10 rounded-full bg-[#D4C4A8]" />
-            <p className="mb-4 text-[16px] font-semibold text-[#1A1613]">Open in Maps</p>
+            <p className="mb-4 text-[16px] font-semibold text-[#1A1613]">{t('openInMaps', language)}</p>
             <a
               href={`https://maps.apple.com/?q=${post.lat},${post.lng}`}
               onClick={() => setShowMapPicker(false)}
               className="flex w-full items-center gap-3 rounded-xl bg-[#EDE6D9] px-4 py-3.5 text-[15px] font-medium text-[#1A1613]"
             >
               <PinIcon className="size-5 shrink-0" />
-              Apple Maps
+              {t('appleMaps', language)}
             </a>
             <a
               href={`https://www.google.com/maps?q=${post.lat},${post.lng}`}
@@ -711,13 +711,13 @@ export default function PostDetailPage() {
               className="mt-3 flex w-full items-center gap-3 rounded-xl bg-[#EDE6D9] px-4 py-3.5 text-[15px] font-medium text-[#1A1613]"
             >
               <PinIcon className="size-5 shrink-0" />
-              Google Maps
+              {t('googleMaps', language)}
             </a>
             <button
               onClick={() => setShowMapPicker(false)}
               className="mt-3 w-full py-2.5 text-[14px] text-[#6B5F52]"
             >
-              Cancel
+              {t('cancel', language)}
             </button>
           </div>
         </div>
@@ -798,10 +798,10 @@ export default function PostDetailPage() {
       <div className={`fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-center border-t border-[#D4C4A8] bg-[#F9F6F0] shadow-[0px_-2px_4px_0px_rgba(0,0,0,0.12)] transition-transform duration-300 ease-in-out ${navVisible ? "translate-y-0" : "translate-y-full"}`}>
         <div className="flex w-[291px] items-center justify-between">
           {([
-            { id: "home", label: "Home", href: "/" },
-            { id: "create", label: "Create", href: "/upload" },
-            { id: "profile", label: "Profile", href: "/profile" },
-          ] as const).map(({ id, label, href }) => (
+            { id: "home", href: "/" },
+            { id: "create", href: "/upload" },
+            { id: "profile", href: "/profile" },
+          ] as const).map(({ id, href }) => (
             <button
               key={id}
               onClick={() => {
@@ -831,7 +831,9 @@ export default function PostDetailPage() {
                   <circle cx="12" cy="7" r="4" />
                 </svg>
               )}
-              <span className="text-[11px] leading-[1.5] text-[#1A1613]">{label}</span>
+              <span className="text-[11px] leading-[1.5] text-[#1A1613]">
+                {id === "home" ? t('home', language) : id === "create" ? t('create', language) : t('profileNav', language)}
+              </span>
             </button>
           ))}
         </div>

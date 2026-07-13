@@ -2,6 +2,8 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { getToken } from "@/lib/auth";
+import { useLanguage } from "@/hooks/useLanguage";
+import { t } from "@/lib/i18n";
 
 function HomeIcon({ className }: { className?: string; filled?: boolean }) {
   return (
@@ -38,9 +40,9 @@ function UserIcon({ className, filled }: { className?: string; filled?: boolean 
 }
 
 const NAV_ITEMS = [
-  { id: "home", label: "Home", href: "/", Icon: HomeIcon },
-  { id: "create", label: "Create", href: "/upload", Icon: PlusSquareIcon },
-  { id: "profile", label: "Profile", href: "/profile", Icon: UserIcon },
+  { id: "home", labelKey: "home" as const, href: "/", Icon: HomeIcon },
+  { id: "create", labelKey: "create" as const, href: "/upload", Icon: PlusSquareIcon },
+  { id: "profile", labelKey: "profileNav" as const, href: "/profile", Icon: UserIcon },
 ];
 
 function getActive(pathname: string) {
@@ -54,6 +56,7 @@ export default function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
   const active = getActive(pathname);
+  const { language } = useLanguage();
 
   const handleNavClick = (id: string, href: string) => {
     if ((id === "create" || id === "profile") && !getToken()) {
@@ -66,7 +69,7 @@ export default function BottomNav() {
   return (
     <div className="fixed bottom-0 left-0 right-0 flex h-16 items-center justify-center border-t border-[#D4C4A8] bg-[#F9F6F0] shadow-[0px_-2px_4px_0px_rgba(0,0,0,0.12)]">
       <div className="flex w-[291px] items-center justify-between">
-        {NAV_ITEMS.map(({ id, label, href, Icon }) => (
+        {NAV_ITEMS.map(({ id, labelKey, href, Icon }) => (
           <button
             key={id}
             onClick={() => handleNavClick(id, href)}
@@ -77,7 +80,7 @@ export default function BottomNav() {
               filled={active === id}
             />
             <span className={`text-[11px] leading-[1.5] ${active === id ? "text-[#B85C38]" : "text-[#1A1613]"}`}>
-              {label}
+              {t(labelKey, language)}
             </span>
           </button>
         ))}

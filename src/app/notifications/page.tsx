@@ -5,28 +5,31 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { API_BASE } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import { useLanguage } from "@/hooks/useLanguage";
+import { t } from "@/lib/i18n";
+import type { Language } from "@/lib/i18n";
 import type { Notification } from "../../../shared/aura-schema";
 
 const DEFAULT_AVATAR = "https://www.figma.com/api/mcp/asset/e4add399-8205-4c2a-8782-3da6c9f7bf60";
 
-function formatDate(d: string) {
+function formatDate(d: string, language: Language) {
   const diff = Date.now() - new Date(d).getTime();
   const m = Math.floor(diff / 60000);
   const h = Math.floor(m / 60);
   const day = Math.floor(h / 24);
-  if (m < 1) return "just now";
+  if (m < 1) return t("justNow", language);
   if (m < 60) return `${m}m ago`;
   if (h < 24) return `${h}h ago`;
   if (day < 7) return `${day}d ago`;
   return new Date(d).toLocaleDateString();
 }
 
-function notificationText(n: Notification) {
+function notificationText(n: Notification, language: Language) {
   switch (n.type) {
-    case "follow":      return "started following you";
-    case "save":        return "saved your post";
-    case "perspective": return "added a perspective to your post";
-    default:            return "interacted with you";
+    case "follow":      return t("startedFollowing", language);
+    case "save":        return t("savedYourPost", language);
+    case "perspective": return t("addedPerspective", language);
+    default:            return t("interacted", language);
   }
 }
 
@@ -35,6 +38,7 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [followPending, setFollowPending] = useState<Record<string, boolean>>({});
+  const { language } = useLanguage();
 
   useEffect(() => {
     const load = async () => {
@@ -83,13 +87,13 @@ export default function NotificationsPage() {
             <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
-        <h1 className="text-[18px] font-bold text-[#1A1613]">Notifications</h1>
+        <h1 className="text-[18px] font-bold text-[#1A1613]">{t("notificationsTitle", language)}</h1>
       </div>
 
       <div className="flex-1 overflow-y-auto">
         {loading && (
           <div className="flex items-center justify-center py-20">
-            <p className="text-[14px] text-[#6B5F52]">Loading…</p>
+            <p className="text-[14px] text-[#6B5F52]">{t("loading", language)}</p>
           </div>
         )}
 
@@ -99,8 +103,8 @@ export default function NotificationsPage() {
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
               <path d="M13.73 21a2 2 0 0 1-3.46 0" />
             </svg>
-            <p className="mt-5 text-[17px] font-semibold text-[#1A1613]">All caught up</p>
-            <p className="mt-1 text-[13px] text-[#6B5F52]">You have no new notifications</p>
+            <p className="mt-5 text-[17px] font-semibold text-[#1A1613]">{t("allCaughtUp", language)}</p>
+            <p className="mt-1 text-[13px] text-[#6B5F52]">{t("noNewNotifications", language)}</p>
           </div>
         )}
 
@@ -122,9 +126,9 @@ export default function NotificationsPage() {
                     <Link href={`/profile/${n.actor_id}`} className="font-semibold">
                       {n.actor_name}
                     </Link>
-                    {" "}{notificationText(n)}
+                    {" "}{notificationText(n, language)}
                   </p>
-                  <p className="mt-0.5 text-[12px] text-[#A09080]">{formatDate(n.created_at)}</p>
+                  <p className="mt-0.5 text-[12px] text-[#A09080]">{formatDate(n.created_at, language)}</p>
                 </div>
 
                 {/* Follow-back button */}
@@ -138,7 +142,7 @@ export default function NotificationsPage() {
                         : "bg-[#B85C38] text-white"
                     }`}
                   >
-                    {n.is_following ? "Following" : "Follow back"}
+                    {n.is_following ? t("followingBtn", language) : t("followBack", language)}
                   </button>
                 )}
 

@@ -8,7 +8,7 @@ import { API_BASE } from "@/lib/api";
 import BottomNav from "@/components/BottomNav";
 import EmojiStickerEditor from "@/components/EmojiStickerEditor";
 import { useLanguage } from "@/hooks/useLanguage";
-import { TAG_GROUPS, translateTag, translateGroupLabel } from "@/lib/i18n";
+import { TAG_GROUPS, translateTag, translateGroupLabel, t } from "@/lib/i18n";
 import { useUpload } from "@/context/UploadContext";
 import { searchNearbyPOIs, searchPlaces, getCityFromCoordinates, type NearbyPOI } from "@/lib/geocoding";
 import type { NearbyPlace } from "../../../shared/aura-schema";
@@ -240,7 +240,7 @@ export default function UploadPage() {
           />
 
           <h1 className="px-3 pt-3 text-[24px] font-semibold text-[#1A1613]">
-            Upload
+            {t('upload', language)}
           </h1>
 
           {/* ── State 1: empty photo picker ── */}
@@ -256,9 +256,9 @@ export default function UploadPage() {
                   </svg>
                 </div>
                 <p className="text-left text-[12px] leading-[1.5] text-[#6B5F52]">
-                  Select photos
+                  {t('selectPhotos', language)}
                   <br />
-                  (max 3 photos)
+                  {t('maxPhotosHint', language)}
                 </p>
               </button>
           )}
@@ -270,14 +270,14 @@ export default function UploadPage() {
               <div className="flex items-center justify-between px-3 pt-1">
                 <p className="text-[12px] text-[#6B5F52]">
                   {photos.length > 1
-                    ? `Select one photo for GPS data (applied to all ${photos.length} photos)`
-                    : "GPS / Altitude / Heading from this photo"}
+                    ? `${t('gpsHintMulti', language).replace('{n}', String(photos.length))}`
+                    : t('gpsHintSingle', language)}
                 </p>
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   className="text-[12px] text-[#B85C38] underline"
                 >
-                  Change
+                  {t('change', language)}
                 </button>
               </div>
 
@@ -338,7 +338,7 @@ export default function UploadPage() {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Title"
+              placeholder={t('titlePlaceholder', language)}
               className="w-full rounded-[8px] border border-[#D4C4A8] px-3 py-[10px] text-[16px] text-[#1A1613] outline-none placeholder:text-[#A09080] focus:border-[#B85C38]"
             />
           </div>
@@ -348,7 +348,7 @@ export default function UploadPage() {
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Description(Optional)"
+              placeholder={t('descriptionOptional', language)}
               rows={5}
               className="w-full resize-none rounded-[8px] border border-[#D4C4A8] px-3 py-[10px] text-[16px] text-[#1A1613] outline-none placeholder:text-[#A09080] focus:border-[#B85C38]"
             />
@@ -357,7 +357,7 @@ export default function UploadPage() {
           {/* Tags */}
           <div className="mt-5 px-3">
             <div className="flex items-center justify-between">
-              <p className="text-[16px] font-medium text-black">Tags</p>
+              <p className="text-[16px] font-medium text-black">{t('tags', language)}</p>
               <p className="text-[12px] text-[#A09080]">{selectedTags.length}/{MAX_TAGS}</p>
             </div>
             <div className="mt-3 space-y-4">
@@ -408,8 +408,8 @@ export default function UploadPage() {
                 <div className="flex items-start gap-3">
                   <span className="text-[20px] leading-none mt-0.5">📍</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[15px] font-semibold text-[#1A1613]">Add a location</p>
-                    <p className="mt-0.5 text-[12px] text-[#6B5F52]">No GPS found — add a rough location</p>
+                    <p className="text-[15px] font-semibold text-[#1A1613]">{t('addLocation', language)}</p>
+                    <p className="mt-0.5 text-[12px] text-[#6B5F52]">{t('noGpsAddLocation', language)}</p>
                   </div>
                 </div>
 
@@ -424,7 +424,7 @@ export default function UploadPage() {
                       onClick={() => { setManualLocation(null); setLocationSearch(''); setShowLocationSearch(false); }}
                       className="shrink-0 text-[12px] text-[#A09080]"
                     >
-                      Change
+                      {t('change', language)}
                     </button>
                   </div>
                 ) : showLocationSearch ? (
@@ -443,7 +443,7 @@ export default function UploadPage() {
                           setLocationSuggestions(results);
                         }, 300);
                       }}
-                      placeholder="Search city, country…"
+                      placeholder={t('searchCityCountry', language)}
                       autoFocus
                       className="w-full rounded-xl border border-[#D4C4A8] bg-[#F7F3EC] px-3 py-2.5 text-[14px] text-[#1A1613] placeholder:text-[#A09080] outline-none focus:border-[#B85C38]"
                     />
@@ -470,7 +470,7 @@ export default function UploadPage() {
                       onClick={() => { setShowLocationSearch(false); setLocationSearch(''); setLocationSuggestions([]); }}
                       className="mt-2 text-[12px] text-[#A09080]"
                     >
-                      Cancel
+                      {t('cancel', language)}
                     </button>
                   </div>
                 ) : (
@@ -494,11 +494,11 @@ export default function UploadPage() {
                       className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#1A1613] py-2.5 text-[13px] font-medium text-white disabled:opacity-60"
                     >
                       {locationGeoLoading ? (
-                        <span>Locating…</span>
+                        <span>{t('locating', language)}</span>
                       ) : (
                         <>
                           <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
-                          Use my location
+                          {t('useMyLocation', language)}
                         </>
                       )}
                     </button>
@@ -506,7 +506,7 @@ export default function UploadPage() {
                       onClick={() => setShowLocationSearch(true)}
                       className="flex-1 rounded-xl border border-[#D4C4A8] py-2.5 text-[13px] font-medium text-[#6B5F52]"
                     >
-                      Search
+                      {t('search', language)}
                     </button>
                   </div>
                 )}
@@ -522,10 +522,10 @@ export default function UploadPage() {
                   <span className="text-[20px] leading-none mt-0.5">🏪</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-[15px] font-semibold text-[#1A1613]">
-                      Is this at a restaurant, café, or store?
+                      {t('isVenueQuestion', language)}
                     </p>
                     <p className="mt-0.5 text-[12px] text-[#6B5F52]">
-                      We'll link your post to that venue
+                      {t('venueDesc', language)}
                     </p>
                   </div>
                 </div>
@@ -541,7 +541,7 @@ export default function UploadPage() {
                       onClick={() => { setSelectedVenueName(null); setSelectedVenueId(null); }}
                       className="shrink-0 text-[12px] text-[#A09080]"
                     >
-                      Change
+                      {t('change', language)}
                     </button>
                   </div>
                 ) : (
@@ -551,13 +551,13 @@ export default function UploadPage() {
                       onClick={handleFindPlace}
                       className="flex-1 rounded-xl bg-[#1A1613] py-2.5 text-[13px] font-medium text-white"
                     >
-                      Yes, find it
+                      {t('yesFindIt', language)}
                     </button>
                     <button
                       onClick={() => setVenueSkipped(true)}
                       className="flex-1 rounded-xl border border-[#D4C4A8] py-2.5 text-[13px] font-medium text-[#6B5F52]"
                     >
-                      Not a venue
+                      {t('notAVenue', language)}
                     </button>
                   </div>
                 )}
@@ -579,7 +579,7 @@ export default function UploadPage() {
               disabled={photos.length === 0 || uploadStatus === "uploading"}
               className="w-full rounded-[40px] bg-[#1A1613] py-[13px] text-[20px] font-medium text-white transition-opacity disabled:opacity-50"
             >
-              {uploadStatus === "uploading" ? "Uploading..." : photos.length > 1 ? `Upload ${photos.length} Photos` : "Upload"}
+              {uploadStatus === "uploading" ? t('uploading', language) : photos.length > 1 ? `${t('upload', language)} ${photos.length}` : t('upload', language)}
             </button>
           </div>
         </div>
@@ -615,12 +615,12 @@ export default function UploadPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 h-1 w-10 rounded-full bg-[#D4C4A8] mx-auto" />
-            <p className="text-[16px] font-semibold text-[#1A1613]">Select a place</p>
-            <p className="mt-0.5 mb-4 text-[12px] text-[#6B5F52]">Places near where this photo was taken</p>
+            <p className="text-[16px] font-semibold text-[#1A1613]">{t('selectAPlace', language)}</p>
+            <p className="mt-0.5 mb-4 text-[12px] text-[#6B5F52]">{t('placesNearPhoto', language)}</p>
             {poisLoading ? (
-              <p className="py-8 text-center text-[14px] text-[#6B5F52]">Finding nearby places…</p>
+              <p className="py-8 text-center text-[14px] text-[#6B5F52]">{t('findingPlaces', language)}</p>
             ) : nearbyPOIs.length === 0 ? (
-              <p className="py-8 text-center text-[14px] text-[#6B5F52]">No places found nearby</p>
+              <p className="py-8 text-center text-[14px] text-[#6B5F52]">{t('noPlacesFound', language)}</p>
             ) : (
               <div className="space-y-2">
                 {nearbyPOIs.map((poi) => (
@@ -648,7 +648,7 @@ export default function UploadPage() {
               onClick={() => setShowPlacePicker(false)}
               className="mt-4 w-full py-2.5 text-[14px] text-[#6B5F52]"
             >
-              Cancel
+              {t('cancel', language)}
             </button>
           </div>
         </div>
@@ -663,10 +663,10 @@ export default function UploadPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 h-1 w-10 rounded-full bg-[#D4C4A8] mx-auto" />
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-[#B85C38]">📍 Nearby spot</p>
-            <h2 className="mt-1.5 text-[20px] font-bold text-[#1A1613]">Add to an existing spot?</h2>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-[#B85C38]">{`📍 ${t('nearbySpotLabel', language)}`}</p>
+            <h2 className="mt-1.5 text-[20px] font-bold text-[#1A1613]">{t('addToExistingSpot', language)}</h2>
             <p className="mt-1 mb-4 text-[14px] text-[#6B5F52]">
-              These spots are nearby — add your shot to one, or create a new spot.
+              {t('nearbySpotsDesc', language)}
             </p>
 
             {/* List of nearby places */}
@@ -708,7 +708,7 @@ export default function UploadPage() {
                         <>
                           <span className="text-[#D4C4A8]">·</span>
                           <span className="text-[12px] text-[#6B5F52]">
-                            {place.verified_count} verified {place.verified_count === 1 ? "shot" : "shots"}
+                            {place.verified_count} {place.verified_count === 1 ? t('verifiedShot', language) : t('verifiedShots', language)}
                           </span>
                         </>
                       )}
@@ -729,13 +729,13 @@ export default function UploadPage() {
               disabled={uploadStatus === "uploading"}
               className="mt-3 w-full rounded-2xl border border-[#D4C4A8] bg-[#F7F3EC] py-3.5 text-[15px] font-medium text-[#1A1613] disabled:opacity-50"
             >
-              Create new spot
+              {t('createNewSpot', language)}
             </button>
             <button
               onClick={() => setShowNearbyPrompt(false)}
               className="mt-2 w-full py-2.5 text-[13px] text-[#A09080]"
             >
-              Cancel
+              {t('cancel', language)}
             </button>
           </div>
         </div>

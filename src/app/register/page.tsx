@@ -6,6 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { apiPost } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import type { AuthResponse } from "../../../shared/aura-schema";
+import { useLanguage } from "@/hooks/useLanguage";
+import { t } from "@/lib/i18n";
 
 // ── Register Page ──────────────────────────────────────────────────────────────
 
@@ -20,6 +22,7 @@ function RegisterForm() {
   const redirectTo = searchParams.get("redirect") || "";
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { language } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +61,7 @@ function RegisterForm() {
       {/* Form */}
       <div className="flex-1 px-4 pt-12">
         <h1 className="mb-8 text-center text-[24px] font-semibold text-[#1A1613]">
-          Create your account
+          {t('registerTitle', language)}
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -68,7 +71,7 @@ function RegisterForm() {
               htmlFor="name"
               className="mb-1 block text-[13px] font-medium text-[#6B5F52]"
             >
-              Name
+              {t('namePlaceholder', language)}
             </label>
             <input
               id="name"
@@ -79,7 +82,7 @@ function RegisterForm() {
                 setShowNameError(false);
               }}
               onBlur={() => setShowNameError(name.trim() === "")}
-              placeholder="Your name"
+              placeholder={t('yourName', language)}
               maxLength={10}
               required
               className="w-full rounded-lg border border-[#D4C4A8] bg-[#F7F3EC] px-3 py-2.5 text-[16px] text-[#1A1613] placeholder:text-[#A09080] outline-none focus:border-[#B85C38] focus:ring-1 focus:ring-[#B85C38]"
@@ -87,7 +90,7 @@ function RegisterForm() {
             <div className="mt-1 flex items-center justify-between">
               {showNameError && (
                 <span className="text-[13px] text-[#ff0000]">
-                  Name is required
+                  {t('nameRequired', language)}
                 </span>
               )}
               <span
@@ -104,14 +107,14 @@ function RegisterForm() {
               htmlFor="email"
               className="mb-1 block text-[13px] font-medium text-[#6B5F52]"
             >
-              Email
+              {t('email', language)}
             </label>
             <input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@email.com"
+              placeholder={t('emailPlaceholder', language)}
               required
               className="w-full rounded-lg border border-[#D4C4A8] bg-[#F7F3EC] px-3 py-2.5 text-[16px] text-[#1A1613] placeholder:text-[#A09080] outline-none focus:border-[#B85C38] focus:ring-1 focus:ring-[#B85C38]"
             />
@@ -123,20 +126,20 @@ function RegisterForm() {
               htmlFor="password"
               className="mb-1 block text-[13px] font-medium text-[#6B5F52]"
             >
-              Password
+              {t('password', language)}
             </label>
             <input
               id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Create a password"
+              placeholder={t('createPassword', language)}
               required
               minLength={6}
               className="w-full rounded-lg border border-[#D4C4A8] bg-[#F7F3EC] px-3 py-2.5 text-[16px] text-[#1A1613] placeholder:text-[#A09080] outline-none focus:border-[#B85C38] focus:ring-1 focus:ring-[#B85C38]"
             />
             <p className="mt-1 text-[12px] text-[#6B5F52]">
-              At least 6 characters
+              {t('passwordHint', language)}
             </p>
           </div>
 
@@ -148,7 +151,7 @@ function RegisterForm() {
               disabled={loading}
               className="w-full rounded-lg bg-[#B85C38] py-3 text-[16px] font-semibold text-white transition-colors hover:bg-[#A84828] disabled:opacity-60"
             >
-              {loading ? "Creating..." : "Sign up"}
+              {loading ? t('creating', language) : t('signUp', language)}
             </button>
           </div>
         </form>
@@ -156,12 +159,12 @@ function RegisterForm() {
         {/* Login link */}
         <div className="mt-6 text-center">
           <p className="text-[14px] text-[#6B5F52]">
-            Already have an account?{" "}
+            {t('haveAccount', language)}{" "}
             <Link
               href={redirectTo ? `/login?redirect=${encodeURIComponent(redirectTo)}` : "/login"}
               className="font-semibold text-[#B85C38] hover:underline"
             >
-              Log in
+              {t('logIn', language)}
             </Link>
           </p>
         </div>

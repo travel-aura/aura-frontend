@@ -7,7 +7,7 @@ import { searchPlaces } from "@/lib/geocoding";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import { useLanguage } from "@/hooks/useLanguage";
-import { TAG_GROUPS, translateTag, translateGroupLabel } from "@/lib/i18n";
+import { TAG_GROUPS, translateTag, translateGroupLabel, t } from "@/lib/i18n";
 import { useUpload } from "@/context/UploadContext";
 import type { PlaceFeedItem, PlacesFeedResponse } from "../../shared/aura-schema";
 
@@ -399,15 +399,15 @@ export default function AuraFeed() {
       >
         <TopBar />
         <div className="mt-2 flex items-center justify-center gap-2">
-          {(["all", "following"] as Tab[]).map((t) => (
+          {(["all", "following"] as Tab[]).map((tab) => (
             <button
-              key={t}
-              onClick={() => handleTabChange(t)}
+              key={tab}
+              onClick={() => handleTabChange(tab)}
               className={`rounded-full px-3 py-0.5 text-[15px] font-medium transition-colors capitalize ${
-                activeTab === t ? "bg-[#3D3328] text-[#EDE6D9]" : "text-[#1A1613]"
+                activeTab === tab ? "bg-[#3D3328] text-[#EDE6D9]" : "text-[#1A1613]"
               }`}
             >
-              {t === "all" ? "All" : "Following"}
+              {tab === "all" ? t("all", language) : t("following", language)}
             </button>
           ))}
         </div>
@@ -426,7 +426,7 @@ export default function AuraFeed() {
                 <SearchIcon className="size-4 shrink-0 text-[#6B5F52]" />
                 <input
                   type="text"
-                  placeholder="Search location or post title…"
+                  placeholder={t("searchLocationOrTitle", language)}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
@@ -496,7 +496,7 @@ export default function AuraFeed() {
               }`}
             >
               <SlidersIcon className="size-3.5" />
-              {activeTag ? `#${translateTag(activeTag, language)}` : "Advanced Search"}
+              {activeTag ? `#${translateTag(activeTag, language)}` : t("advancedSearch", language)}
               {activeTag && (
                 <span
                   onClick={(e) => { e.stopPropagation(); handleClearTag(); }}
@@ -513,7 +513,7 @@ export default function AuraFeed() {
       <div className="mt-3 flex-1 px-[7px] pb-20">
         {loading && (
           <div className="flex items-center justify-center py-4">
-            <p className="text-[13px] text-[#6B5F52]">Loading…</p>
+            <p className="text-[13px] text-[#6B5F52]">{t("loading", language)}</p>
           </div>
         )}
         {error && (
@@ -538,7 +538,7 @@ export default function AuraFeed() {
                   disabled={loading}
                   className="rounded-lg bg-[#EDE6D9] px-6 py-2.5 text-[14px] font-medium text-[#1A1613] disabled:opacity-50"
                 >
-                  {loading ? "Loading..." : "Load More"}
+                  {loading ? t("loading", language) : t("loadMore", language)}
                 </button>
               </div>
             )}
@@ -550,11 +550,11 @@ export default function AuraFeed() {
               <>
                 <p className="text-[32px]">🗺️</p>
                 <p className="mt-3 text-[17px] font-semibold text-[#1A1613]">
-                  No Auras here yet.
+                  {t("noAurasYet", language)}
                 </p>
-                <p className="mt-1 text-[14px] text-[#6B5F52]">Be the first to capture this place.</p>
+                <p className="mt-1 text-[14px] text-[#6B5F52]">{t("beFirstCapture", language)}</p>
                 <Link href="/upload" className="mt-5 rounded-xl bg-[#B85C38] px-6 py-3 text-[15px] font-semibold text-white">
-                  Be a Pioneer 🚩
+                  {t("bePioneer", language)}
                 </Link>
               </>
             ) : (
@@ -577,7 +577,7 @@ export default function AuraFeed() {
 
             {/* Header */}
             <div className="flex items-center justify-between px-5 pt-4 pb-3">
-              <p className="text-[17px] font-bold text-[#1A1613]">Filter by Tag</p>
+              <p className="text-[17px] font-bold text-[#1A1613]">{t("filterByTag", language)}</p>
               <button onClick={() => setShowTagFilter(false)} className="flex size-8 items-center justify-center rounded-full bg-[#EDE6D9]">
                 <XIcon className="size-4 text-[#6B5F52]" />
               </button>

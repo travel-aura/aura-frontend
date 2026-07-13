@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { API_BASE } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import { useLanguage } from "@/hooks/useLanguage";
+import { t } from "@/lib/i18n";
 import type { UserSearchResult, UserSearchResponse } from "../../../shared/aura-schema";
 
 const DEFAULT_AVATAR = "https://www.figma.com/api/mcp/asset/e4add399-8205-4c2a-8782-3da6c9f7bf60";
@@ -66,6 +68,8 @@ export default function FriendsPage() {
     }
   };
 
+  const { language } = useLanguage();
+
   const displayName = (u: UserSearchResult) => u.name || u.email.split("@")[0];
 
   return (
@@ -77,7 +81,7 @@ export default function FriendsPage() {
             <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
-        <h1 className="text-[18px] font-bold text-[#1A1613]">Find Friends</h1>
+        <h1 className="text-[18px] font-bold text-[#1A1613]">{t("friendsTitle", language)}</h1>
       </div>
 
       {/* Search input */}
@@ -90,7 +94,7 @@ export default function FriendsPage() {
           <input
             type="text"
             autoFocus
-            placeholder="Search by name or username…"
+            placeholder={t("searchPeople", language)}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="flex-1 bg-transparent text-[16px] text-[#1A1613] placeholder-[#A09080] outline-none"
@@ -111,7 +115,7 @@ export default function FriendsPage() {
         {/* Loading */}
         {loading && (
           <div className="flex items-center justify-center py-12">
-            <p className="text-[14px] text-[#6B5F52]">Searching…</p>
+            <p className="text-[14px] text-[#6B5F52]">{t("searching", language)}</p>
           </div>
         )}
 
@@ -124,16 +128,16 @@ export default function FriendsPage() {
               <line x1="19" y1="8" x2="19" y2="14" />
               <line x1="22" y1="11" x2="16" y2="11" />
             </svg>
-            <p className="mt-4 text-[16px] font-semibold text-[#1A1613]">Find people on Aura</p>
-            <p className="mt-1 text-[13px] text-[#6B5F52]">Search by name or username to connect with friends</p>
+            <p className="mt-4 text-[16px] font-semibold text-[#1A1613]">{t("findPeopleTitle", language)}</p>
+            <p className="mt-1 text-[13px] text-[#6B5F52]">{t("findPeopleDesc", language)}</p>
           </div>
         )}
 
         {/* No results */}
         {!loading && query.length >= 2 && results.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-            <p className="text-[16px] font-semibold text-[#1A1613]">No users found</p>
-            <p className="mt-1 text-[13px] text-[#6B5F52]">Try a different name or username</p>
+            <p className="text-[16px] font-semibold text-[#1A1613]">{t("noUsersFound", language)}</p>
+            <p className="mt-1 text-[13px] text-[#6B5F52]">{t("tryDifferentName", language)}</p>
           </div>
         )}
 
@@ -174,7 +178,7 @@ export default function FriendsPage() {
                       : "bg-[#B85C38] text-white"
                   }`}
                 >
-                  {user.is_following ? "Following" : "Follow"}
+                  {user.is_following ? t("followingBtn", language) : t("follow", language)}
                 </button>
               </li>
             ))}

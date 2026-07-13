@@ -7,6 +7,8 @@ import imageCompression from "browser-image-compression";
 import { apiGet, apiPut, API_BASE } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/hooks/useLanguage";
+import { t } from "@/lib/i18n";
 import type { UserProfile, ProfileUpdatePayload } from "../../../../shared/aura-schema";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
@@ -48,6 +50,7 @@ function PencilIcon({ className }: { className?: string }) {
 export default function EditProfilePage() {
   const { token, ready } = useAuth();
   const router = useRouter();
+  const { language } = useLanguage();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [name, setName] = useState("");
   const [bio, setBio] = useState("");
@@ -158,7 +161,7 @@ export default function EditProfilePage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="text-[15px] text-[#6B5F52]">Loading profile...</p>
+        <p className="text-[15px] text-[#6B5F52]">{t('loading', language)}</p>
       </div>
     );
   }
@@ -174,13 +177,13 @@ export default function EditProfilePage() {
             href="/profile"
             className="rounded-lg bg-[#EDE6D9] px-4 py-2 text-[14px] font-medium text-[#1A1613]"
           >
-            Go Back
+            {t('goBack', language)}
           </Link>
           <button
             onClick={() => window.location.reload()}
             className="rounded-lg bg-[#B85C38] px-4 py-2 text-[14px] font-medium text-white"
           >
-            Retry
+            {t('retry', language)}
           </button>
         </div>
       </div>
@@ -195,7 +198,7 @@ export default function EditProfilePage() {
           <ChevronLeftIcon className="size-6 text-[#1A1613]" />
         </Link>
         <h1 className="text-[17px] font-semibold text-[#1A1613]">
-          Edit profile
+          {t('editProfileTitle', language)}
         </h1>
       </div>
 
@@ -253,7 +256,7 @@ export default function EditProfilePage() {
                 htmlFor="name"
                 className="mb-1 block text-[13px] font-medium text-[#6B5F52]"
               >
-                Name
+                {t('namePlaceholder', language)}
               </label>
               <input
                 id="name"
@@ -288,7 +291,7 @@ export default function EditProfilePage() {
                 htmlFor="bio"
                 className="mb-1 block text-[13px] font-medium text-[#6B5F52]"
               >
-                Bio
+                {t('bioPlaceholder', language)}
               </label>
               <textarea
                 id="bio"
@@ -297,7 +300,7 @@ export default function EditProfilePage() {
                   setBio(e.target.value);
                   setError(null);
                 }}
-                placeholder="Share your location, your favorite..."
+                placeholder={t('bioHint', language)}
                 rows={4}
                 maxLength={100}
                 className="w-full resize-none rounded-lg border border-[#D4C4A8] bg-[#F7F3EC] px-3 py-2.5 text-[16px] text-[#1A1613] placeholder:text-[#A09080] outline-none focus:border-[#B85C38] focus:ring-1 focus:ring-[#B85C38]"
@@ -316,7 +319,7 @@ export default function EditProfilePage() {
                 disabled={saving || !name || name.trim() === ""}
                 className="w-full rounded-lg bg-[#B85C38] py-3 text-[16px] font-semibold text-white transition-colors hover:bg-[#A84828] disabled:opacity-50"
               >
-                {saving ? "Saving..." : "Save Changes"}
+                {saving ? t('saving', language) : t('saveChanges', language)}
               </button>
             </div>
           </div>
@@ -325,7 +328,7 @@ export default function EditProfilePage() {
           <div className="mx-4 mt-8 border-t border-[#EDE6D9] pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[13px] font-medium text-[#6B5F52]">Account</p>
+                <p className="text-[13px] font-medium text-[#6B5F52]">{t('account', language)}</p>
                 <p className="mt-1 text-[15px] text-[#1A1613]">{profile?.email || "Loading..."}</p>
               </div>
             </div>

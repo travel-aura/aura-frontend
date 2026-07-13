@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { getToken } from "@/lib/auth";
 import { apiGet, API_BASE } from "@/lib/api";
 import { useLanguage } from "@/hooks/useLanguage";
-import { TAG_GROUPS, translateTag, translateGroupLabel } from "@/lib/i18n";
+import { TAG_GROUPS, translateTag, translateGroupLabel, t } from "@/lib/i18n";
 import type { AuraWithUser } from "../../../../../shared/aura-schema";
 
 const MAX_TAGS = 5;
@@ -83,7 +83,7 @@ export default function EditPostPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F7F3EC]">
-        <p className="text-[15px] text-[#6B5F52]">Loading...</p>
+        <p className="text-[15px] text-[#6B5F52]">{t('loading', language)}</p>
       </div>
     );
   }
@@ -99,15 +99,15 @@ export default function EditPostPage() {
               <polyline points="15 18 9 12 15 6" />
             </svg>
           </button>
-          <h1 className="text-[24px] font-semibold text-[#1A1613]">Edit Post</h1>
+          <h1 className="text-[24px] font-semibold text-[#1A1613]">{t('editPost', language)}</h1>
         </div>
 
         {/* Photos strip */}
         <div className="mt-4 px-3">
           <p className="mb-2 text-[12px] text-[#6B5F52]">
-            {imageUrls.length > 1 ? `Photos (${imageUrls.length})` : "Photo"}
+            {imageUrls.length > 1 ? `${t('photos', language)} (${imageUrls.length})` : t('photo', language)}
             {imageUrls.length > 1 && (
-              <span className="ml-1 text-[#A09080]">· tap ✕ to remove</span>
+              <span className="ml-1 text-[#A09080]">{t('tapToRemove', language)}</span>
             )}
           </p>
           <div className="flex gap-2 overflow-x-auto pb-1">
@@ -137,7 +137,7 @@ export default function EditPostPage() {
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Title"
+            placeholder={t('titlePlaceholder', language)}
             className="w-full rounded-[8px] border border-[#D4C4A8] px-3 py-[10px] text-[16px] text-[#1A1613] outline-none placeholder:text-[#A09080] focus:border-[#B85C38]"
           />
         </div>
@@ -147,7 +147,7 @@ export default function EditPostPage() {
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Description (optional)"
+            placeholder={t('descriptionEdit', language)}
             rows={5}
             className="w-full resize-none rounded-[8px] border border-[#D4C4A8] px-3 py-[10px] text-[16px] text-[#1A1613] outline-none placeholder:text-[#A09080] focus:border-[#B85C38]"
           />
@@ -156,7 +156,7 @@ export default function EditPostPage() {
         {/* Tags */}
         <div className="mt-5 px-3">
           <div className="flex items-center justify-between">
-            <p className="text-[16px] font-medium text-black">Tags</p>
+            <p className="text-[16px] font-medium text-black">{t('tags', language)}</p>
             <p className="text-[12px] text-[#A09080]">{selectedTags.length}/{MAX_TAGS}</p>
           </div>
           <div className="mt-3 space-y-4">
@@ -214,7 +214,7 @@ export default function EditPostPage() {
             disabled={saving}
             className="w-full rounded-[40px] bg-[#1A1613] py-[13px] text-[20px] font-medium text-white transition-opacity disabled:opacity-50"
           >
-            {saving ? "Saving..." : "Save"}
+            {saving ? t('saving', language) : t('save', language)}
           </button>
         </div>
       </div>

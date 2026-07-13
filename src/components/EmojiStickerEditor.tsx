@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useLanguage } from "@/hooks/useLanguage";
+import { t } from "@/lib/i18n";
 
 interface Sticker {
   id: number;
@@ -31,6 +33,7 @@ export default function EmojiStickerEditor({ imageFile, onDone, onCancel }: Prop
   const [nextId, setNextId] = useState(0);
   const [showPicker, setShowPicker] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const { language } = useLanguage();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -176,15 +179,15 @@ export default function EmojiStickerEditor({ imageFile, onDone, onCancel }: Prop
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-12 pb-3">
         <button onClick={onCancel} className="text-[14px] text-white/60">
-          Cancel
+          {t('cancel', language)}
         </button>
-        <p className="text-[15px] font-semibold text-white">Add Sticker</p>
+        <p className="text-[15px] font-semibold text-white">{t('addStickerTitle', language)}</p>
         <button
           onClick={handleDone}
           disabled={processing}
           className="text-[14px] font-semibold text-[#fa6460] disabled:opacity-50"
         >
-          {processing ? "Saving…" : "Done"}
+          {processing ? t('savingDots', language) : t('done', language)}
         </button>
       </div>
 
@@ -254,7 +257,7 @@ export default function EmojiStickerEditor({ imageFile, onDone, onCancel }: Prop
               onClick={() => setShowPicker(false)}
               className="mt-3 w-full py-2 text-[13px] text-white/50"
             >
-              Cancel
+              {t('cancel', language)}
             </button>
           </>
         ) : (
@@ -264,7 +267,7 @@ export default function EmojiStickerEditor({ imageFile, onDone, onCancel }: Prop
               className="flex items-center gap-2 rounded-full bg-white/15 px-6 py-3 text-[14px] font-medium text-white"
             >
               <span className="text-[20px]">😊</span>
-              Add sticker
+              {t('addSticker', language)}
             </button>
           </div>
         )}
