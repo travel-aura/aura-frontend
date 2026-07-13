@@ -1,9 +1,17 @@
+substitutions:
+  _MAPBOX_TOKEN: ''
+  _GOOGLE_CLIENT_ID: ''
+
 steps:
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
       - '-t'
       - 'gcr.io/$PROJECT_ID/aura-frontend:latest'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_MAPBOX_TOKEN=${_MAPBOX_TOKEN}'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID}'
       - '.'
 
   - name: 'gcr.io/cloud-builders/docker'
