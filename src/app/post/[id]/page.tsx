@@ -684,7 +684,7 @@ export default function PostDetailPage() {
             <button
               onClick={handleDelete}
               disabled={deleteLoading}
-              className="mt-5 w-full rounded-xl bg-red-500 py-3.5 text-[15px] font-semibold text-white disabled:opacity-60"
+              className="mt-5 w-full rounded-xl bg-[#1A1613] py-3.5 text-[15px] font-semibold text-white disabled:opacity-60"
             >
               {deleteLoading ? t('deleting', language) : t('delete', language)}
             </button>
