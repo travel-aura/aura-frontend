@@ -1,6 +1,5 @@
 substitutions:
   _MAPBOX_TOKEN: ''
-  _GOOGLE_CLIENT_ID: ''
 
 steps:
   - name: 'gcr.io/cloud-builders/docker'
@@ -28,8 +27,6 @@ steps:
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
-      - '--update-env-vars'
-      - 'GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID}'
 
 images:
   - 'gcr.io/$PROJECT_ID/aura-frontend:latest'
