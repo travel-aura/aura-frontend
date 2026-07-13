@@ -35,6 +35,7 @@ function StoreIcon({ className }: { className?: string }) {
 export default function UploadPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const submitLockRef = useRef(false);
 
   const { language } = useLanguage();
   const { startUpload, status: uploadStatus } = useUpload();
@@ -171,8 +172,10 @@ export default function UploadPage() {
   };
 
   const handleUpload = async () => {
-    if (photos.length === 0) { setError("Please select at least one photo"); return; }
-    if (!title.trim()) { setError("Please enter a title"); return; }
+    if (submitLockRef.current) return;
+    submitLockRef.current = true;
+    if (photos.length === 0) { submitLockRef.current = false; setError("Please select at least one photo"); return; }
+    if (!title.trim()) { submitLockRef.current = false; setError("Please enter a title"); return; }
 
     // Arrived from "Add your shot of this spot" — place already known, skip all place questions
     if (prefilledPlaceId) {
@@ -204,6 +207,7 @@ export default function UploadPage() {
           if (nearby.length > 0) {
             setNearbyPlaces(nearby);
             setShowNearbyPrompt(true);
+            submitLockRef.current = false; // release so sheet buttons can proceed
             return; // Pause — wait for user choice in the prompt
           }
         }
