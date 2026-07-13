@@ -211,6 +211,15 @@ export default function PostDetailPage() {
   // ── Directions (walking route) ───────────────────────────────────────────────
   useEffect(() => {
     if (!userCoords || !post?.lat || !post?.lng || !mapToken) return;
+
+    // Skip directions if the straight-line distance exceeds 100km
+    const R = 6371000;
+    const dLat = ((post.lat - userCoords.lat) * Math.PI) / 180;
+    const dLng = ((post.lng - userCoords.lng) * Math.PI) / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos((userCoords.lat * Math.PI) / 180) * Math.cos((post.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+    const straightLineM = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    if (straightLineM > 100_000) return;
+
     const coords = `${userCoords.lng},${userCoords.lat};${post.lng},${post.lat}`;
     fetch(`https://api.mapbox.com/directions/v5/mapbox/walking/${coords}?access_token=${mapToken}&overview=false`)
       .then((r) => r.json())
