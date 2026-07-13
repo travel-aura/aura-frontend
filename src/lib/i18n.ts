@@ -356,6 +356,11 @@ export const UI_TEXT = {
   addStickerTitle:    { en: "Add Sticker",        "zh-CN": "添加贴纸",      "zh-TW": "新增貼紙" },
   addSticker:         { en: "Add sticker",        "zh-CN": "添加贴纸",      "zh-TW": "新增貼紙" },
   savingDots:         { en: "Saving…",            "zh-CN": "保存中…",       "zh-TW": "儲存中…" },
+
+  // Google auth
+  continueWithGoogle: { en: "Continue with Google", "zh-CN": "使用 Google 继续", "zh-TW": "使用 Google 繼續" },
+  orDivider:          { en: "or",                 "zh-CN": "或",            "zh-TW": "或" },
+  googleAuthError:    { en: "Google sign-in failed. Please try again.", "zh-CN": "Google 登录失败，请重试", "zh-TW": "Google 登入失敗，請再試一次" },
 } satisfies Record<string, UIEntry>;
 
 export type UITextKey = keyof typeof UI_TEXT;

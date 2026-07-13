@@ -1,9 +1,9 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { apiPost } from "@/lib/api";
+import { apiPost, API_BASE } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import type { AuthResponse } from "../../../shared/aura-schema";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -21,8 +21,61 @@ function RegisterForm() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "";
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { language } = useLanguage();
+
+  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+
+  const handleGoogleCredential = async (credential: string) => {
+    setGoogleLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`${API_BASE}/auth/google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id_token: credential }),
+      });
+      if (!response.ok) throw new Error(await response.text());
+      const data: AuthResponse = await response.json();
+      if (data.session?.access_token && data.user?.id) {
+        login(data.session.access_token, data.user.id);
+        router.push(redirectTo || "/profile");
+      }
+    } catch {
+      setError(t("googleAuthError", language));
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!clientId) return;
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.onload = () => {
+      window.google?.accounts.id.initialize({
+        client_id: clientId,
+        callback: (res: { credential: string }) => handleGoogleCredential(res.credential),
+      });
+      const btn = document.getElementById("google-register-btn");
+      if (btn) {
+        window.google?.accounts.id.renderButton(btn, {
+          type: "standard",
+          shape: "rectangular",
+          theme: "outline",
+          text: "continue_with",
+          size: "large",
+          width: btn.offsetWidth || 320,
+          logo_alignment: "left",
+        });
+      }
+    };
+    document.head.appendChild(script);
+    return () => { document.head.removeChild(script); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,6 +116,25 @@ function RegisterForm() {
         <h1 className="mb-8 text-center text-[24px] font-semibold text-[#1A1613]">
           {t('registerTitle', language)}
         </h1>
+
+        {/* Google Sign-In */}
+        {clientId && (
+          <div className="mb-5">
+            <div
+              id="google-register-btn"
+              className={`w-full overflow-hidden rounded-lg transition-opacity ${googleLoading ? "opacity-50 pointer-events-none" : ""}`}
+            />
+          </div>
+        )}
+
+        {/* Divider */}
+        {clientId && (
+          <div className="mb-5 flex items-center gap-3">
+            <div className="h-px flex-1 bg-[#D4C4A8]" />
+            <span className="text-[13px] text-[#A09080]">{t('orDivider', language)}</span>
+            <div className="h-px flex-1 bg-[#D4C4A8]" />
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Name field */}
