@@ -455,7 +455,7 @@ export default function PostDetailPage() {
           {(post.is_verified || (post.tags?.length ?? 0) > 0) && (
             <div className="mt-3 flex flex-wrap gap-2">
               {post.is_verified && (
-                <span className="inline-flex items-center rounded-full bg-[#DEC9A0] px-2.5 py-1 text-[13px]">
+                <span className="inline-flex items-center rounded-full bg-[#D4C4A8] px-2.5 py-1 text-[13px]">
                   📍
                 </span>
               )}

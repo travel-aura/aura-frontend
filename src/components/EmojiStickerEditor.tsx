@@ -185,7 +185,7 @@ export default function EmojiStickerEditor({ imageFile, onDone, onCancel }: Prop
         <button
           onClick={handleDone}
           disabled={processing}
-          className="text-[14px] font-semibold text-[#fa6460] disabled:opacity-50"
+          className="text-[14px] font-semibold text-[#B85C38] disabled:opacity-50"
         >
           {processing ? t('savingDots', language) : t('done', language)}
         </button>

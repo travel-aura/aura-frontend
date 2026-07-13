@@ -111,7 +111,7 @@ export default function NotificationsPage() {
         {!loading && notifications.length > 0 && (
           <ul className="divide-y divide-[#EDE6D9]">
             {notifications.map((n) => (
-              <li key={n.id} className={`flex items-start gap-3 px-4 py-3 ${!n.read ? "bg-[#F2E3D5]" : ""}`}>
+              <li key={n.id} className={`flex items-start gap-3 px-4 py-3 ${!n.read ? "bg-[#EDE6D9]" : ""}`}>
                 {/* Avatar */}
                 <Link href={`/profile/${n.actor_id}`} className="mt-0.5 shrink-0">
                   <div className="size-10 overflow-hidden rounded-full bg-[#EDE6D9]">

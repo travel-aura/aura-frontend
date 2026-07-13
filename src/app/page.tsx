@@ -99,7 +99,7 @@ function FeedCard({ place }: { place: PlaceFeedItem }) {
 
         {/* Verified badge */}
         {place.verified_count > 0 && (
-          <div className="absolute right-2 top-2 flex items-center justify-center rounded-full bg-[#DEC9A0] px-1.5 py-0.5 text-[11px] leading-none drop-shadow">
+          <div className="absolute right-2 top-2 flex items-center justify-center rounded-full bg-[#D4C4A8] px-1.5 py-0.5 text-[11px] leading-none drop-shadow">
             📍
           </div>
         )}
@@ -404,7 +404,7 @@ export default function AuraFeed() {
               key={tab}
               onClick={() => handleTabChange(tab)}
               className={`rounded-full px-3 py-0.5 text-[15px] font-medium transition-colors capitalize ${
-                activeTab === tab ? "bg-[#3D3328] text-[#EDE6D9]" : "text-[#1A1613]"
+                activeTab === tab ? "bg-[#1A1613] text-[#EDE6D9]" : "text-[#1A1613]"
               }`}
             >
               {tab === "all" ? t("all", language) : t("following", language)}
@@ -479,7 +479,7 @@ export default function AuraFeed() {
 
           {/* Context label */}
           {contextLabel && (
-            <div className="mx-4 mt-2 flex items-center justify-between rounded-lg bg-[#F2E3D5] px-3 py-2">
+            <div className="mx-4 mt-2 flex items-center justify-between rounded-lg bg-[#EDE6D9] px-3 py-2">
               <span className="text-[13px] font-medium text-[#1A1613]">{contextLabel}</span>
               <button onClick={handleClearLocation}>
                 <XIcon className="size-4 text-[#6B5F52]" />

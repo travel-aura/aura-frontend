@@ -383,7 +383,7 @@ function FollowersList({
                       <button
                         onClick={() => onFollowBack(user)}
                         disabled={followPending[user.id]}
-                        className="text-[13px] font-semibold text-[#3478f6] disabled:opacity-50"
+                        className="text-[13px] font-semibold text-[#B85C38] disabled:opacity-50"
                       >
                         Follow back
                       </button>
