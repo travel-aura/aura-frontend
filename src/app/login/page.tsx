@@ -50,10 +50,7 @@ function LoginForm() {
 
   useEffect(() => {
     if (!clientId) return;
-    const script = document.createElement("script");
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.onload = () => {
+    const initButton = () => {
       window.google?.accounts.id.initialize({
         client_id: clientId,
         callback: (res: { credential: string }) => handleGoogleCredential(res.credential),
@@ -61,18 +58,20 @@ function LoginForm() {
       const btn = document.getElementById("google-signin-btn");
       if (btn) {
         window.google?.accounts.id.renderButton(btn, {
-          type: "standard",
-          shape: "rectangular",
-          theme: "outline",
-          text: "continue_with",
-          size: "large",
-          width: btn.offsetWidth || 320,
-          logo_alignment: "left",
+          type: "standard", shape: "rectangular", theme: "outline",
+          text: "continue_with", size: "large",
+          width: btn.offsetWidth || 320, logo_alignment: "left",
         });
       }
     };
+    if (window.google) { initButton(); return; }
+    const existing = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
+    if (existing) { existing.addEventListener("load", initButton); return; }
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.onload = initButton;
     document.head.appendChild(script);
-    return () => { document.head.removeChild(script); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientId]);
 
