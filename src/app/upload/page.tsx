@@ -79,6 +79,10 @@ export default function UploadPage() {
   const [nearbyPOIs, setNearbyPOIs] = useState<NearbyPOI[]>([]);
   const [showPlacePicker, setShowPlacePicker] = useState(false);
   const [poisLoading, setPoisLoading] = useState(false);
+  const [venueSearchQuery, setVenueSearchQuery] = useState('');
+  const [venueSearchResults, setVenueSearchResults] = useState<Array<{ name: string; lat: number; lng: number }>>([]);
+  const [venueSearchLoading, setVenueSearchLoading] = useState(false);
+  const venueSearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Extract GPS from the anchor photo; reset venue selection when anchor changes
   useEffect(() => {
@@ -211,6 +215,8 @@ export default function UploadPage() {
 
   const handleFindPlace = async () => {
     if (!exifCoords) return;
+    setVenueSearchQuery('');
+    setVenueSearchResults([]);
     setShowPlacePicker(true);
     setPoisLoading(true);
     try {
@@ -421,32 +427,36 @@ export default function UploadPage() {
                       <span className="text-[14px] font-medium text-[#1A1613] truncate">{manualLocation.name}</span>
                     </div>
                     <button
-                      onClick={() => { setManualLocation(null); setLocationSearch(''); setShowLocationSearch(false); }}
+                      onClick={() => { setManualLocation(null); setLocationSearch(''); setLocationSuggestions([]); }}
                       className="shrink-0 text-[12px] text-[#A09080]"
                     >
                       {t('change', language)}
                     </button>
                   </div>
-                ) : showLocationSearch ? (
-                  /* Search input */
+                ) : (
+                  /* Search input always visible + Use My Location below */
                   <div className="mt-3">
-                    <input
-                      type="text"
-                      value={locationSearch}
-                      onChange={(e) => {
-                        const q = e.target.value;
-                        setLocationSearch(q);
-                        if (locationDebounceRef.current) clearTimeout(locationDebounceRef.current);
-                        if (!q.trim()) { setLocationSuggestions([]); return; }
-                        locationDebounceRef.current = setTimeout(async () => {
-                          const results = await searchPlaces(q);
-                          setLocationSuggestions(results);
-                        }, 300);
-                      }}
-                      placeholder={t('searchCityCountry', language)}
-                      autoFocus
-                      className="w-full rounded-xl border border-[#D4C4A8] bg-[#F7F3EC] px-3 py-2.5 text-[14px] text-[#1A1613] placeholder:text-[#A09080] outline-none focus:border-[#B85C38]"
-                    />
+                    <div className="relative">
+                      <svg className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#A09080]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                      </svg>
+                      <input
+                        type="text"
+                        value={locationSearch}
+                        onChange={(e) => {
+                          const q = e.target.value;
+                          setLocationSearch(q);
+                          if (locationDebounceRef.current) clearTimeout(locationDebounceRef.current);
+                          if (!q.trim()) { setLocationSuggestions([]); return; }
+                          locationDebounceRef.current = setTimeout(async () => {
+                            const results = await searchPlaces(q);
+                            setLocationSuggestions(results);
+                          }, 300);
+                        }}
+                        placeholder={t('searchLocation', language)}
+                        className="w-full rounded-xl border border-[#D4C4A8] bg-[#F7F3EC] pl-9 pr-3 py-2.5 text-[14px] text-[#1A1613] placeholder:text-[#A09080] outline-none focus:border-[#B85C38]"
+                      />
+                    </div>
                     {locationSuggestions.length > 0 && (
                       <div className="mt-1 overflow-hidden rounded-xl border border-[#D4C4A8] bg-[#F9F6F0]">
                         {locationSuggestions.map((s, i) => (
@@ -456,9 +466,8 @@ export default function UploadPage() {
                               setManualLocation({ lat: s.lat, lng: s.lng, name: s.name.split(',')[0] });
                               setLocationSearch('');
                               setLocationSuggestions([]);
-                              setShowLocationSearch(false);
                             }}
-                            className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[13px] text-[#1A1613] hover:bg-[#EDE6D9] border-t border-[#D4C4A8] first:border-t-0"
+                            className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[13px] text-[#1A1613] active:bg-[#EDE6D9] border-t border-[#D4C4A8] first:border-t-0"
                           >
                             <svg className="size-3.5 shrink-0 text-[#A09080]" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>
                             <span className="truncate">{s.name}</span>
@@ -466,16 +475,6 @@ export default function UploadPage() {
                         ))}
                       </div>
                     )}
-                    <button
-                      onClick={() => { setShowLocationSearch(false); setLocationSearch(''); setLocationSuggestions([]); }}
-                      className="mt-2 text-[12px] text-[#A09080]"
-                    >
-                      {t('cancel', language)}
-                    </button>
-                  </div>
-                ) : (
-                  /* Two action buttons */
-                  <div className="mt-3 flex gap-2">
                     <button
                       onClick={async () => {
                         if (!navigator.geolocation) return;
@@ -491,7 +490,7 @@ export default function UploadPage() {
                         );
                       }}
                       disabled={locationGeoLoading}
-                      className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#1A1613] py-2.5 text-[13px] font-medium text-white disabled:opacity-60"
+                      className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-xl border border-[#D4C4A8] py-2.5 text-[13px] font-medium text-[#6B5F52] disabled:opacity-60"
                     >
                       {locationGeoLoading ? (
                         <span>{t('locating', language)}</span>
@@ -501,12 +500,6 @@ export default function UploadPage() {
                           {t('useMyLocation', language)}
                         </>
                       )}
-                    </button>
-                    <button
-                      onClick={() => setShowLocationSearch(true)}
-                      className="flex-1 rounded-xl border border-[#D4C4A8] py-2.5 text-[13px] font-medium text-[#6B5F52]"
-                    >
-                      {t('search', language)}
                     </button>
                   </div>
                 )}
@@ -611,41 +604,99 @@ export default function UploadPage() {
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setShowPlacePicker(false)}>
           <div
             className="w-full rounded-t-2xl bg-[#F9F6F0] px-4 pt-5 pb-10 shadow-xl overflow-y-auto"
-            style={{ maxHeight: '70vh' }}
+            style={{ maxHeight: '75vh' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 h-1 w-10 rounded-full bg-[#D4C4A8] mx-auto" />
             <p className="text-[16px] font-semibold text-[#1A1613]">{t('selectAPlace', language)}</p>
-            <p className="mt-0.5 mb-4 text-[12px] text-[#6B5F52]">{t('placesNearPhoto', language)}</p>
-            {poisLoading ? (
-              <p className="py-8 text-center text-[14px] text-[#6B5F52]">{t('findingPlaces', language)}</p>
-            ) : nearbyPOIs.length === 0 ? (
-              <p className="py-8 text-center text-[14px] text-[#6B5F52]">{t('noPlacesFound', language)}</p>
+
+            {/* Search input */}
+            <div className="relative mt-3 mb-4">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#A09080]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input
+                type="text"
+                value={venueSearchQuery}
+                onChange={(e) => {
+                  const q = e.target.value;
+                  setVenueSearchQuery(q);
+                  if (venueSearchDebounceRef.current) clearTimeout(venueSearchDebounceRef.current);
+                  if (!q.trim()) { setVenueSearchResults([]); return; }
+                  setVenueSearchLoading(true);
+                  venueSearchDebounceRef.current = setTimeout(async () => {
+                    const results = await searchPlaces(q);
+                    setVenueSearchResults(results);
+                    setVenueSearchLoading(false);
+                  }, 300);
+                }}
+                placeholder={t('searchLocation', language)}
+                className="w-full rounded-xl border border-[#D4C4A8] bg-[#F7F3EC] pl-9 pr-3 py-2.5 text-[14px] text-[#1A1613] placeholder:text-[#A09080] outline-none focus:border-[#B85C38]"
+              />
+            </div>
+
+            {venueSearchQuery.trim() ? (
+              /* Search results */
+              venueSearchLoading ? (
+                <p className="py-6 text-center text-[14px] text-[#6B5F52]">{t('findingPlaces', language)}</p>
+              ) : venueSearchResults.length === 0 ? (
+                <p className="py-6 text-center text-[14px] text-[#6B5F52]">{t('noPlacesFound', language)}</p>
+              ) : (
+                <div className="space-y-2">
+                  {venueSearchResults.map((r, i) => (
+                    <button
+                      key={i}
+                      onClick={() => {
+                        setSelectedVenueName(r.name.split(',')[0]);
+                        setSelectedVenueId(null);
+                        setShowPlacePicker(false);
+                        setVenueSearchQuery('');
+                        setVenueSearchResults([]);
+                      }}
+                      className="flex w-full items-center gap-3 rounded-xl bg-[#EDE6D9] px-4 py-3 text-left"
+                    >
+                      <svg className="size-4 shrink-0 text-[#6B5F52]" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>
+                      <span className="truncate text-[14px] font-medium text-[#1A1613]">{r.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )
             ) : (
-              <div className="space-y-2">
-                {nearbyPOIs.map((poi) => (
-                  <button
-                    key={poi.id}
-                    onClick={() => {
-                      setSelectedVenueName(poi.name);
-                      setSelectedVenueId(poi.id); // Mapbox feature ID → sent as venue_id to backend
-                      setShowPlacePicker(false);
-                    }}
-                    className="flex w-full items-center gap-3 rounded-xl bg-[#EDE6D9] px-4 py-3 text-left"
-                  >
-                    <StoreIcon className="size-5 shrink-0 text-[#6B5F52]" />
-                    <div className="min-w-0">
-                      <p className="text-[14px] font-medium text-[#1A1613]">{poi.name}</p>
-                      {poi.category && (
-                        <p className="text-[12px] capitalize text-[#A09080]">{poi.category}</p>
-                      )}
-                    </div>
-                  </button>
-                ))}
-              </div>
+              /* Nearby POIs (auto-detected) */
+              <>
+                <p className="mb-3 text-[12px] text-[#6B5F52]">{t('placesNearPhoto', language)}</p>
+                {poisLoading ? (
+                  <p className="py-6 text-center text-[14px] text-[#6B5F52]">{t('findingPlaces', language)}</p>
+                ) : nearbyPOIs.length === 0 ? (
+                  <p className="py-6 text-center text-[14px] text-[#6B5F52]">{t('noPlacesFound', language)}</p>
+                ) : (
+                  <div className="space-y-2">
+                    {nearbyPOIs.map((poi) => (
+                      <button
+                        key={poi.id}
+                        onClick={() => {
+                          setSelectedVenueName(poi.name);
+                          setSelectedVenueId(poi.id);
+                          setShowPlacePicker(false);
+                        }}
+                        className="flex w-full items-center gap-3 rounded-xl bg-[#EDE6D9] px-4 py-3 text-left"
+                      >
+                        <StoreIcon className="size-5 shrink-0 text-[#6B5F52]" />
+                        <div className="min-w-0">
+                          <p className="text-[14px] font-medium text-[#1A1613]">{poi.name}</p>
+                          {poi.category && (
+                            <p className="text-[12px] capitalize text-[#A09080]">{poi.category}</p>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
+
             <button
-              onClick={() => setShowPlacePicker(false)}
+              onClick={() => { setShowPlacePicker(false); setVenueSearchQuery(''); setVenueSearchResults([]); }}
               className="mt-4 w-full py-2.5 text-[14px] text-[#6B5F52]"
             >
               {t('cancel', language)}

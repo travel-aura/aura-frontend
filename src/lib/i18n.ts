@@ -260,6 +260,7 @@ export const UI_TEXT = {
   useMyLocation:      { en: "Use my location",    "zh-CN": "使用我的位置",  "zh-TW": "使用我的位置" },
   locating:           { en: "Locating…",          "zh-CN": "定位中…",       "zh-TW": "定位中…" },
   searchCityCountry:  { en: "Search city, country…","zh-CN": "搜索城市、国家…","zh-TW": "搜尋城市、國家…" },
+  searchLocation:     { en: "Search place or venue…","zh-CN": "搜索地点或场所…","zh-TW": "搜尋地點或場所…" },
   isVenueQuestion:    { en: "Is this at a restaurant, café, or store?", "zh-CN": "这是餐厅、咖啡馆或商店吗？", "zh-TW": "這是餐廳、咖啡館或商店嗎？" },
   venueDesc:          { en: "We'll link your post to that venue", "zh-CN": "我们将把你的帖子与该场所关联", "zh-TW": "我們將把你的貼文與該場所關聯" },
   yesFindIt:          { en: "Yes, find it",       "zh-CN": "是，查找",      "zh-TW": "是，查找" },
