@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { apiGet } from "@/lib/api";
 import { searchPlaces } from "@/lib/geocoding";
 import TopBar from "@/components/TopBar";
@@ -83,12 +84,11 @@ type LocationMode = "global" | "nearby" | "city" | "text";
 // ── Feed Card ─────────────────────────────────────────────────────────────────
 
 function FeedCard({ place }: { place: PlaceFeedItem }) {
-  if (!place.cover_post_id) return null;
+  if (!place.cover_post_id || !place.cover_image_url) return null;
   return (
     <Link href={`/post/${place.cover_post_id}`} className="block">
       <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg bg-[#D4C4A8]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={place.cover_image_url ?? undefined} alt={place.cover_title ?? undefined} loading="lazy" className="h-full w-full object-cover" />
+        <Image src={place.cover_image_url} alt={place.cover_title ?? ""} fill className="object-cover" sizes="(max-width: 768px) 50vw, 33vw" />
 
         {/* Multiple shots indicator */}
         {place.shot_count > 1 && (

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { apiGet } from "@/lib/api";
 import { saveUserId } from "@/lib/auth";
@@ -119,10 +120,9 @@ export default function ProfilePage() {
         {/* ── Profile header ── */}
         <div className="flex items-start gap-4 px-4 pt-5">
           {/* Avatar */}
-          <div className="size-[80px] shrink-0 overflow-hidden rounded-full border border-[#D4C4A8] bg-[#EDE6D9]">
+          <div className="relative size-[80px] shrink-0 overflow-hidden rounded-full border border-[#D4C4A8] bg-[#EDE6D9]">
             {avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={avatarUrl} alt={userName} className="h-full w-full object-cover" />
+              <Image src={avatarUrl} alt={userName} fill className="object-cover" sizes="80px" />
             ) : (
               <div className="flex h-full w-full items-center justify-center">
                 <span className="text-[28px] font-semibold text-[#B85C38]">

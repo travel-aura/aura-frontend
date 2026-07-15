@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Image from "next/image";
 import { getToken } from "@/lib/auth";
 import { apiGet, API_BASE } from "@/lib/api";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -113,8 +114,7 @@ export default function EditPostPage() {
           <div className="flex gap-2 overflow-x-auto pb-1">
             {imageUrls.map((url, i) => (
               <div key={i} className="relative h-[120px] w-[90px] shrink-0 overflow-hidden rounded-[12px] bg-[#D4C4A8]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={url} alt="" className="h-full w-full object-cover" />
+                <Image src={url} alt="" fill className="object-cover" sizes="90px" />
                 {/* Only show remove button when there are 2+ photos */}
                 {imageUrls.length > 1 && (
                   <button

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 interface GridItem {
   id: string;
@@ -46,8 +47,7 @@ export default function PostGrid({ posts, emptyTitle, emptyMessage }: PostGridPr
     return (
       <div className="w-[128px]">
         <Link href={`/post/${posts[0].id}`} className="relative block aspect-square">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={posts[0].image_urls[0]} alt={posts[0].title} loading="lazy" className="h-full w-full object-cover" />
+          <Image src={posts[0].image_urls[0]} alt={posts[0].title} fill className="object-cover" sizes="128px" />
           {posts[0].image_urls.length > 1 && (
             <div className="absolute right-2 top-2">
               <LayersIcon className="size-5 text-white drop-shadow-lg" />
@@ -62,8 +62,7 @@ export default function PostGrid({ posts, emptyTitle, emptyMessage }: PostGridPr
     <div className="grid grid-cols-3 gap-1">
       {posts.map((post) => (
         <Link key={post.id} href={`/post/${post.id}`} className="relative block aspect-square">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={post.image_urls[0]} alt={post.title} loading="lazy" className="h-full w-full object-cover" />
+          <Image src={post.image_urls[0]} alt={post.title} fill className="object-cover" sizes="(max-width: 768px) 33vw, 25vw" />
           {post.image_urls.length > 1 && (
             <div className="absolute right-2 top-2">
               <LayersIcon className="size-4 text-white drop-shadow-lg" />

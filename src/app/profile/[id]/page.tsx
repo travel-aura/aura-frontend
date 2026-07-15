@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { API_BASE } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import PostGrid from "@/components/PostGrid";
@@ -127,9 +128,8 @@ export default function PublicProfilePage() {
         {/* ── Profile header ── */}
         <div className="flex items-start gap-4 px-4 pt-3">
           {/* Avatar */}
-          <div className="size-[80px] shrink-0 overflow-hidden rounded-full border border-[#D4C4A8]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={profile.avatar_url || DEFAULT_AVATAR} alt={profile.name} className="h-full w-full object-cover" />
+          <div className="relative size-[80px] shrink-0 overflow-hidden rounded-full border border-[#D4C4A8]">
+            <Image src={profile.avatar_url || DEFAULT_AVATAR} alt={profile.name} fill className="object-cover" sizes="80px" />
           </div>
 
           {/* Name + stats */}

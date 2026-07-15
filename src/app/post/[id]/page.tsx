@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { apiGet, API_BASE } from "@/lib/api";
 import { getToken, getUserId } from "@/lib/auth";
 import { getCityFromCoordinates } from "@/lib/geocoding";
@@ -334,12 +335,14 @@ export default function PostDetailPage() {
             href={isOwnPost ? "/profile" : `/profile/${post.user_id}`}
             className="flex items-center gap-2"
           >
-            <div className="size-8 overflow-hidden rounded-full bg-[#EDE6D9]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+            <div className="relative size-8 overflow-hidden rounded-full bg-[#EDE6D9]">
+              <Image
                 src={post.user?.avatar_url || post.user_avatar_url || DEFAULT_AVATAR}
                 alt={post.user?.name || post.user_name || "User"}
-                className="h-full w-full object-cover"
+                fill
+                className="object-cover"
+                sizes="32px"
+                priority
               />
             </div>
             <span className="text-[15px] font-semibold text-[#1A1613]">
@@ -406,11 +409,10 @@ export default function PostDetailPage() {
             {post.image_urls.map((url, index) => (
               <div
                 key={index}
-                className="aspect-[3/4] w-[62%] shrink-0 snap-start overflow-hidden rounded-2xl cursor-zoom-in"
+                className="relative aspect-[3/4] w-[62%] shrink-0 snap-start overflow-hidden rounded-2xl cursor-zoom-in"
                 onClick={() => setLightboxIndex(index)}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={url} alt={`${post.title} ${index + 1}`} className="h-full w-full object-cover" />
+                <Image src={url} alt={`${post.title} ${index + 1}`} fill className="object-cover" sizes="62vw" priority={index === 0} />
               </div>
             ))}
             <div className="w-4 shrink-0" />
@@ -618,9 +620,8 @@ export default function PostDetailPage() {
                 >
                   {/* Avatar + name + title — single line */}
                   <div className="flex items-center gap-2 px-3 pt-3 pb-1.5">
-                    <div className="size-6 shrink-0 overflow-hidden rounded-full bg-[#EDE6D9]">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={p.user_avatar_url || DEFAULT_AVATAR} alt="" className="h-full w-full object-cover" />
+                    <div className="relative size-6 shrink-0 overflow-hidden rounded-full bg-[#EDE6D9]">
+                      <Image src={p.user_avatar_url || DEFAULT_AVATAR} alt="" fill className="object-cover" sizes="24px" />
                     </div>
                     <span className="shrink-0 text-[12px] font-semibold text-[#1A1613]">{p.user_name || "User"}</span>
                     <span className="min-w-0 truncate text-[12px] text-[#6B5F52]">{p.title}</span>
@@ -637,9 +638,8 @@ export default function PostDetailPage() {
                   <div className="overflow-hidden pl-3 pb-3">
                     <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory scrollbar-hide">
                       {p.image_urls.map((url, i) => (
-                        <div key={i} className="aspect-[3/4] w-[82%] shrink-0 snap-start overflow-hidden rounded-xl">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={url} alt={p.title} className="h-full w-full object-cover" />
+                        <div key={i} className="relative aspect-[3/4] w-[82%] shrink-0 snap-start overflow-hidden rounded-xl">
+                          <Image src={url} alt={p.title} fill className="object-cover" sizes="82vw" />
                         </div>
                       ))}
                       <div className="w-1 shrink-0" />
@@ -772,11 +772,12 @@ export default function PostDetailPage() {
             </span>
           )}
 
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src={post.image_urls[lightboxIndex]}
             alt={post.title}
-            className="max-h-screen max-w-full object-contain"
+            fill
+            className="object-contain"
+            sizes="100vw"
             onClick={(e) => e.stopPropagation()}
           />
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { API_BASE } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -114,9 +115,8 @@ export default function NotificationsPage() {
               <li key={n.id} className={`flex items-start gap-3 px-4 py-3 ${!n.read ? "bg-[#EDE6D9]" : ""}`}>
                 {/* Avatar */}
                 <Link href={`/profile/${n.actor_id}`} className="mt-0.5 shrink-0">
-                  <div className="size-10 overflow-hidden rounded-full bg-[#EDE6D9]">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={n.actor_avatar || DEFAULT_AVATAR} alt={n.actor_name} className="h-full w-full object-cover" />
+                  <div className="relative size-10 overflow-hidden rounded-full bg-[#EDE6D9]">
+                    <Image src={n.actor_avatar || DEFAULT_AVATAR} alt={n.actor_name} fill className="object-cover" sizes="40px" />
                   </div>
                 </Link>
 
