@@ -65,6 +65,7 @@ export default function UploadPage() {
   const [nearbyPlaces, setNearbyPlaces] = useState<NearbyPlace[]>([]);
   const [showNearbyPrompt, setShowNearbyPrompt] = useState(false);
   const [exifCoords, setExifCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [exifLoading, setExifLoading] = useState(false);
   // Manual location for no-GPS photos
   const [manualLocation, setManualLocation] = useState<{ lat: number; lng: number; name: string } | null>(null);
   const [locationSearch, setLocationSearch] = useState('');
@@ -89,6 +90,7 @@ export default function UploadPage() {
   useEffect(() => {
     if (photos.length === 0) {
       setExifCoords(null);
+      setExifLoading(false);
       setSelectedVenueName(null); setSelectedVenueId(null); setVenueSkipped(false);
       return;
     }
@@ -97,6 +99,8 @@ export default function UploadPage() {
     // Reset venue choice whenever the GPS anchor changes
     setSelectedVenueName(null); setSelectedVenueId(null); setVenueSkipped(false);
     setManualLocation(null); setLocationSearch(''); setShowLocationSearch(false);
+    setExifCoords(null);
+    setExifLoading(true);
     let cancelled = false;
     (async () => {
       try {
@@ -108,9 +112,13 @@ export default function UploadPage() {
           } else {
             setExifCoords(null);
           }
+          setExifLoading(false);
         }
       } catch {
-        if (!cancelled) setExifCoords(null);
+        if (!cancelled) {
+          setExifCoords(null);
+          setExifLoading(false);
+        }
       }
     })();
     return () => { cancelled = true; };
@@ -411,8 +419,8 @@ export default function UploadPage() {
             </div>
           </div>
 
-          {/* No-GPS location picker */}
-          {!exifCoords && photos.length > 0 && (
+          {/* No-GPS location picker — only shown after EXIF check completes */}
+          {!exifCoords && !exifLoading && photos.length > 0 && (
             <div className="mt-5 px-3">
               <div className="rounded-2xl border border-[#D4C4A8] bg-[#F9F6F0] px-4 py-4">
                 <div className="flex items-start gap-3">
