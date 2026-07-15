@@ -213,6 +213,8 @@ export const UI_TEXT = {
   // Auth
   signUp:             { en: "Sign up",            "zh-CN": "注册",          "zh-TW": "註冊" },
   logIn:              { en: "Log in",             "zh-CN": "登录",          "zh-TW": "登入" },
+  loginToSeeProfile:  { en: "Log in to view profiles", "zh-CN": "登录后查看用户主页", "zh-TW": "登入後查看用戶主頁" },
+  loginToSeeProfileSub: { en: "Create an account or sign in to see who's sharing moments near you.", "zh-CN": "注册或登录，看看谁在分享你附近的精彩瞬间。", "zh-TW": "註冊或登入，看看誰在分享你附近的精彩瞬間。" },
   loginTitle:         { en: "Welcome back",       "zh-CN": "欢迎回来",      "zh-TW": "歡迎回來" },
   loginSubtitle:      { en: "Log in to upload",   "zh-CN": "登录后开始上传", "zh-TW": "登入後開始上傳" },
   loginTagline:       { en: "Document and share your photo spots", "zh-CN": "记录并分享你的拍照地点", "zh-TW": "記錄並分享你的拍照地點" },

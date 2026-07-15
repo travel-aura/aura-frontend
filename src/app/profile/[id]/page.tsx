@@ -96,6 +96,37 @@ export default function PublicProfilePage() {
   }
 
   if (error || !profile) {
+    if (!getToken()) {
+      return (
+        <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#F7F3EC] px-8 text-center">
+          <div className="flex size-16 items-center justify-center rounded-full bg-[#EDE6D9]">
+            <svg className="size-8 text-[#6B5F52]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-[18px] font-bold text-[#1A1613]">{t('loginToSeeProfile', language)}</p>
+            <p className="mt-1 text-[14px] text-[#6B5F52]">{t('loginToSeeProfileSub', language)}</p>
+          </div>
+          <Link
+            href={`/login?redirect=/profile/${userId}`}
+            className="w-full rounded-xl bg-[#B85C38] py-3.5 text-[15px] font-semibold text-white"
+          >
+            {t('logIn', language)}
+          </Link>
+          <Link
+            href={`/register?redirect=/profile/${userId}`}
+            className="w-full rounded-xl bg-[#EDE6D9] py-3.5 text-[15px] font-semibold text-[#1A1613]"
+          >
+            {t('signUp', language)}
+          </Link>
+          <button onClick={() => router.back()} className="text-[14px] text-[#A09080]">
+            {t('goBack', language)}
+          </button>
+        </div>
+      );
+    }
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-[#F7F3EC] px-4">
         <p className="text-[15px] font-semibold text-red-600">{error || t('userNotFound', language)}</p>
