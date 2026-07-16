@@ -410,7 +410,8 @@ export default function PostDetailClient({ initialPost, postId }: Props) {
           {/* Capture timestamp — only shown when EXIF data exists */}
           {post.taken_at && (() => {
             const date = new Date(post.taken_at);
-            const formatted = date.toLocaleString(undefined, {
+            const locale = language === "zh-CN" ? "zh-CN" : language === "zh-TW" ? "zh-TW" : "en";
+            const formatted = date.toLocaleString(locale, {
               year: "numeric", month: "short", day: "numeric",
               hour: "2-digit", minute: "2-digit",
             });

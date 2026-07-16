@@ -137,15 +137,15 @@ export default function ProfilePage() {
             <p className="text-[17px] font-bold leading-tight text-[#1A1613]">{userName || "—"}</p>
             <div className="mt-2.5 flex items-stretch divide-x divide-[#D4C4A8]">
               <div className="flex flex-1 flex-col items-center gap-0.5 px-1">
-                <span className="text-[12px] text-[#6B5F52]">Verified</span>
+                <span className="text-[12px] text-[#6B5F52]">{t('statVerified', language)}</span>
                 <span className="text-[17px] font-bold text-[#1A1613]">{stats.verified_count}</span>
               </div>
               <Link href="/profile/cities" className="flex flex-1 flex-col items-center gap-0.5 px-1">
-                <span className="text-[12px] text-[#6B5F52]">Cities</span>
+                <span className="text-[12px] text-[#6B5F52]">{t('statCities', language)}</span>
                 <span className="text-[17px] font-bold text-[#1A1613]">{stats.city_count}</span>
               </Link>
               <Link href="/profile/followers" className="flex flex-1 flex-col items-center gap-0.5 px-1">
-                <span className="text-[12px] text-[#6B5F52]">Friends</span>
+                <span className="text-[12px] text-[#6B5F52]">{t('statFriends', language)}</span>
                 <span className="text-[17px] font-bold text-[#1A1613]">{stats.friend_count ?? stats.follower_count}</span>
               </Link>
             </div>

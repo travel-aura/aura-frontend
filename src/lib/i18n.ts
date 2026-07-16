@@ -249,6 +249,9 @@ export const UI_TEXT = {
   noAurasYet:         { en: "No Auras here yet.", "zh-CN": "暂无帖子。",    "zh-TW": "暫無貼文。" },
   filterByTag:        { en: "Filter by Tag",      "zh-CN": "按标签筛选",    "zh-TW": "按標籤篩選" },
   clear:              { en: "Clear",              "zh-CN": "清除",          "zh-TW": "清除" },
+  showingNearby:      { en: "Showing nearby posts", "zh-CN": "显示附近帖子", "zh-TW": "顯示附近貼文" },
+  showingAurasIn:     { en: "Showing Auras in",   "zh-CN": "显示以下城市的帖子：", "zh-TW": "顯示以下城市的貼文：" },
+  resultsFor:         { en: "Results for",        "zh-CN": "搜索结果：",    "zh-TW": "搜尋結果：" },
 
   // Upload
   upload:             { en: "Upload",             "zh-CN": "发布",          "zh-TW": "發布" },
@@ -304,6 +307,9 @@ export const UI_TEXT = {
   signUpToAdd:        { en: "Sign up to add a shot","zh-CN": "注册后可添加照片","zh-TW": "註冊後可新增照片" },
 
   // Profile (own)
+  statVerified:       { en: "Verified",           "zh-CN": "已验证",        "zh-TW": "已驗證" },
+  statCities:         { en: "Cities",             "zh-CN": "城市",          "zh-TW": "城市" },
+  statFriends:        { en: "Friends",            "zh-CN": "好友",          "zh-TW": "好友" },
   uploaded:           { en: "Uploaded",           "zh-CN": "已上传",        "zh-TW": "已上傳" },
   saved:              { en: "Saved",              "zh-CN": "已收藏",        "zh-TW": "已收藏" },
   editProfile:        { en: "Edit profile",       "zh-CN": "编辑资料",      "zh-TW": "編輯資料" },

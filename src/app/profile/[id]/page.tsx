@@ -165,15 +165,15 @@ export default function PublicProfilePage() {
             <p className="text-[17px] font-bold leading-tight text-[#1A1613]">{profile.name}</p>
             <div className="mt-2.5 flex items-stretch divide-x divide-[#D4C4A8]">
               <div className="flex flex-1 flex-col items-center gap-0.5 px-1">
-                <span className="text-[12px] text-[#6B5F52]">Verified</span>
+                <span className="text-[12px] text-[#6B5F52]">{t('statVerified', language)}</span>
                 <span className="text-[17px] font-bold text-[#1A1613]">{stats.verified_count}</span>
               </div>
               <Link href={`/profile/${userId}/cities`} className="flex flex-1 flex-col items-center gap-0.5 px-1">
-                <span className="text-[12px] text-[#6B5F52]">Cities</span>
+                <span className="text-[12px] text-[#6B5F52]">{t('statCities', language)}</span>
                 <span className="text-[17px] font-bold text-[#1A1613]">{stats.city_count}</span>
               </Link>
               <div className="flex flex-1 flex-col items-center gap-0.5 px-1">
-                <span className="text-[12px] text-[#6B5F52]">Friends</span>
+                <span className="text-[12px] text-[#6B5F52]">{t('statFriends', language)}</span>
                 <span className="text-[17px] font-bold text-[#1A1613]">{stats.friend_count ?? stats.follower_count}</span>
               </div>
             </div>

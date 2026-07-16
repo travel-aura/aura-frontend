@@ -465,9 +465,9 @@ export default function AuraFeed() {
   const rightPlaces = validPlaces.filter((_, i) => i % 2 === 1);
 
   const contextLabel =
-    locationMode === "nearby" ? "📍 Showing nearby posts" :
-    locationMode === "city" ? `📍 Showing Auras in ${selectedCity?.name}` :
-    locationMode === "text" ? `🔍 Results for "${activeQuery}"` :
+    locationMode === "nearby" ? `📍 ${t('showingNearby', language)}` :
+    locationMode === "city" ? `📍 ${t('showingAurasIn', language)} ${selectedCity?.name}` :
+    locationMode === "text" ? `🔍 ${t('resultsFor', language)} "${activeQuery}"` :
     null;
 
   return (
