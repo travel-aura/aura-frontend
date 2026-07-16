@@ -56,7 +56,7 @@ export default function UploadPage() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [photos, setPhotos] = useState<PhotoFile[]>([]);
-  const [gpsPhotoIndex, setGpsPhotoIndex] = useState(0);
+  const [gpsAnchorIndex, setGpsAnchorIndex] = useState<number | null>(null);
   const [editingPhotoIndex, setEditingPhotoIndex] = useState<number | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -86,63 +86,68 @@ export default function UploadPage() {
   const [venueSearchLoading, setVenueSearchLoading] = useState(false);
   const venueSearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Extract GPS from the anchor photo; reset venue selection when anchor changes
+  // Auto-detect GPS: scan photos in order, pick first one with valid coordinates
   useEffect(() => {
     if (photos.length === 0) {
       setExifCoords(null);
       setExifLoading(false);
+      setGpsAnchorIndex(null);
       setSelectedVenueName(null); setSelectedVenueId(null); setVenueSkipped(false);
       return;
     }
-    const anchor = photos[gpsPhotoIndex];
-    if (!anchor) return;
-    // Reset venue choice whenever the GPS anchor changes
     setSelectedVenueName(null); setSelectedVenueId(null); setVenueSkipped(false);
     setManualLocation(null); setLocationSearch(''); setShowLocationSearch(false);
     setExifCoords(null);
+    setGpsAnchorIndex(null);
     setExifLoading(true);
     let cancelled = false;
     (async () => {
+      const dms2dd = (dms: number[] | undefined, ref: string | undefined): number | null => {
+        if (!Array.isArray(dms) || dms.length < 2) return null;
+        const [deg, min, sec = 0] = dms;
+        if (typeof deg !== 'number' || typeof min !== 'number') return null;
+        const d = Math.abs(deg) + Math.abs(min) / 60 + Math.abs(sec) / 3600;
+        const r = (ref ?? '').trim().toUpperCase();
+        if (r === 'S' || r === 'W') return -d;
+        if (r === 'N' || r === 'E') return d;
+        return deg < 0 ? -d : d;
+      };
       try {
         const { default: exifr } = await import('exifr');
-        // xmp:true catches GPS stored in XMP on some Android OEMs (Xiaomi, OnePlus, Oppo).
-        const data = await exifr.parse(anchor.file, { gps: true, tiff: true, xmp: true });
-        // exifr.gps:true computes latitude/longitude from GPS IFD.
-        // Fallback: some Android devices return raw [deg, min, sec] arrays without computing
-        // decimal degrees, or write lowercase ref strings ('n'/'s').
-        let lat: number | null = data?.latitude ?? null;
-        let lng: number | null = data?.longitude ?? null;
-        if ((lat == null || lng == null) && data) {
-          const dms2dd = (dms: number[] | undefined, ref: string | undefined): number | null => {
-            if (!Array.isArray(dms) || dms.length < 2) return null;
-            const [deg, min, sec = 0] = dms;
-            if (typeof deg !== 'number' || typeof min !== 'number') return null;
-            const d = Math.abs(deg) + Math.abs(min) / 60 + Math.abs(sec) / 3600;
-            const r = (ref ?? '').trim().toUpperCase();
-            if (r === 'S' || r === 'W') return -d;
-            if (r === 'N' || r === 'E') return d;
-            return deg < 0 ? -d : d;
-          };
-          lat = dms2dd(data.GPSLatitude, data.GPSLatitudeRef);
-          lng = dms2dd(data.GPSLongitude, data.GPSLongitudeRef);
-        }
-        if (!cancelled) {
-          if (lat != null && lng != null && (lat !== 0 || lng !== 0)) {
-            setExifCoords({ lat, lng });
-          } else {
-            setExifCoords(null);
+        for (let i = 0; i < photos.length; i++) {
+          if (cancelled) return;
+          const data = await exifr.parse(photos[i].file, { gps: true, tiff: true, xmp: true });
+          let lat: number | null = data?.latitude ?? null;
+          let lng: number | null = data?.longitude ?? null;
+          if ((lat == null || lng == null) && data) {
+            lat = dms2dd(data.GPSLatitude, data.GPSLatitudeRef);
+            lng = dms2dd(data.GPSLongitude, data.GPSLongitudeRef);
           }
+          if (lat != null && lng != null && (lat !== 0 || lng !== 0)) {
+            if (!cancelled) {
+              setExifCoords({ lat, lng });
+              setGpsAnchorIndex(i);
+              setExifLoading(false);
+            }
+            return;
+          }
+        }
+        // No photo had GPS
+        if (!cancelled) {
+          setExifCoords(null);
+          setGpsAnchorIndex(null);
           setExifLoading(false);
         }
       } catch {
         if (!cancelled) {
           setExifCoords(null);
+          setGpsAnchorIndex(null);
           setExifLoading(false);
         }
       }
     })();
     return () => { cancelled = true; };
-  }, [photos, gpsPhotoIndex]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [photos]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -176,14 +181,11 @@ export default function UploadPage() {
   };
 
   const removePhoto = (index: number) => {
-    const next = photos.filter((_, i) => i !== index);
-    setPhotos(next);
-    if (gpsPhotoIndex >= next.length) setGpsPhotoIndex(Math.max(0, next.length - 1));
-    else if (gpsPhotoIndex === index) setGpsPhotoIndex(0);
+    setPhotos(photos.filter((_, i) => i !== index));
   };
 
   const doUpload = (placeId?: string | null) => {
-    const gpsPhoto = photos[gpsPhotoIndex];
+    const gpsPhoto = photos[gpsAnchorIndex ?? 0];
     const metadata: AuraMetadata = {
       title: title.trim(),
       description: description.trim() || undefined,
@@ -217,29 +219,14 @@ export default function UploadPage() {
       return;
     }
 
-    // Step 2: no venue — check for nearby generic spots
+    // Step 2: no venue — check for nearby generic spots using already-extracted coords
     try {
-      const { default: exifr } = await import("exifr");
-      const exifData = await exifr.parse(photos[gpsPhotoIndex].file, { gps: true, tiff: true, xmp: true });
-      // Same DMS fallback as the UI check for Android compatibility
-      const dms2dd = (dms: number[] | undefined, ref: string | undefined): number | null => {
-        if (!Array.isArray(dms) || dms.length < 2) return null;
-        const [deg, min, sec = 0] = dms;
-        if (typeof deg !== 'number' || typeof min !== 'number') return null;
-        const d = Math.abs(deg) + Math.abs(min) / 60 + Math.abs(sec) / 3600;
-        const r = (ref ?? '').trim().toUpperCase();
-        if (r === 'S' || r === 'W') return -d;
-        if (r === 'N' || r === 'E') return d;
-        return deg < 0 ? -d : d;
-      };
-      const nearbyLat = exifData?.latitude ?? dms2dd(exifData?.GPSLatitude, exifData?.GPSLatitudeRef);
-      const nearbyLng = exifData?.longitude ?? dms2dd(exifData?.GPSLongitude, exifData?.GPSLongitudeRef);
-      if (nearbyLat != null && nearbyLng != null && (nearbyLat !== 0 || nearbyLng !== 0)) {
+      if (exifCoords) {
         const token = getToken();
         const headers: Record<string, string> = {};
         if (token) headers.Authorization = `Bearer ${token}`;
         const res = await fetch(
-          `${API_BASE}/api/places/nearby?lat=${nearbyLat}&lng=${nearbyLng}`,
+          `${API_BASE}/api/places/nearby?lat=${exifCoords.lat}&lng=${exifCoords.lng}`,
           { headers }
         );
         if (res.ok) {
@@ -253,7 +240,7 @@ export default function UploadPage() {
           }
         }
       }
-    } catch { /* no GPS or places/nearby not yet available — proceed normally */ }
+    } catch { /* places/nearby not yet available — proceed normally */ }
 
     doUpload();
   };
@@ -317,12 +304,10 @@ export default function UploadPage() {
           {/* ── State 2: photos selected ── */}
           {photos.length > 0 && (
             <>
-              {/* GPS photo selector hint */}
+              {/* Photo count + change */}
               <div className="flex items-center justify-between px-3 pt-1">
                 <p className="text-[12px] text-[#6B5F52]">
-                  {photos.length > 1
-                    ? `${t('gpsHintMulti', language).replace('{n}', String(photos.length))}`
-                    : t('gpsHintSingle', language)}
+                  {photos.length} {photos.length === 1 ? t('photo', language) : t('photos', language)}
                 </p>
                 <button
                   onClick={() => fileInputRef.current?.click()}
@@ -337,7 +322,7 @@ export default function UploadPage() {
                 {photos.map((photo, i) => (
                   <div
                     key={i}
-                    className={`relative h-[120px] w-[90px] shrink-0 overflow-hidden rounded-[12px] bg-[#D4C4A8] ${gpsPhotoIndex === i ? "ring-2 ring-[#C9973A]" : ""}`}
+                    className={`relative h-[120px] w-[90px] shrink-0 overflow-hidden rounded-[12px] bg-[#D4C4A8] ${gpsAnchorIndex === i ? "ring-2 ring-[#C9973A]" : ""}`}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -345,21 +330,6 @@ export default function UploadPage() {
                       alt=""
                       className="h-full w-full object-cover"
                     />
-                    {/* GPS selector — top-left */}
-                    <button
-                      onClick={() => setGpsPhotoIndex(i)}
-                      className="absolute left-[5px] top-[5px] flex size-[16px] items-center justify-center rounded-full"
-                    >
-                      {gpsPhotoIndex === i ? (
-                        /* Selected: blue ring + white dot */
-                        <span className="flex size-[16px] items-center justify-center rounded-full bg-[#B85C38]">
-                          <span className="size-[8px] rounded-full bg-[#F7F3EC]" />
-                        </span>
-                      ) : (
-                        /* Unselected: white/semi-transparent ring */
-                        <span className="flex size-[16px] items-center justify-center rounded-full border border-[#D4C4A8] bg-[#F7F3EC]/80" />
-                      )}
-                    </button>
                     {/* Sticker editor — bottom-left */}
                     <button
                       onClick={() => setEditingPhotoIndex(i)}
