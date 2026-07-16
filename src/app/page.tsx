@@ -14,6 +14,8 @@ import type { PlaceFeedItem, PlacesFeedResponse } from "../../shared/aura-schema
 
 const RADIUS = 5000;
 const LIMIT = 10;
+const FEED_CACHE_KEY = 'aura_feed_cache';
+const clearFeedCache = () => { try { sessionStorage.removeItem(FEED_CACHE_KEY); } catch {} };
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -153,6 +155,7 @@ export default function AuraFeed() {
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
+  const [restoreScrollY, setRestoreScrollY] = useState<number | null>(null);
 
   // Scroll-based header animation
   const topGroupRef = useRef<HTMLDivElement>(null);
@@ -265,14 +268,58 @@ export default function AuraFeed() {
     }
   }, [offset, buildUrl]);
 
+  // On mount: restore from sessionStorage cache (navigating back from post) or do a fresh fetch
   useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(FEED_CACHE_KEY);
+      if (raw) {
+        const c = JSON.parse(raw);
+        if (Array.isArray(c.places) && c.places.length > 0) {
+          setPlaces(c.places);
+          setOffset(c.offset ?? 0);
+          setHasMore(c.hasMore ?? true);
+          setActiveTab(c.activeTab ?? 'all');
+          setLocationMode(c.locationMode ?? 'global');
+          setUserCoords(c.userCoords ?? null);
+          setSelectedCity(c.selectedCity ?? null);
+          setActiveTag(c.activeTag ?? null);
+          setActiveQuery(c.activeQuery ?? null);
+          setRestoreScrollY(c.scrollY ?? 0);
+          setLoading(false);
+          return;
+        }
+      }
+    } catch {}
     fetchPosts({ coords: null, currentOffset: 0, following: false });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Save feed state + scroll position to sessionStorage so navigating back restores it
+  useEffect(() => {
+    const save = () => {
+      try {
+        sessionStorage.setItem(FEED_CACHE_KEY, JSON.stringify({
+          places, offset, hasMore, scrollY: window.scrollY,
+          activeTab, locationMode, userCoords, selectedCity, activeTag, activeQuery,
+        }));
+      } catch {}
+    };
+    window.addEventListener('scroll', save, { passive: true });
+    return () => window.removeEventListener('scroll', save);
+  }, [places, offset, hasMore, activeTab, locationMode, userCoords, selectedCity, activeTag, activeQuery]);
+
+  // Restore scroll position after cached content paints
+  useLayoutEffect(() => {
+    if (restoreScrollY !== null && places.length > 0) {
+      window.scrollTo(0, restoreScrollY);
+      setRestoreScrollY(null);
+    }
+  }, [restoreScrollY, places.length]);
+
   // When a background upload completes, refresh the feed so the new post appears
   useEffect(() => {
     if (uploadStatus !== "success") return;
+    clearFeedCache();
     const coords = userCoords ?? (selectedCity ? { lat: selectedCity.lat, lng: selectedCity.lng } : null);
     fetchPosts({ coords, currentOffset: 0, following: activeTab === "following", tag: activeTag, query: activeQuery });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -281,6 +328,7 @@ export default function AuraFeed() {
   const handleSearch = () => {
     const q = searchQuery.trim();
     if (!q) return;
+    clearFeedCache();
     setShowSuggestions(false);
     setSuggestions([]);
     setActiveQuery(q);
@@ -292,6 +340,7 @@ export default function AuraFeed() {
   };
 
   const handleTabChange = (tab: Tab) => {
+    clearFeedCache();
     setActiveTab(tab);
     setOffset(0);
     setLocationMode("global");
@@ -307,6 +356,7 @@ export default function AuraFeed() {
 
   const handleNearMe = () => {
     if (locationMode === "nearby") {
+      clearFeedCache();
       setLocationMode("global");
       setUserCoords(null);
       setSelectedCity(null);
@@ -317,6 +367,7 @@ export default function AuraFeed() {
     setNearMeLoading(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        clearFeedCache();
         const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setUserCoords(coords);
         setSelectedCity(null);
@@ -337,6 +388,7 @@ export default function AuraFeed() {
   };
 
   const handleSelectCity = (s: LocationSuggestion) => {
+    clearFeedCache();
     const city = { name: s.name, lat: s.lat, lng: s.lng };
     setSelectedCity(city);
     setUserCoords(null);
@@ -350,6 +402,7 @@ export default function AuraFeed() {
   };
 
   const handleClearLocation = () => {
+    clearFeedCache();
     setLocationMode("global");
     setUserCoords(null);
     setSelectedCity(null);
@@ -360,6 +413,7 @@ export default function AuraFeed() {
   };
 
   const handleTag = (t: string) => {
+    clearFeedCache();
     setActiveTag(t);
     setShowTagFilter(false);
     const coords = locationMode === "nearby" ? userCoords : locationMode === "city" ? selectedCity : null;
@@ -368,6 +422,7 @@ export default function AuraFeed() {
   };
 
   const handleClearTag = () => {
+    clearFeedCache();
     setActiveTag(null);
     const coords = locationMode === "nearby" ? userCoords : locationMode === "city" ? selectedCity : null;
     setOffset(0);
