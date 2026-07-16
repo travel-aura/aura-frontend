@@ -11,7 +11,7 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { translateTag, t } from "@/lib/i18n";
 import type { AuraWithUser, Aura, Place, PlaceResponse } from "../../../../../shared/aura-schema";
 
-const DEFAULT_AVATAR = "https://www.figma.com/api/mcp/asset/e4add399-8205-4c2a-8782-3da6c9f7bf60";
+import AvatarImage from "@/components/AvatarImage";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -307,13 +307,13 @@ export default function PostDetailClient({ initialPost, postId }: Props) {
             className="flex items-center gap-2"
           >
             <div className="relative size-8 overflow-hidden rounded-full bg-[#EDE6D9]">
-              <Image
-                src={post.user?.avatar_url || post.user_avatar_url || DEFAULT_AVATAR}
+              <AvatarImage
+                src={post.user?.avatar_url || post.user_avatar_url}
+                name={post.user?.name || post.user_name}
                 alt={post.user?.name || post.user_name || "User"}
                 fill
                 className="object-cover"
                 sizes="32px"
-                priority
               />
             </div>
             <span className="text-[15px] font-semibold text-[#1A1613]">
@@ -592,7 +592,7 @@ export default function PostDetailClient({ initialPost, postId }: Props) {
                   {/* Avatar + name + title — single line */}
                   <div className="flex items-center gap-2 px-3 pt-3 pb-1.5">
                     <div className="relative size-6 shrink-0 overflow-hidden rounded-full bg-[#EDE6D9]">
-                      <Image src={p.user_avatar_url || DEFAULT_AVATAR} alt="" fill className="object-cover" sizes="24px" />
+                      <AvatarImage src={p.user_avatar_url} name={p.user_name} fill className="object-cover" sizes="24px" />
                     </div>
                     <span className="shrink-0 text-[12px] font-semibold text-[#1A1613]">{p.user_name || "User"}</span>
                     <span className="min-w-0 truncate text-[12px] text-[#6B5F52]">{p.title}</span>

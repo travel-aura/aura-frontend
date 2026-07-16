@@ -3,15 +3,13 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { API_BASE } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { useLanguage } from "@/hooks/useLanguage";
 import { t } from "@/lib/i18n";
 import type { Language } from "@/lib/i18n";
 import type { Notification } from "../../../shared/aura-schema";
-
-const DEFAULT_AVATAR = "https://www.figma.com/api/mcp/asset/e4add399-8205-4c2a-8782-3da6c9f7bf60";
+import AvatarImage from "@/components/AvatarImage";
 
 function formatDate(d: string, language: Language) {
   const diff = Date.now() - new Date(d).getTime();
@@ -116,7 +114,7 @@ export default function NotificationsPage() {
                 {/* Avatar */}
                 <Link href={`/profile/${n.actor_id}`} className="mt-0.5 shrink-0">
                   <div className="relative size-10 overflow-hidden rounded-full bg-[#EDE6D9]">
-                    <Image src={n.actor_avatar || DEFAULT_AVATAR} alt={n.actor_name} fill className="object-cover" sizes="40px" />
+                    <AvatarImage src={n.actor_avatar} name={n.actor_name} alt={n.actor_name} fill className="object-cover" sizes="40px" />
                   </div>
                 </Link>
 

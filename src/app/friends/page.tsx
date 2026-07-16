@@ -9,7 +9,7 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { t } from "@/lib/i18n";
 import type { UserSearchResult, UserSearchResponse } from "../../../shared/aura-schema";
 
-const DEFAULT_AVATAR = "https://www.figma.com/api/mcp/asset/e4add399-8205-4c2a-8782-3da6c9f7bf60";
+import AvatarImage from "@/components/AvatarImage";
 
 export default function FriendsPage() {
   const router = useRouter();
@@ -147,13 +147,8 @@ export default function FriendsPage() {
             {results.map((user) => (
               <li key={user.id} className="flex items-center gap-3 px-4 py-3">
                 {/* Avatar → profile link */}
-                <Link href={`/profile/${user.id}`} className="size-11 shrink-0 overflow-hidden rounded-full bg-[#EDE6D9]">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={user.avatar_url || DEFAULT_AVATAR}
-                    alt={displayName(user)}
-                    className="h-full w-full object-cover"
-                  />
+                <Link href={`/profile/${user.id}`} className="relative size-11 shrink-0 overflow-hidden rounded-full bg-[#EDE6D9]">
+                  <AvatarImage src={user.avatar_url} name={user.name} alt={displayName(user)} fill className="object-cover" sizes="44px" />
                 </Link>
 
                 {/* Name → profile link */}

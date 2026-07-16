@@ -3,16 +3,13 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { API_BASE } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import PostGrid from "@/components/PostGrid";
 import { useLanguage } from "@/hooks/useLanguage";
 import { translateTag, t } from "@/lib/i18n";
 import type { PublicProfileResponse, ArchetypeStats, Aura } from "../../../../shared/aura-schema";
-
-
-const DEFAULT_AVATAR = "https://www.figma.com/api/mcp/asset/e4add399-8205-4c2a-8782-3da6c9f7bf60";
+import AvatarImage from "@/components/AvatarImage";
 
 export default function PublicProfilePage() {
   const params = useParams();
@@ -160,7 +157,7 @@ export default function PublicProfilePage() {
         <div className="flex items-start gap-4 px-4 pt-3">
           {/* Avatar */}
           <div className="relative size-[80px] shrink-0 overflow-hidden rounded-full border border-[#D4C4A8]">
-            <Image src={profile.avatar_url || DEFAULT_AVATAR} alt={profile.name} fill className="object-cover" sizes="80px" />
+            <AvatarImage src={profile.avatar_url} name={profile.name} alt={profile.name} fill className="object-cover" sizes="80px" />
           </div>
 
           {/* Name + stats */}
