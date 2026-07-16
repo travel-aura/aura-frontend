@@ -287,7 +287,7 @@ export const UI_TEXT = {
   notVerified:        { en: "Not verified · Approximate location only", "zh-CN": "未验证 · 仅为大致位置", "zh-TW": "未驗證 · 僅為大致位置" },
   walk:               { en: "walk",               "zh-CN": "步行",          "zh-TW": "步行" },
   away:               { en: "away",               "zh-CN": "外",            "zh-TW": "外" },
-  confirmed:          { en: "confirmed",          "zh-CN": "已确认",        "zh-TW": "已確認" },
+  confirmed:          { en: "verified",           "zh-CN": "已验证",        "zh-TW": "已驗證" },
   go:                 { en: "Go",                 "zh-CN": "导航",          "zh-TW": "導航" },
   beFirstToFind:      { en: "Be the first to find this place", "zh-CN": "成为第一个发现此地的人", "zh-TW": "成為第一個發現此地的人" },
   openInMaps:         { en: "Open in Maps",       "zh-CN": "在地图中打开",  "zh-TW": "在地圖中開啟" },
