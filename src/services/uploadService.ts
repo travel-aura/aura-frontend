@@ -4,6 +4,20 @@ import { API_BASE } from '@/lib/api';
 import { getToken } from '@/lib/auth';
 import type { AuraUploadMetadata, Archetype } from '../../shared/aura-schema';
 
+// Android OEMs sometimes return raw [deg, min, sec] arrays without computing decimal degrees,
+// or write lowercase refs ('n'/'s'). This handles both cases.
+function dmsToDecimal(dms: number[] | undefined, ref: string | undefined): number | null {
+  if (!Array.isArray(dms) || dms.length < 2) return null;
+  const [deg, min, sec = 0] = dms;
+  if (typeof deg !== 'number' || typeof min !== 'number') return null;
+  const decimal = Math.abs(deg) + Math.abs(min) / 60 + Math.abs(sec) / 3600;
+  const dir = (ref ?? '').trim().toUpperCase();
+  if (dir === 'S' || dir === 'W') return -decimal;
+  if (dir === 'N' || dir === 'E') return decimal;
+  // No ref present — return signed value if degrees are already signed
+  return deg < 0 ? -decimal : decimal;
+}
+
 export interface AuraMetadata {
   title: string;
   archetype_tag?: Archetype;
@@ -43,7 +57,8 @@ export const processAndUploadMultipleAuras = async (
   // --- STEP 1: EXTRACT EXIF FROM ANCHOR PHOTO ---
   onProgress?.({ current: 0, total: files.length, status: 'extracting' });
 
-  // Parse all available EXIF blocks
+  // Parse all available EXIF blocks.
+  // xmp: true catches GPS stored in XMP segments on some Android OEMs (Xiaomi, OnePlus, Oppo).
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let exifData: Record<string, any> | null = null;
   try {
@@ -51,6 +66,7 @@ export const processAndUploadMultipleAuras = async (
       gps: true,   // computes latitude, longitude, altitude from raw GPS tags
       exif: true,  // DateTimeOriginal, OffsetTimeOriginal, DateTimeDigitized, etc.
       tiff: true,  // ModifyDate (DateTime), Orientation, etc.
+      xmp: true,   // Android OEMs sometimes store GPS only in XMP, not in GPS IFD
     }) ?? null;
   } catch {
     // EXIF extraction failing is not fatal — continue without metadata
@@ -60,12 +76,18 @@ export const processAndUploadMultipleAuras = async (
   let isVerified = false;
   const gpsFields: Pick<AuraUploadMetadata, 'lat' | 'lng' | 'altitude' | 'heading'> = {};
 
-  if (exifData?.latitude && exifData?.longitude) {
+  // exifr computes latitude/longitude when gps:true — prefer those.
+  // Fallback: some Android devices return raw DMS arrays (GPSLatitude) without computing
+  // the decimal degree value, or write lowercase ref strings ('n'/'s'/'e'/'w').
+  const lat = exifData?.latitude ?? dmsToDecimal(exifData?.GPSLatitude, exifData?.GPSLatitudeRef);
+  const lng = exifData?.longitude ?? dmsToDecimal(exifData?.GPSLongitude, exifData?.GPSLongitudeRef);
+
+  if (lat != null && lng != null) {
     isVerified = true;
-    gpsFields.lat = exifData.latitude;
-    gpsFields.lng = exifData.longitude;
-    gpsFields.altitude = exifData.altitude ?? 0;
-    gpsFields.heading = exifData.GPSImgDirection ?? 0;
+    gpsFields.lat = lat;
+    gpsFields.lng = lng;
+    gpsFields.altitude = exifData?.altitude ?? exifData?.GPSAltitude ?? 0;
+    gpsFields.heading = exifData?.GPSImgDirection ?? exifData?.GPSTrack ?? 0;
   } else if (userMetadata.lat && userMetadata.lng) {
     // Manual location provided by user — not EXIF verified, is_verified stays false
     gpsFields.lat = userMetadata.lat;

@@ -724,9 +724,17 @@ export default function PostDetailClient({ initialPost, postId }: Props) {
       {/* ── Lightbox ─────────────────────────────────────────────────────────── */}
       {lightboxIndex !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black" onClick={() => setLightboxIndex(null)}>
+          <Image
+            src={post.image_urls[lightboxIndex]}
+            alt={post.title}
+            fill
+            className="pointer-events-none object-contain"
+            sizes="100vw"
+          />
+
           <button
-            className="absolute right-4 top-4 flex size-9 items-center justify-center rounded-full bg-white/20 text-white"
-            onClick={() => setLightboxIndex(null)}
+            className="absolute right-4 top-4 z-10 flex size-9 items-center justify-center rounded-full bg-white/20 text-white"
+            onClick={(e) => { e.stopPropagation(); setLightboxIndex(null); }}
           >
             <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={2}>
               <line x1="18" y1="6" x2="6" y2="18" />
@@ -735,23 +743,14 @@ export default function PostDetailClient({ initialPost, postId }: Props) {
           </button>
 
           {post.image_urls.length > 1 && (
-            <span className="absolute left-4 top-5 text-[13px] font-medium text-white/70">
+            <span className="absolute left-4 top-5 z-10 text-[13px] font-medium text-white/70">
               {lightboxIndex + 1} / {post.image_urls.length}
             </span>
           )}
 
-          <Image
-            src={post.image_urls[lightboxIndex]}
-            alt={post.title}
-            fill
-            className="object-contain"
-            sizes="100vw"
-            onClick={(e) => e.stopPropagation()}
-          />
-
           {lightboxIndex > 0 && (
             <button
-              className="absolute left-3 top-1/2 -translate-y-1/2 flex size-10 items-center justify-center rounded-full bg-white/20 text-white"
+              className="absolute left-3 top-1/2 z-10 -translate-y-1/2 flex size-10 items-center justify-center rounded-full bg-white/20 text-white"
               onClick={(e) => { e.stopPropagation(); setLightboxIndex(lightboxIndex - 1); }}
             >
               <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={2.5}>
@@ -761,7 +760,7 @@ export default function PostDetailClient({ initialPost, postId }: Props) {
           )}
           {lightboxIndex < post.image_urls.length - 1 && (
             <button
-              className="absolute right-3 top-1/2 -translate-y-1/2 flex size-10 items-center justify-center rounded-full bg-white/20 text-white"
+              className="absolute right-3 top-1/2 z-10 -translate-y-1/2 flex size-10 items-center justify-center rounded-full bg-white/20 text-white"
               onClick={(e) => { e.stopPropagation(); setLightboxIndex(lightboxIndex + 1); }}
             >
               <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={2.5}>

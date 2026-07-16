@@ -105,10 +105,30 @@ export default function UploadPage() {
     (async () => {
       try {
         const { default: exifr } = await import('exifr');
-        const data = await exifr.parse(anchor.file, { gps: true });
+        // xmp:true catches GPS stored in XMP on some Android OEMs (Xiaomi, OnePlus, Oppo).
+        const data = await exifr.parse(anchor.file, { gps: true, tiff: true, xmp: true });
+        // exifr.gps:true computes latitude/longitude from GPS IFD.
+        // Fallback: some Android devices return raw [deg, min, sec] arrays without computing
+        // decimal degrees, or write lowercase ref strings ('n'/'s').
+        let lat: number | null = data?.latitude ?? null;
+        let lng: number | null = data?.longitude ?? null;
+        if ((lat == null || lng == null) && data) {
+          const dms2dd = (dms: number[] | undefined, ref: string | undefined): number | null => {
+            if (!Array.isArray(dms) || dms.length < 2) return null;
+            const [deg, min, sec = 0] = dms;
+            if (typeof deg !== 'number' || typeof min !== 'number') return null;
+            const d = Math.abs(deg) + Math.abs(min) / 60 + Math.abs(sec) / 3600;
+            const r = (ref ?? '').trim().toUpperCase();
+            if (r === 'S' || r === 'W') return -d;
+            if (r === 'N' || r === 'E') return d;
+            return deg < 0 ? -d : d;
+          };
+          lat = dms2dd(data.GPSLatitude, data.GPSLatitudeRef);
+          lng = dms2dd(data.GPSLongitude, data.GPSLongitudeRef);
+        }
         if (!cancelled) {
-          if (data?.latitude && data?.longitude) {
-            setExifCoords({ lat: data.latitude, lng: data.longitude });
+          if (lat != null && lng != null) {
+            setExifCoords({ lat, lng });
           } else {
             setExifCoords(null);
           }
@@ -200,13 +220,26 @@ export default function UploadPage() {
     // Step 2: no venue — check for nearby generic spots
     try {
       const { default: exifr } = await import("exifr");
-      const exifData = await exifr.parse(photos[gpsPhotoIndex].file, { gps: true });
-      if (exifData?.latitude && exifData?.longitude) {
+      const exifData = await exifr.parse(photos[gpsPhotoIndex].file, { gps: true, tiff: true, xmp: true });
+      // Same DMS fallback as the UI check for Android compatibility
+      const dms2dd = (dms: number[] | undefined, ref: string | undefined): number | null => {
+        if (!Array.isArray(dms) || dms.length < 2) return null;
+        const [deg, min, sec = 0] = dms;
+        if (typeof deg !== 'number' || typeof min !== 'number') return null;
+        const d = Math.abs(deg) + Math.abs(min) / 60 + Math.abs(sec) / 3600;
+        const r = (ref ?? '').trim().toUpperCase();
+        if (r === 'S' || r === 'W') return -d;
+        if (r === 'N' || r === 'E') return d;
+        return deg < 0 ? -d : d;
+      };
+      const nearbyLat = exifData?.latitude ?? dms2dd(exifData?.GPSLatitude, exifData?.GPSLatitudeRef);
+      const nearbyLng = exifData?.longitude ?? dms2dd(exifData?.GPSLongitude, exifData?.GPSLongitudeRef);
+      if (nearbyLat != null && nearbyLng != null) {
         const token = getToken();
         const headers: Record<string, string> = {};
         if (token) headers.Authorization = `Bearer ${token}`;
         const res = await fetch(
-          `${API_BASE}/api/places/nearby?lat=${exifData.latitude}&lng=${exifData.longitude}`,
+          `${API_BASE}/api/places/nearby?lat=${nearbyLat}&lng=${nearbyLng}`,
           { headers }
         );
         if (res.ok) {
