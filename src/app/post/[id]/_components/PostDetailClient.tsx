@@ -113,6 +113,7 @@ export default function PostDetailClient({ initialPost, postId }: Props) {
   const [mapToken, setMapToken] = useState<string>("");
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [routeInfo, setRouteInfo] = useState<{ distanceM: number; durationS: number } | null>(null);
+  const [straightLineM, setStraightLineM] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(initialPost ? null : "Post not found");
   const [isSaved, setIsSaved] = useState(initialPost?.is_saved ?? false);
   const [savePending, setSavePending] = useState(false);
@@ -185,26 +186,28 @@ export default function PostDetailClient({ initialPost, postId }: Props) {
     );
   }, []);
 
-  // ── Directions (walking route) ───────────────────────────────────────────────
+  // ── Directions ───────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!userCoords || !post?.lat || !post?.lng || !mapToken) return;
 
-    // Skip directions if the straight-line distance exceeds 100km
     const R = 6371000;
     const dLat = ((post.lat - userCoords.lat) * Math.PI) / 180;
     const dLng = ((post.lng - userCoords.lng) * Math.PI) / 180;
     const a = Math.sin(dLat / 2) ** 2 + Math.cos((userCoords.lat * Math.PI) / 180) * Math.cos((post.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
-    const straightLineM = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    if (straightLineM > 100_000) return;
+    const slm = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    setStraightLineM(slm);
 
-    const coords = `${userCoords.lng},${userCoords.lat};${post.lng},${post.lat}`;
-    fetch(`https://api.mapbox.com/directions/v5/mapbox/walking/${coords}?access_token=${mapToken}&overview=false`)
-      .then((r) => r.json())
-      .then((data) => {
-        const route = data.routes?.[0];
-        if (route) setRouteInfo({ distanceM: route.distance, durationS: route.duration });
-      })
-      .catch(() => {});
+    // Under 5km — fetch walking directions for an accurate walk time
+    if (slm < 5000) {
+      const coords = `${userCoords.lng},${userCoords.lat};${post.lng},${post.lat}`;
+      fetch(`https://api.mapbox.com/directions/v5/mapbox/walking/${coords}?access_token=${mapToken}&overview=false`)
+        .then((r) => r.json())
+        .then((data) => {
+          const route = data.routes?.[0];
+          if (route) setRouteInfo({ distanceM: route.distance, durationS: route.duration });
+        })
+        .catch(() => {});
+    }
   }, [userCoords?.lat, userCoords?.lng, post?.id, mapToken]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
@@ -482,27 +485,27 @@ export default function PostDetailClient({ initialPost, postId }: Props) {
                 {/* Sub-cards row */}
                 <div className="flex gap-2">
 
-                  {/* Walk time — only when GPS */}
+                  {/* Distance / walk time — only when GPS + user location */}
                   {hasGPS && (
                     <div className="flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl bg-white px-2 py-3.5">
                       {routeInfo ? (
-                        routeInfo.durationS < 1800 ? (
-                          <>
-                            <span className="text-[16px] font-bold text-[#1A1613]">{Math.round(routeInfo.durationS / 60)} min</span>
-                            <span className="text-[11px] text-[#6B5F52]">{t('walk', language)}</span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="text-[16px] font-bold text-[#1A1613]">
-                              {routeInfo.distanceM < 1000 ? `${Math.round(routeInfo.distanceM)}m` : `${(routeInfo.distanceM / 1000).toFixed(1)}km`}
-                            </span>
-                            <span className="text-[11px] text-[#6B5F52]">{t('away', language)}</span>
-                          </>
-                        )
+                        // < 5km — show walking minutes
+                        <>
+                          <span className="text-[16px] font-bold text-[#1A1613]">{Math.round(routeInfo.durationS / 60)} min</span>
+                          <span className="text-[11px] text-[#6B5F52]">{t('walk', language)}</span>
+                        </>
+                      ) : straightLineM != null ? (
+                        // ≥ 5km or walking route unavailable — show straight-line distance
+                        <>
+                          <span className="text-[16px] font-bold text-[#1A1613]">
+                            {straightLineM < 1000 ? `${Math.round(straightLineM)}m` : `${(straightLineM / 1000).toFixed(1)}km`}
+                          </span>
+                          <span className="text-[11px] text-[#6B5F52]">{t('away', language)}</span>
+                        </>
                       ) : (
                         <>
                           <span className="text-[16px] font-bold text-[#1A1613]">—</span>
-                          <span className="text-[11px] text-[#6B5F52]">{t('walk', language)}</span>
+                          <span className="text-[11px] text-[#6B5F52]">{t('away', language)}</span>
                         </>
                       )}
                     </div>
