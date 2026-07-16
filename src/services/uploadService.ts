@@ -82,7 +82,7 @@ export const processAndUploadMultipleAuras = async (
   const lat = exifData?.latitude ?? dmsToDecimal(exifData?.GPSLatitude, exifData?.GPSLatitudeRef);
   const lng = exifData?.longitude ?? dmsToDecimal(exifData?.GPSLongitude, exifData?.GPSLongitudeRef);
 
-  if (lat != null && lng != null) {
+  if (lat != null && lng != null && (lat !== 0 || lng !== 0)) {
     isVerified = true;
     gpsFields.lat = lat;
     gpsFields.lng = lng;

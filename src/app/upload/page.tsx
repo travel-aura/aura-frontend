@@ -127,7 +127,7 @@ export default function UploadPage() {
           lng = dms2dd(data.GPSLongitude, data.GPSLongitudeRef);
         }
         if (!cancelled) {
-          if (lat != null && lng != null) {
+          if (lat != null && lng != null && (lat !== 0 || lng !== 0)) {
             setExifCoords({ lat, lng });
           } else {
             setExifCoords(null);
@@ -234,7 +234,7 @@ export default function UploadPage() {
       };
       const nearbyLat = exifData?.latitude ?? dms2dd(exifData?.GPSLatitude, exifData?.GPSLatitudeRef);
       const nearbyLng = exifData?.longitude ?? dms2dd(exifData?.GPSLongitude, exifData?.GPSLongitudeRef);
-      if (nearbyLat != null && nearbyLng != null) {
+      if (nearbyLat != null && nearbyLng != null && (nearbyLat !== 0 || nearbyLng !== 0)) {
         const token = getToken();
         const headers: Record<string, string> = {};
         if (token) headers.Authorization = `Bearer ${token}`;
