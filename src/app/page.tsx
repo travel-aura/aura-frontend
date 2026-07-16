@@ -152,10 +152,13 @@ export default function AuraFeed() {
   // Feed state
   const [places, setPlaces] = useState<PlaceFeedItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const loadingMoreRef = useRef(false); // stable ref for IntersectionObserver closure
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
   const [restoreScrollY, setRestoreScrollY] = useState<number | null>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   // Scroll-based header animation
   const topGroupRef = useRef<HTMLDivElement>(null);
@@ -250,10 +253,14 @@ export default function AuraFeed() {
   }) => {
     const { loadMore = false, coords = null, currentOffset, following = false, tag = null, query = null } = opts;
     const off = currentOffset ?? (loadMore ? offset : 0);
-    try {
+    if (loadMore) {
+      loadingMoreRef.current = true;
+      setLoadingMore(true);
+    } else {
       setLoading(true);
+    }
+    try {
       const response = await apiGet<PlacesFeedResponse>(buildUrl(off, coords, following, tag, query));
-
       if (loadMore) {
         setPlaces(prev => [...prev, ...response.places]);
       } else {
@@ -264,7 +271,12 @@ export default function AuraFeed() {
     } catch (err) {
       setError((err as Error).message || "Failed to load feed");
     } finally {
-      setLoading(false);
+      if (loadMore) {
+        loadingMoreRef.current = false;
+        setLoadingMore(false);
+      } else {
+        setLoading(false);
+      }
     }
   }, [offset, buildUrl]);
 
@@ -315,6 +327,23 @@ export default function AuraFeed() {
       setRestoreScrollY(null);
     }
   }, [restoreScrollY, places.length]);
+
+  // Infinite scroll — trigger load-more when sentinel enters viewport (600px early)
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMoreRef.current && !loading) {
+          fetchPosts({ loadMore: true, coords: activeCoords, following: isFollowing, tag: activeTag, query: activeQuery });
+        }
+      },
+      { rootMargin: '0px 0px 600px 0px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasMore, loading, fetchPosts]);
 
   // When a background upload completes, refresh the feed so the new post appears
   useEffect(() => {
@@ -586,15 +615,11 @@ export default function AuraFeed() {
                 {rightPlaces.map((place) => <FeedCard key={place.id} place={place} />)}
               </div>
             </div>
-            {hasMore && (
-              <div className="mt-6 flex justify-center">
-                <button
-                  onClick={() => fetchPosts({ loadMore: true, coords: activeCoords, following: isFollowing, tag: activeTag, query: activeQuery })}
-                  disabled={loading}
-                  className="rounded-lg bg-[#EDE6D9] px-6 py-2.5 text-[14px] font-medium text-[#1A1613] disabled:opacity-50"
-                >
-                  {loading ? t("loading", language) : t("loadMore", language)}
-                </button>
+            {/* Sentinel — IntersectionObserver fires 600px before this enters view */}
+            <div ref={sentinelRef} className="h-1" />
+            {loadingMore && (
+              <div className="flex justify-center py-4">
+                <div className="size-5 animate-spin rounded-full border-2 border-[#D4C4A8] border-t-[#B85C38]" />
               </div>
             )}
           </>
