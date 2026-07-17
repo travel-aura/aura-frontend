@@ -90,7 +90,7 @@ function FeedCard({ place }: { place: PlaceFeedItem }) {
   return (
     <Link href={`/post/${place.cover_post_id}`} className="block">
       <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg bg-[#D4C4A8]">
-        <Image src={place.cover_image_url} alt={place.cover_title ?? ""} fill className="object-cover" sizes="(max-width: 768px) 50vw, 33vw" />
+        <Image src={place.cover_image_url} alt={place.cover_title ?? ""} fill className="object-cover" sizes="(max-width: 1024px) 50vw, 25vw" />
 
         {/* Multiple shots indicator */}
         {place.shot_count > 1 && (
@@ -461,8 +461,6 @@ export default function AuraFeed() {
   const activeCoords = locationMode === "nearby" ? userCoords : locationMode === "city" ? selectedCity : null;
 
   const validPlaces = places.filter((p) => p.cover_post_id);
-  const leftPlaces = validPlaces.filter((_, i) => i % 2 === 0);
-  const rightPlaces = validPlaces.filter((_, i) => i % 2 === 1);
 
   const contextLabel =
     locationMode === "nearby" ? `📍 ${t('showingNearby', language)}` :
@@ -479,7 +477,7 @@ export default function AuraFeed() {
       {/* ── TopBar + Tabs — always fixed, never moves ── */}
       <div
         ref={topGroupRef}
-        className={`fixed top-0 left-0 right-0 z-50 bg-[#F9F6F0] transition-shadow duration-300 ${scrollDir !== 'top' ? 'shadow-sm' : ''}`}
+        className={`fixed top-0 left-0 right-0 z-50 bg-[#F9F6F0] transition-shadow duration-300 lg:left-[220px] ${scrollDir !== 'top' ? 'shadow-sm' : ''}`}
       >
         <TopBar />
         <div className="mt-2 flex items-center justify-center gap-2">
@@ -500,7 +498,7 @@ export default function AuraFeed() {
       {/* ── Search + Filters — hides on scroll down, returns on scroll up ── */}
       <div
         ref={searchGroupRef}
-        className="fixed left-0 right-0 z-40 bg-[#F7F3EC] pb-2 transition-transform duration-300 ease-in-out"
+        className="fixed left-0 right-0 z-40 bg-[#F7F3EC] pb-2 transition-transform duration-300 ease-in-out lg:left-[220px]"
         style={{ top: topGroupH, transform: `translateY(${scrollDir === 'down' ? -searchGroupH : 0}px)` }}
       >
           {/* Search + Near Me */}
@@ -607,13 +605,8 @@ export default function AuraFeed() {
         )}
         {!error && places.length > 0 && (
           <>
-            <div className="flex gap-2">
-              <div className="flex flex-1 flex-col gap-4">
-                {leftPlaces.map((place) => <FeedCard key={place.id} place={place} />)}
-              </div>
-              <div className="flex flex-1 flex-col gap-4">
-                {rightPlaces.map((place) => <FeedCard key={place.id} place={place} />)}
-              </div>
+            <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+              {validPlaces.map((place) => <FeedCard key={place.id} place={place} />)}
             </div>
             {/* Sentinel — IntersectionObserver fires 600px before this enters view */}
             <div ref={sentinelRef} className="h-1" />

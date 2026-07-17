@@ -67,7 +67,7 @@ export default function BottomNav() {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 flex h-16 items-center justify-center border-t border-[#D4C4A8] bg-[#F9F6F0] shadow-[0px_-2px_4px_0px_rgba(0,0,0,0.12)]">
+    <div className="lg:hidden fixed bottom-0 left-0 right-0 flex h-16 items-center justify-center border-t border-[#D4C4A8] bg-[#F9F6F0] shadow-[0px_-2px_4px_0px_rgba(0,0,0,0.12)]">
       <div className="flex w-[291px] items-center justify-between">
         {NAV_ITEMS.map(({ id, labelKey, href, Icon }) => (
           <button

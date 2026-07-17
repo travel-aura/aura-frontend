@@ -152,6 +152,7 @@ export default function PublicProfilePage() {
       </div>
 
       <div className="flex-1 overflow-y-auto pb-6">
+        <div className="lg:max-w-[740px] lg:mx-auto">
 
         {/* ── Profile header ── */}
         <div className="flex items-start gap-4 px-4 pt-3">
@@ -230,6 +231,7 @@ export default function PublicProfilePage() {
             emptyMessage={t('noUserPosts', language)}
           />
         </div>
+        </div>{/* end lg:max-w wrapper */}
       </div>
     </div>
   );

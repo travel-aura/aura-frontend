@@ -29,7 +29,7 @@ export default function TopBar() {
   }, [token]);
 
   return (
-    <div className="relative flex items-center justify-center px-4 pt-3">
+    <div className="lg:hidden relative flex items-center justify-center px-4 pt-3">
       {/* Language cycle button — always visible, no login required */}
       <button
         onClick={cycle}

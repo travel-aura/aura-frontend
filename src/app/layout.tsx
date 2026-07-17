@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AuthProvider } from "@/context/AuthContext";
 import { UploadProvider } from "@/context/UploadContext";
+import DesktopNav from "@/components/DesktopNav";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -40,7 +41,12 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <AuthProvider>
-          <UploadProvider>{children}</UploadProvider>
+          <UploadProvider>
+            <DesktopNav />
+            <div className="lg:pl-[220px]">
+              {children}
+            </div>
+          </UploadProvider>
         </AuthProvider>
       </body>
     </html>

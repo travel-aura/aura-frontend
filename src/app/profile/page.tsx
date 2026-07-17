@@ -115,7 +115,9 @@ export default function ProfilePage() {
     <div className="relative flex min-h-screen w-full flex-col bg-[#F7F3EC]">
       <TopBar />
 
+
       <div className="flex-1 overflow-y-auto pb-20">
+        <div className="lg:max-w-[740px] lg:mx-auto">
 
         {/* ── Profile header ── */}
         <div className="flex items-start gap-4 px-4 pt-5">
@@ -231,6 +233,7 @@ export default function ProfilePage() {
             />
           )}
         </div>
+        </div>{/* end lg:max-w wrapper */}
       </div>
 
       <BottomNav />

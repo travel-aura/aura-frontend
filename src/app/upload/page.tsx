@@ -262,40 +262,43 @@ export default function UploadPage() {
 
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-[#F7F3EC]">
-      {/* Scrollable body */}
-      <div className="flex-1 overflow-y-auto pb-24">
-          {/* Hidden file input - always present for ref */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*,.heic,.heif"
-            multiple
-            onChange={handleFileSelect}
-            className="hidden"
-          />
+      {/* Hidden file input — always present for ref */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*,.heic,.heif"
+        multiple
+        onChange={handleFileSelect}
+        className="hidden"
+      />
 
-          <h1 className="px-3 pt-3 text-[24px] font-semibold text-[#1A1613]">
+      {/* Desktop: side-by-side panels; Mobile: single column */}
+      <div className="flex flex-1 flex-col lg:flex-row">
+
+        {/* LEFT PANEL: photo area */}
+        <div className="lg:sticky lg:top-0 lg:h-screen lg:w-[420px] lg:shrink-0 lg:overflow-y-auto lg:border-r lg:border-[#D4C4A8] lg:bg-[#F9F6F0]">
+          <h1 className="px-3 pt-3 text-[24px] font-semibold text-[#1A1613] lg:px-6 lg:pt-8">
             {t('upload', language)}
           </h1>
 
           {/* ── State 1: empty photo picker ── */}
           {photos.length === 0 && (
             <button
-                onClick={() => fileInputRef.current?.click()}
-                className="mx-3 mt-4 flex items-center gap-5"
-              >
-                <div className="flex h-[122px] w-[98px] shrink-0 items-center justify-center rounded-[10px] border border-[#D4C4A8] bg-gradient-to-b from-[#EDE6D9] to-[#F7F3EC]">
-                  <svg className="size-[37px] text-[#A09080]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                  </svg>
-                </div>
-                <p className="text-left text-[12px] leading-[1.5] text-[#6B5F52]">
-                  {t('selectPhotos', language)}
-                  <br />
-                  {t('maxPhotosHint', language)}
-                </p>
-              </button>
+              onClick={() => fileInputRef.current?.click()}
+              className="mx-3 mt-4 flex items-center gap-5 lg:mx-6 lg:flex-col lg:items-center lg:justify-center lg:gap-4 lg:rounded-2xl lg:border-2 lg:border-dashed lg:border-[#D4C4A8] lg:p-12 lg:w-auto"
+            >
+              <div className="flex h-[122px] w-[98px] shrink-0 items-center justify-center rounded-[10px] border border-[#D4C4A8] bg-gradient-to-b from-[#EDE6D9] to-[#F7F3EC] lg:h-16 lg:w-16 lg:rounded-full lg:border-0 lg:bg-transparent">
+                <svg className="size-[37px] text-[#A09080] lg:size-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </div>
+              <p className="text-left text-[12px] leading-[1.5] text-[#6B5F52] lg:text-center lg:text-[14px]">
+                {t('selectPhotos', language)}
+                <br />
+                {t('maxPhotosHint', language)}
+              </p>
+            </button>
           )}
 
           {/* ── State 2: photos selected ── */}
@@ -314,12 +317,12 @@ export default function UploadPage() {
                 </button>
               </div>
 
-              {/* Horizontal photo strip */}
-              <div className="mt-2 flex gap-2 overflow-x-auto px-3 pb-1">
+              {/* Photo strip — horizontal on mobile, grid on desktop */}
+              <div className="mt-2 flex gap-2 overflow-x-auto px-3 pb-1 lg:grid lg:grid-cols-3 lg:overflow-x-visible lg:px-6 lg:pb-3">
                 {photos.map((photo, i) => (
                   <div
                     key={i}
-                    className={`relative h-[120px] w-[90px] shrink-0 overflow-hidden rounded-[12px] bg-[#D4C4A8] ${gpsAnchorIndex === i ? "ring-2 ring-[#C9973A]" : ""}`}
+                    className={`relative h-[120px] w-[90px] shrink-0 overflow-hidden rounded-[12px] bg-[#D4C4A8] lg:h-auto lg:w-auto lg:aspect-square ${gpsAnchorIndex === i ? "ring-2 ring-[#C9973A]" : ""}`}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -349,6 +352,11 @@ export default function UploadPage() {
               </div>
 </>
           )}
+        </div>{/* end left panel */}
+
+        {/* RIGHT PANEL: form fields */}
+        <div className="flex-1 overflow-y-auto pb-24 lg:h-screen lg:pb-10">
+          <div className="lg:max-w-[620px] lg:mx-auto lg:pt-8">
 
           {/* Title */}
           <div className="mt-5 px-3">
@@ -587,7 +595,10 @@ export default function UploadPage() {
               {uploadStatus === "uploading" ? t('uploading', language) : photos.length > 1 ? `${t('upload', language)} ${photos.length}` : t('upload', language)}
             </button>
           </div>
-        </div>
+
+          </div>{/* end lg:max-w wrapper */}
+        </div>{/* end right panel */}
+      </div>{/* end flex-row container */}
 
       <BottomNav />
 
