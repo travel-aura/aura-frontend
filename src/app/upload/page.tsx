@@ -112,38 +112,35 @@ export default function UploadPage() {
         if (r === 'N' || r === 'E') return d;
         return deg < 0 ? -d : d;
       };
-      try {
-        const { default: exifr } = await import('exifr');
-        for (let i = 0; i < photos.length; i++) {
-          if (cancelled) return;
+      const { default: exifr } = await import('exifr');
+      let found = false;
+      for (let i = 0; i < photos.length; i++) {
+        if (cancelled) return;
+        let lat: number | null = null;
+        let lng: number | null = null;
+        try {
           const data = await exifr.parse(photos[i].file, { gps: true, tiff: true, xmp: true });
-          let lat: number | null = data?.latitude ?? null;
-          let lng: number | null = data?.longitude ?? null;
+          lat = data?.latitude ?? null;
+          lng = data?.longitude ?? null;
           if ((lat == null || lng == null) && data) {
             lat = dms2dd(data.GPSLatitude, data.GPSLatitudeRef);
             lng = dms2dd(data.GPSLongitude, data.GPSLongitudeRef);
           }
-          if (lat != null && lng != null && (lat !== 0 || lng !== 0)) {
-            if (!cancelled) {
-              setExifCoords({ lat, lng });
-              setGpsAnchorIndex(i);
-              setExifLoading(false);
-            }
-            return;
+        } catch { /* this photo has no readable EXIF — continue to next */ }
+        if (lat != null && lng != null && (lat !== 0 || lng !== 0)) {
+          if (!cancelled) {
+            setExifCoords({ lat, lng });
+            setGpsAnchorIndex(i);
+            setExifLoading(false);
           }
+          found = true;
+          break;
         }
-        // No photo had GPS
-        if (!cancelled) {
-          setExifCoords(null);
-          setGpsAnchorIndex(null);
-          setExifLoading(false);
-        }
-      } catch {
-        if (!cancelled) {
-          setExifCoords(null);
-          setGpsAnchorIndex(null);
-          setExifLoading(false);
-        }
+      }
+      if (!found && !cancelled) {
+        setExifCoords(null);
+        setGpsAnchorIndex(null);
+        setExifLoading(false);
       }
     })();
     return () => { cancelled = true; };
