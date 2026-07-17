@@ -126,7 +126,7 @@ export default function DesktopNav() {
     <div className="hidden lg:flex fixed left-0 top-0 h-full w-[220px] flex-col border-r border-[#D4C4A8] bg-[#F9F6F0] z-50">
       {/* Logo */}
       <Link href="/" className="px-6 pt-8 pb-8">
-        <span className="text-[26px] font-bold tracking-tight text-[#B85C38]">Aura</span>
+        <span className="text-[26px] font-bold tracking-tight text-[#B85C38]">Aiyi</span>
       </Link>
 
       {/* Nav items */}
