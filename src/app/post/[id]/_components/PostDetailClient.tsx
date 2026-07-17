@@ -286,7 +286,7 @@ export default function PostDetailClient({ initialPost, postId }: Props) {
   const displayLocation = place?.name ?? post.place_name ?? cityLocation;
 
   return (
-    <div className="relative flex h-screen w-full flex-col overflow-hidden bg-[#F7F3EC]">
+    <div className="relative flex h-screen w-full flex-col overflow-hidden bg-[#F7F3EC] lg:max-w-[500px] lg:mx-auto">
 
       {/* ── Header ─────────────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between px-4 py-3">
