@@ -126,6 +126,15 @@ export default function UploadPage() {
             lat = dms2dd(data.GPSLatitude, data.GPSLatitudeRef);
             lng = dms2dd(data.GPSLongitude, data.GPSLongitudeRef);
           }
+          // Third-pass: exifr.gps() handles XMP-only GPS and DMS string formats
+          if (lat == null || lng == null || (lat === 0 && lng === 0)) {
+            const gpsOnly = await exifr.gps(photos[i].file);
+            if (gpsOnly?.latitude != null && gpsOnly?.longitude != null
+                && (gpsOnly.latitude !== 0 || gpsOnly.longitude !== 0)) {
+              lat = gpsOnly.latitude;
+              lng = gpsOnly.longitude;
+            }
+          }
         } catch { /* this photo has no readable EXIF — continue to next */ }
         if (lat != null && lng != null && (lat !== 0 || lng !== 0)) {
           if (!cancelled) {

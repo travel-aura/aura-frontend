@@ -79,8 +79,21 @@ export const processAndUploadMultipleAuras = async (
   // exifr computes latitude/longitude when gps:true — prefer those.
   // Fallback: some Android devices return raw DMS arrays (GPSLatitude) without computing
   // the decimal degree value, or write lowercase ref strings ('n'/'s'/'e'/'w').
-  const lat = exifData?.latitude ?? dmsToDecimal(exifData?.GPSLatitude, exifData?.GPSLatitudeRef);
-  const lng = exifData?.longitude ?? dmsToDecimal(exifData?.GPSLongitude, exifData?.GPSLongitudeRef);
+  let lat = exifData?.latitude ?? dmsToDecimal(exifData?.GPSLatitude, exifData?.GPSLatitudeRef);
+  let lng = exifData?.longitude ?? dmsToDecimal(exifData?.GPSLongitude, exifData?.GPSLongitudeRef);
+
+  // Third-pass fallback: exifr.gps() is a dedicated GPS extractor that handles XMP-only GPS
+  // (common on Xiaomi/OnePlus/Oppo) and DMS string formats that neither path above catches.
+  if (lat == null || lng == null || (lat === 0 && lng === 0)) {
+    try {
+      const gpsOnly = await exifr.gps(gpsAnchorFile);
+      if (gpsOnly?.latitude != null && gpsOnly?.longitude != null
+          && (gpsOnly.latitude !== 0 || gpsOnly.longitude !== 0)) {
+        lat = gpsOnly.latitude;
+        lng = gpsOnly.longitude;
+      }
+    } catch {}
+  }
 
   if (lat != null && lng != null && (lat !== 0 || lng !== 0)) {
     isVerified = true;
