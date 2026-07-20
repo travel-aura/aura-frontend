@@ -29,6 +29,8 @@ export interface AuraMetadata {
   place_name?: string;         // venue display name chosen by user
   lat?: number;                // manual location (no-GPS photos) — is_verified stays false
   lng?: number;
+  exif_lat?: number;           // pre-extracted EXIF GPS from page scan — is_verified true
+  exif_lng?: number;
 }
 
 export interface UploadProgress {
@@ -93,6 +95,16 @@ export const processAndUploadMultipleAuras = async (
         lng = gpsOnly.longitude;
       }
     } catch {}
+  }
+
+  // Fourth-pass fallback: coords pre-extracted by the upload page scan.
+  // The page scan runs the same exifr passes at selection time and stores results in exif_lat/exif_lng.
+  // This ensures Android GPS is never silently lost when the service re-parse happens to fail.
+  if ((lat == null || lng == null || (lat === 0 && lng === 0))
+      && userMetadata.exif_lat != null && userMetadata.exif_lng != null
+      && (userMetadata.exif_lat !== 0 || userMetadata.exif_lng !== 0)) {
+    lat = userMetadata.exif_lat;
+    lng = userMetadata.exif_lng;
   }
 
   if (lat != null && lng != null && (lat !== 0 || lng !== 0)) {

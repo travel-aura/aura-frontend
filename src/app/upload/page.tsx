@@ -202,6 +202,10 @@ export default function UploadPage() {
       // Manual location for no-GPS photos — upload service uses these when EXIF has no coords
       lat: manualLocation?.lat,
       lng: manualLocation?.lng,
+      // Pass pre-extracted EXIF coords as a reliable fallback so Android GPS is never lost
+      // if the service's independent re-parse fails on the same file.
+      exif_lat: exifCoords?.lat,
+      exif_lng: exifCoords?.lng,
     };
     startUpload(photos.map(p => p.file), gpsPhoto.file, metadata);
     router.push("/");
