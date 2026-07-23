@@ -137,9 +137,22 @@ export default function UploadPage() {
           // full buffer guarantees all GPS value offsets are in range.
           const buf = await photos[i].originalFile.arrayBuffer();
           const data = await exifr.parse(buf, { gps: true, tiff: true, xmp: true });
-          dbg += `\n  parse keys: ${data ? Object.keys(data).slice(0, 20).join(', ') || '(none)' : 'null'}`;
           dbg += `\n  latitude=${data?.latitude} longitude=${data?.longitude}`;
           dbg += `\n  GPSLatitude=${JSON.stringify(data?.GPSLatitude)} ref=${data?.GPSLatitudeRef}`;
+          // ── DEEP DUMP: full parse, list every GPS* field + its raw value ──
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const full: any = await exifr.parse(buf, true);
+            const allKeys = full ? Object.keys(full) : [];
+            const gpsKeys = allKeys.filter((k) => /^GPS/i.test(k));
+            dbg += `\n  [full] ${allKeys.length} keys`;
+            dbg += `\n  [full] GPS fields: ${gpsKeys.length
+              ? gpsKeys.map((k) => `${k}=${JSON.stringify(full[k])}`).join(' | ')
+              : '(NONE — no GPS in standard EXIF)'}`;
+            dbg += `\n  [full] lat=${full?.latitude} lng=${full?.longitude}`;
+          } catch (e2) {
+            dbg += `\n  [full] threw: ${e2 instanceof Error ? e2.message : String(e2)}`;
+          }
           lat = fin(data?.latitude);
           lng = fin(data?.longitude);
           if ((lat == null || lng == null) && data) {
