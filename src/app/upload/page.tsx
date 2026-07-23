@@ -11,6 +11,7 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { TAG_GROUPS, translateTag, translateGroupLabel, t } from "@/lib/i18n";
 import { useUpload } from "@/context/UploadContext";
 import { searchNearbyPOIs, searchPlaces, getCityFromCoordinates, type NearbyPOI } from "@/lib/geocoding";
+import { readExifGps } from "@/lib/exifGps";
 import type { NearbyPlace } from "../../../shared/aura-schema";
 
 const MAX_TAGS = 5;
@@ -169,6 +170,16 @@ export default function UploadPage() {
             if (gLat != null && gLng != null && (gLat !== 0 || gLng !== 0)) {
               lat = gLat;
               lng = gLng;
+            }
+          }
+          // Fourth-pass: hand-written GPS reader for Samsung/Android files whose
+          // rational GPS values exifr fails to resolve.
+          if (lat == null || lng == null || (lat === 0 && lng === 0)) {
+            const manual = readExifGps(buf);
+            dbg += `\n  manual: ${manual.debug}`;
+            if (manual.lat != null && manual.lng != null) {
+              lat = manual.lat;
+              lng = manual.lng;
             }
           }
         } catch (e) {

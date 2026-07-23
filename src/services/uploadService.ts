@@ -2,6 +2,7 @@ import exifr from 'exifr';
 import imageCompression from 'browser-image-compression';
 import { API_BASE } from '@/lib/api';
 import { getToken } from '@/lib/auth';
+import { readExifGps } from '@/lib/exifGps';
 import type { AuraUploadMetadata, Archetype } from '../../shared/aura-schema';
 
 // Android OEMs sometimes return raw [deg, min, sec] arrays without computing decimal degrees,
@@ -110,6 +111,19 @@ export const processAndUploadMultipleAuras = async (
       if (gLat != null && gLng != null && (gLat !== 0 || gLng !== 0)) {
         lat = gLat;
         lng = gLng;
+      }
+    } catch {}
+  }
+
+  // Hand-written GPS reader for Samsung/Android files whose rational GPS values
+  // exifr fails to resolve. Needs the full buffer (anchorBuf may be a File on fallback).
+  if (lat == null || lng == null || (lat === 0 && lng === 0)) {
+    try {
+      const ab = anchorBuf instanceof ArrayBuffer ? anchorBuf : await gpsAnchorFile.arrayBuffer();
+      const manual = readExifGps(ab);
+      if (manual.lat != null && manual.lng != null) {
+        lat = manual.lat;
+        lng = manual.lng;
       }
     } catch {}
   }
