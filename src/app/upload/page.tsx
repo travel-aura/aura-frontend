@@ -18,7 +18,8 @@ const MAX_TAGS = 5;
 // ── Upload Page ───────────────────────────────────────────────────────────────
 
 interface PhotoFile {
-  file: File;
+  file: File;          // the file uploaded — may be a sticker-edited (EXIF-stripped) copy
+  originalFile: File;  // the untouched camera original — always used for GPS/EXIF extraction
   preview: string;
 }
 
@@ -66,6 +67,8 @@ export default function UploadPage() {
   const [showNearbyPrompt, setShowNearbyPrompt] = useState(false);
   const [exifCoords, setExifCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [exifLoading, setExifLoading] = useState(false);
+  // ── TEMP GPS DIAGNOSTIC (remove after debugging Android) ──
+  const [gpsDebug, setGpsDebug] = useState<string[]>([]);
   // Manual location for no-GPS photos
   const [manualLocation, setManualLocation] = useState<{ lat: number; lng: number; name: string } | null>(null);
   const [locationSearch, setLocationSearch] = useState('');
@@ -113,29 +116,42 @@ export default function UploadPage() {
         return deg < 0 ? -d : d;
       };
       const { default: exifr } = await import('exifr');
+      const debug: string[] = []; // TEMP diagnostic
       let found = false;
       for (let i = 0; i < photos.length; i++) {
         if (cancelled) return;
         let lat: number | null = null;
         let lng: number | null = null;
+        // ── TEMP diagnostic per photo ──
+        const f = photos[i].originalFile;
+        let dbg = `#${i + 1} ${f.name} · ${f.type || '?'} · ${Math.round(f.size / 1024)}KB`;
         try {
-          const data = await exifr.parse(photos[i].file, { gps: true, tiff: true, xmp: true });
+          const data = await exifr.parse(photos[i].originalFile, { gps: true, tiff: true, xmp: true });
+          dbg += `\n  parse keys: ${data ? Object.keys(data).slice(0, 20).join(', ') || '(none)' : 'null'}`;
+          dbg += `\n  latitude=${data?.latitude} longitude=${data?.longitude}`;
+          dbg += `\n  GPSLatitude=${JSON.stringify(data?.GPSLatitude)} ref=${data?.GPSLatitudeRef}`;
           lat = data?.latitude ?? null;
           lng = data?.longitude ?? null;
           if ((lat == null || lng == null) && data) {
             lat = dms2dd(data.GPSLatitude, data.GPSLatitudeRef);
             lng = dms2dd(data.GPSLongitude, data.GPSLongitudeRef);
+            dbg += `\n  after DMS: lat=${lat} lng=${lng}`;
           }
           // Third-pass: exifr.gps() handles XMP-only GPS and DMS string formats
           if (lat == null || lng == null || (lat === 0 && lng === 0)) {
-            const gpsOnly = await exifr.gps(photos[i].file);
+            const gpsOnly = await exifr.gps(photos[i].originalFile);
+            dbg += `\n  exifr.gps(): ${JSON.stringify(gpsOnly)}`;
             if (gpsOnly?.latitude != null && gpsOnly?.longitude != null
                 && (gpsOnly.latitude !== 0 || gpsOnly.longitude !== 0)) {
               lat = gpsOnly.latitude;
               lng = gpsOnly.longitude;
             }
           }
-        } catch { /* this photo has no readable EXIF — continue to next */ }
+        } catch (e) {
+          dbg += `\n  THREW: ${e instanceof Error ? e.message : String(e)}`;
+        }
+        dbg += `\n  → final lat=${lat} lng=${lng}`;
+        debug.push(dbg);
         if (lat != null && lng != null && (lat !== 0 || lng !== 0)) {
           if (!cancelled) {
             setExifCoords({ lat, lng });
@@ -151,6 +167,7 @@ export default function UploadPage() {
         setGpsAnchorIndex(null);
         setExifLoading(false);
       }
+      if (!cancelled) setGpsDebug(debug); // TEMP diagnostic
     })();
     return () => { cancelled = true; };
   }, [photos]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -165,7 +182,7 @@ export default function UploadPage() {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       if (file.type.startsWith('image/')) {
-        incoming.push({ file, preview: URL.createObjectURL(file) });
+        incoming.push({ file, originalFile: file, preview: URL.createObjectURL(file) });
       }
     }
 
@@ -192,6 +209,9 @@ export default function UploadPage() {
 
   const doUpload = (placeId?: string | null) => {
     const gpsPhoto = photos[gpsAnchorIndex ?? 0];
+    // Extract GPS from the untouched original — sticker editing produces a canvas
+    // export with no EXIF, so the edited `file` would have no GPS to read.
+    const gpsAnchorFile = gpsPhoto.originalFile;
     const metadata: AuraMetadata = {
       title: title.trim(),
       description: description.trim() || undefined,
@@ -207,7 +227,7 @@ export default function UploadPage() {
       exif_lat: exifCoords?.lat,
       exif_lng: exifCoords?.lng,
     };
-    startUpload(photos.map(p => p.file), gpsPhoto.file, metadata);
+    startUpload(photos.map(p => p.file), gpsAnchorFile, metadata);
     router.push("/");
   };
 
@@ -293,6 +313,19 @@ export default function UploadPage() {
           <h1 className="px-3 pt-3 text-[24px] font-semibold text-[#1A1613] lg:px-6 lg:pt-8">
             {t('upload', language)}
           </h1>
+
+          {/* ── TEMP GPS DIAGNOSTIC — remove after debugging Android ── */}
+          {gpsDebug.length > 0 && (
+            <div className="mx-3 mt-2 rounded-lg border border-amber-400 bg-amber-50 p-2 lg:mx-6">
+              <p className="text-[11px] font-bold text-amber-800">GPS DEBUG (temp)</p>
+              <pre className="mt-1 whitespace-pre-wrap break-all text-[10px] leading-[1.4] text-amber-900">
+{gpsDebug.join('\n\n')}
+              </pre>
+              <p className="mt-1 text-[10px] font-semibold text-amber-800">
+                exifCoords: {exifCoords ? `${exifCoords.lat}, ${exifCoords.lng}` : 'null (no location)'}
+              </p>
+            </div>
+          )}
 
           {/* ── State 1: empty photo picker ── */}
           {photos.length === 0 && (
@@ -625,6 +658,8 @@ export default function UploadPage() {
               URL.revokeObjectURL(next[editingPhotoIndex].preview);
               next[editingPhotoIndex] = {
                 file: editedFile,
+                // Keep the untouched original so GPS/EXIF is still readable after editing
+                originalFile: next[editingPhotoIndex].originalFile,
                 preview: URL.createObjectURL(editedFile),
               };
               return next;
