@@ -61,10 +61,20 @@ export const processAndUploadMultipleAuras = async (
 
   // Parse all available EXIF blocks.
   // xmp: true catches GPS stored in XMP segments on some Android OEMs (Xiaomi, OnePlus, Oppo).
+  // Read the whole file into an ArrayBuffer first. exifr's chunked reader can see the
+  // GPS tag but fail to resolve its value offset when it lands outside the loaded chunk
+  // (returns [null,null,null] → NaN). The full buffer keeps all offsets in range.
+  let anchorBuf: ArrayBuffer | File = gpsAnchorFile;
+  try {
+    anchorBuf = await gpsAnchorFile.arrayBuffer();
+  } catch {
+    // arrayBuffer unavailable — fall back to passing the File directly
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let exifData: Record<string, any> | null = null;
   try {
-    exifData = await exifr.parse(gpsAnchorFile, {
+    exifData = await exifr.parse(anchorBuf, {
       gps: true,   // computes latitude, longitude, altitude from raw GPS tags
       exif: true,  // DateTimeOriginal, OffsetTimeOriginal, DateTimeDigitized, etc.
       tiff: true,  // ModifyDate (DateTime), Orientation, etc.
@@ -78,21 +88,28 @@ export const processAndUploadMultipleAuras = async (
   let isVerified = false;
   const gpsFields: Pick<AuraUploadMetadata, 'lat' | 'lng' | 'altitude' | 'heading'> = {};
 
+  // Some Android cameras write an empty GPS block when geotagging is off, and exifr
+  // returns NaN for those — which slips past null checks and would send NaN downstream.
+  // Coerce any non-finite value to null so empty GPS is treated as "no location".
+  const fin = (n: unknown): number | null =>
+    typeof n === 'number' && Number.isFinite(n) ? n : null;
+
   // exifr computes latitude/longitude when gps:true — prefer those.
   // Fallback: some Android devices return raw DMS arrays (GPSLatitude) without computing
   // the decimal degree value, or write lowercase ref strings ('n'/'s'/'e'/'w').
-  let lat = exifData?.latitude ?? dmsToDecimal(exifData?.GPSLatitude, exifData?.GPSLatitudeRef);
-  let lng = exifData?.longitude ?? dmsToDecimal(exifData?.GPSLongitude, exifData?.GPSLongitudeRef);
+  let lat = fin(exifData?.latitude) ?? fin(dmsToDecimal(exifData?.GPSLatitude, exifData?.GPSLatitudeRef));
+  let lng = fin(exifData?.longitude) ?? fin(dmsToDecimal(exifData?.GPSLongitude, exifData?.GPSLongitudeRef));
 
   // Third-pass fallback: exifr.gps() is a dedicated GPS extractor that handles XMP-only GPS
   // (common on Xiaomi/OnePlus/Oppo) and DMS string formats that neither path above catches.
   if (lat == null || lng == null || (lat === 0 && lng === 0)) {
     try {
-      const gpsOnly = await exifr.gps(gpsAnchorFile);
-      if (gpsOnly?.latitude != null && gpsOnly?.longitude != null
-          && (gpsOnly.latitude !== 0 || gpsOnly.longitude !== 0)) {
-        lat = gpsOnly.latitude;
-        lng = gpsOnly.longitude;
+      const gpsOnly = await exifr.gps(anchorBuf);
+      const gLat = fin(gpsOnly?.latitude);
+      const gLng = fin(gpsOnly?.longitude);
+      if (gLat != null && gLng != null && (gLat !== 0 || gLng !== 0)) {
+        lat = gLat;
+        lng = gLng;
       }
     } catch {}
   }
@@ -100,11 +117,13 @@ export const processAndUploadMultipleAuras = async (
   // Fourth-pass fallback: coords pre-extracted by the upload page scan.
   // The page scan runs the same exifr passes at selection time and stores results in exif_lat/exif_lng.
   // This ensures Android GPS is never silently lost when the service re-parse happens to fail.
+  const exifLat = fin(userMetadata.exif_lat);
+  const exifLng = fin(userMetadata.exif_lng);
   if ((lat == null || lng == null || (lat === 0 && lng === 0))
-      && userMetadata.exif_lat != null && userMetadata.exif_lng != null
-      && (userMetadata.exif_lat !== 0 || userMetadata.exif_lng !== 0)) {
-    lat = userMetadata.exif_lat;
-    lng = userMetadata.exif_lng;
+      && exifLat != null && exifLng != null
+      && (exifLat !== 0 || exifLng !== 0)) {
+    lat = exifLat;
+    lng = exifLng;
   }
 
   if (lat != null && lng != null && (lat !== 0 || lng !== 0)) {

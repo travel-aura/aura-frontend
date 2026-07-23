@@ -115,6 +115,11 @@ export default function UploadPage() {
         if (r === 'N' || r === 'E') return d;
         return deg < 0 ? -d : d;
       };
+      // Some Android cameras write an empty GPS block when geotagging is off, and
+      // exifr returns NaN for those — which slips past null checks. Coerce any
+      // non-finite value to null so empty GPS is treated as "no location".
+      const fin = (n: unknown): number | null =>
+        typeof n === 'number' && Number.isFinite(n) ? n : null;
       const { default: exifr } = await import('exifr');
       const debug: string[] = []; // TEMP diagnostic
       let found = false;
@@ -126,25 +131,31 @@ export default function UploadPage() {
         const f = photos[i].originalFile;
         let dbg = `#${i + 1} ${f.name} · ${f.type || '?'} · ${Math.round(f.size / 1024)}KB`;
         try {
-          const data = await exifr.parse(photos[i].originalFile, { gps: true, tiff: true, xmp: true });
+          // Read the whole file into an ArrayBuffer first. exifr's chunked reader
+          // can see the GPS tag but fail to resolve its value offset when it lands
+          // outside the loaded chunk (returns [null,null,null] → NaN). Passing the
+          // full buffer guarantees all GPS value offsets are in range.
+          const buf = await photos[i].originalFile.arrayBuffer();
+          const data = await exifr.parse(buf, { gps: true, tiff: true, xmp: true });
           dbg += `\n  parse keys: ${data ? Object.keys(data).slice(0, 20).join(', ') || '(none)' : 'null'}`;
           dbg += `\n  latitude=${data?.latitude} longitude=${data?.longitude}`;
           dbg += `\n  GPSLatitude=${JSON.stringify(data?.GPSLatitude)} ref=${data?.GPSLatitudeRef}`;
-          lat = data?.latitude ?? null;
-          lng = data?.longitude ?? null;
+          lat = fin(data?.latitude);
+          lng = fin(data?.longitude);
           if ((lat == null || lng == null) && data) {
-            lat = dms2dd(data.GPSLatitude, data.GPSLatitudeRef);
-            lng = dms2dd(data.GPSLongitude, data.GPSLongitudeRef);
+            lat = fin(dms2dd(data.GPSLatitude, data.GPSLatitudeRef));
+            lng = fin(dms2dd(data.GPSLongitude, data.GPSLongitudeRef));
             dbg += `\n  after DMS: lat=${lat} lng=${lng}`;
           }
           // Third-pass: exifr.gps() handles XMP-only GPS and DMS string formats
           if (lat == null || lng == null || (lat === 0 && lng === 0)) {
-            const gpsOnly = await exifr.gps(photos[i].originalFile);
+            const gpsOnly = await exifr.gps(buf);
             dbg += `\n  exifr.gps(): ${JSON.stringify(gpsOnly)}`;
-            if (gpsOnly?.latitude != null && gpsOnly?.longitude != null
-                && (gpsOnly.latitude !== 0 || gpsOnly.longitude !== 0)) {
-              lat = gpsOnly.latitude;
-              lng = gpsOnly.longitude;
+            const gLat = fin(gpsOnly?.latitude);
+            const gLng = fin(gpsOnly?.longitude);
+            if (gLat != null && gLng != null && (gLat !== 0 || gLng !== 0)) {
+              lat = gLat;
+              lng = gLng;
             }
           }
         } catch (e) {
