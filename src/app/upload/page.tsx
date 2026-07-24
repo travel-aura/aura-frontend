@@ -69,7 +69,6 @@ export default function UploadPage() {
   const [exifCoords, setExifCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [exifLoading, setExifLoading] = useState(false);
   // ── TEMP GPS DIAGNOSTIC (remove after debugging Android) ──
-  const [gpsDebug, setGpsDebug] = useState<string[]>([]);
   // Manual location for no-GPS photos
   const [manualLocation, setManualLocation] = useState<{ lat: number; lng: number; name: string } | null>(null);
   const [locationSearch, setLocationSearch] = useState('');
@@ -122,15 +121,11 @@ export default function UploadPage() {
       const fin = (n: unknown): number | null =>
         typeof n === 'number' && Number.isFinite(n) ? n : null;
       const { default: exifr } = await import('exifr');
-      const debug: string[] = []; // TEMP diagnostic
       let found = false;
       for (let i = 0; i < photos.length; i++) {
         if (cancelled) return;
         let lat: number | null = null;
         let lng: number | null = null;
-        // ── TEMP diagnostic per photo ──
-        const f = photos[i].originalFile;
-        let dbg = `#${i + 1} ${f.name} · ${f.type || '?'} · ${Math.round(f.size / 1024)}KB`;
         try {
           // Read the whole file into an ArrayBuffer first. exifr's chunked reader
           // can see the GPS tag but fail to resolve its value offset when it lands
@@ -138,33 +133,15 @@ export default function UploadPage() {
           // full buffer guarantees all GPS value offsets are in range.
           const buf = await photos[i].originalFile.arrayBuffer();
           const data = await exifr.parse(buf, { gps: true, tiff: true, xmp: true });
-          dbg += `\n  latitude=${data?.latitude} longitude=${data?.longitude}`;
-          dbg += `\n  GPSLatitude=${JSON.stringify(data?.GPSLatitude)} ref=${data?.GPSLatitudeRef}`;
-          // ── DEEP DUMP: full parse, list every GPS* field + its raw value ──
-          try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const full: any = await exifr.parse(buf, true);
-            const allKeys = full ? Object.keys(full) : [];
-            const gpsKeys = allKeys.filter((k) => /^GPS/i.test(k));
-            dbg += `\n  [full] ${allKeys.length} keys`;
-            dbg += `\n  [full] GPS fields: ${gpsKeys.length
-              ? gpsKeys.map((k) => `${k}=${JSON.stringify(full[k])}`).join(' | ')
-              : '(NONE — no GPS in standard EXIF)'}`;
-            dbg += `\n  [full] lat=${full?.latitude} lng=${full?.longitude}`;
-          } catch (e2) {
-            dbg += `\n  [full] threw: ${e2 instanceof Error ? e2.message : String(e2)}`;
-          }
           lat = fin(data?.latitude);
           lng = fin(data?.longitude);
           if ((lat == null || lng == null) && data) {
             lat = fin(dms2dd(data.GPSLatitude, data.GPSLatitudeRef));
             lng = fin(dms2dd(data.GPSLongitude, data.GPSLongitudeRef));
-            dbg += `\n  after DMS: lat=${lat} lng=${lng}`;
           }
           // Third-pass: exifr.gps() handles XMP-only GPS and DMS string formats
           if (lat == null || lng == null || (lat === 0 && lng === 0)) {
             const gpsOnly = await exifr.gps(buf);
-            dbg += `\n  exifr.gps(): ${JSON.stringify(gpsOnly)}`;
             const gLat = fin(gpsOnly?.latitude);
             const gLng = fin(gpsOnly?.longitude);
             if (gLat != null && gLng != null && (gLat !== 0 || gLng !== 0)) {
@@ -176,17 +153,12 @@ export default function UploadPage() {
           // rational GPS values exifr fails to resolve.
           if (lat == null || lng == null || (lat === 0 && lng === 0)) {
             const manual = readExifGps(buf);
-            dbg += `\n  manual: ${manual.debug}`;
             if (manual.lat != null && manual.lng != null) {
               lat = manual.lat;
               lng = manual.lng;
             }
           }
-        } catch (e) {
-          dbg += `\n  THREW: ${e instanceof Error ? e.message : String(e)}`;
-        }
-        dbg += `\n  → final lat=${lat} lng=${lng}`;
-        debug.push(dbg);
+        } catch { /* EXIF failing is not fatal — continue without location */ }
         if (lat != null && lng != null && (lat !== 0 || lng !== 0)) {
           if (!cancelled) {
             setExifCoords({ lat, lng });
@@ -202,7 +174,6 @@ export default function UploadPage() {
         setGpsAnchorIndex(null);
         setExifLoading(false);
       }
-      if (!cancelled) setGpsDebug(debug); // TEMP diagnostic
     })();
     return () => { cancelled = true; };
   }, [photos]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -348,19 +319,6 @@ export default function UploadPage() {
           <h1 className="px-3 pt-3 text-[24px] font-semibold text-[#1A1613] lg:px-6 lg:pt-8">
             {t('upload', language)}
           </h1>
-
-          {/* ── TEMP GPS DIAGNOSTIC — remove after debugging Android ── */}
-          {gpsDebug.length > 0 && (
-            <div className="mx-3 mt-2 rounded-lg border border-amber-400 bg-amber-50 p-2 lg:mx-6">
-              <p className="text-[11px] font-bold text-amber-800">GPS DEBUG (temp)</p>
-              <pre className="mt-1 whitespace-pre-wrap break-all text-[10px] leading-[1.4] text-amber-900">
-{gpsDebug.join('\n\n')}
-              </pre>
-              <p className="mt-1 text-[10px] font-semibold text-amber-800">
-                exifCoords: {exifCoords ? `${exifCoords.lat}, ${exifCoords.lng}` : 'null (no location)'}
-              </p>
-            </div>
-          )}
 
           {/* ── State 1: empty photo picker ── */}
           {photos.length === 0 && (
