@@ -12,7 +12,8 @@ import { TAG_GROUPS, translateTag, translateGroupLabel, t } from "@/lib/i18n";
 import { useUpload } from "@/context/UploadContext";
 import type { PlaceFeedItem, PlacesFeedResponse } from "../../shared/aura-schema";
 
-const RADIUS = 5000;
+// Search radius around a chosen city. Near me sends no radius: it sorts all posts by distance.
+const CITY_RADIUS_M = 15000;
 const LIMIT = 10;
 const FEED_CACHE_KEY = 'aura_feed_cache';
 const clearFeedCache = () => { try { sessionStorage.removeItem(FEED_CACHE_KEY); } catch {} };
@@ -79,7 +80,7 @@ interface LocationSuggestion {
   lng: number;
 }
 
-interface Coords { lat: number; lng: number; }
+interface Coords { lat: number; lng: number; radius?: number; }
 
 type LocationMode = "global" | "nearby" | "city" | "text";
 
@@ -236,7 +237,10 @@ export default function AuraFeed() {
 
   const buildUrl = useCallback((currentOffset: number, coords: Coords | null, following: boolean, tag: string | null, query: string | null) => {
     let url = `/api/places/feed?limit=${LIMIT}&offset=${currentOffset}`;
-    if (coords) url += `&lat=${coords.lat}&lng=${coords.lng}&radius=${RADIUS}`;
+    if (coords) {
+      url += `&lat=${coords.lat}&lng=${coords.lng}`;
+      if (coords.radius) url += `&radius=${coords.radius}`;
+    }
     if (query) url += `&q=${encodeURIComponent(query)}`;
     if (following) url += `&following=true`;
     if (tag) url += `&tag=${encodeURIComponent(tag)}`;
@@ -418,7 +422,7 @@ export default function AuraFeed() {
 
   const handleSelectCity = (s: LocationSuggestion) => {
     clearFeedCache();
-    const city = { name: s.name, lat: s.lat, lng: s.lng };
+    const city = { name: s.name, lat: s.lat, lng: s.lng, radius: CITY_RADIUS_M };
     setSelectedCity(city);
     setUserCoords(null);
     setActiveQuery(null);
