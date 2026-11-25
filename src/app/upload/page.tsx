@@ -402,6 +402,7 @@ export default function UploadPage() {
             <input
               type="text"
               value={title}
+              maxLength={100}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={t('titlePlaceholder', language)}
               className="w-full rounded-[8px] border border-[#D4C4A8] px-3 py-[10px] text-[16px] text-[#1A1613] outline-none placeholder:text-[#A09080] focus:border-[#B85C38]"
@@ -412,6 +413,7 @@ export default function UploadPage() {
           <div className="mt-3 px-3">
             <textarea
               value={description}
+              maxLength={1000}
               onChange={(e) => setDescription(e.target.value)}
               placeholder={t('descriptionOptional', language)}
               rows={5}
