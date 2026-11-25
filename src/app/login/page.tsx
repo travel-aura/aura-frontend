@@ -100,7 +100,7 @@ function LoginForm() {
       {/* Logo */}
       <div className="flex justify-center pt-8">
         <span className="text-[32px] font-bold tracking-tight text-[#1A1613]">
-          Aura
+          Vieuu
         </span>
       </div>
 
