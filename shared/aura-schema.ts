@@ -307,7 +307,7 @@ export interface PublicProfileResponse {
 export interface AuthResponse {
   ok: boolean;
   user: { id: string; email: string };
-  session?: { access_token: string };
+  session?: { access_token: string; refresh_token?: string; expires_at?: number };
 }
 
 // 17. Follow user entry (GET /api/follows/followers and GET /api/follows/following)

@@ -39,7 +39,7 @@ function RegisterForm() {
       if (!response.ok) throw new Error(await response.text());
       const data: AuthResponse = await response.json();
       if (data.session?.access_token && data.user?.id) {
-        login(data.session.access_token, data.user.id);
+        login(data.session.access_token, data.user.id, data.session.refresh_token);
         router.push(redirectTo || "/profile");
       }
     } catch {
@@ -90,7 +90,7 @@ function RegisterForm() {
       const response = await apiPost<AuthResponse>("/auth/register", { name, email, password });
 
       if (response.session?.access_token && response.user?.id) {
-        login(response.session.access_token, response.user.id);
+        login(response.session.access_token, response.user.id, response.session.refresh_token);
       }
 
       router.push(redirectTo || "/profile");

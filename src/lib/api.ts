@@ -1,3 +1,5 @@
+import { getRefreshToken, refreshSession } from "@/lib/auth";
+
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 function getAuthHeaders(): HeadersInit {
@@ -16,13 +18,23 @@ function getAuthHeaders(): HeadersInit {
     return headers;
 }
 
+// Sends a request; if it comes back 401 (expired session), renews the session
+// once and retries. buildInit is called again so the retry gets the new token.
+async function fetchWithRefresh(path: string, buildInit: () => RequestInit): Promise<Response> {
+    const res = await fetch(`${API_BASE}${path}`, buildInit());
+    if (res.status !== 401 || typeof window === "undefined" || !getRefreshToken()) return res;
+    const fresh = await refreshSession(true);
+    if (!fresh) return res;
+    return fetch(`${API_BASE}${path}`, buildInit());
+}
+
 export async function apiPost<T>(path: string, body: unknown): Promise<T> {
-    const res = await fetch(`${API_BASE}${path}`, {
+    const res = await fetchWithRefresh(path, () => ({
         method: "POST",
         headers: getAuthHeaders(),
         credentials: "include", // IMPORTANT: receive/send httpOnly cookie
         body: JSON.stringify(body),
-    });
+    }));
 
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data?.error || `Request failed: ${res.status}`);
@@ -30,11 +42,11 @@ export async function apiPost<T>(path: string, body: unknown): Promise<T> {
 }
 
 export async function apiGet<T>(path: string): Promise<T> {
-    const res = await fetch(`${API_BASE}${path}`, {
+    const res = await fetchWithRefresh(path, () => ({
         method: "GET",
         headers: getAuthHeaders(),
         credentials: "include",
-    });
+    }));
 
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data?.error || `Request failed: ${res.status}`);
@@ -42,12 +54,12 @@ export async function apiGet<T>(path: string): Promise<T> {
 }
 
 export async function apiPut<T>(path: string, body: unknown): Promise<T> {
-    const res = await fetch(`${API_BASE}${path}`, {
+    const res = await fetchWithRefresh(path, () => ({
         method: "PUT",
         headers: getAuthHeaders(),
         credentials: "include",
         body: JSON.stringify(body),
-    });
+    }));
 
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data?.error || `Request failed: ${res.status}`);

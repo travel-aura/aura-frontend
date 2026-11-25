@@ -38,7 +38,7 @@ function LoginForm() {
       if (!response.ok) throw new Error(await response.text());
       const data: AuthResponse = await response.json();
       if (data.session?.access_token && data.user?.id) {
-        login(data.session.access_token, data.user.id);
+        login(data.session.access_token, data.user.id, data.session.refresh_token);
         router.push(redirectTo || "/profile");
       }
     } catch {
@@ -84,7 +84,7 @@ function LoginForm() {
       const response = await apiPost<AuthResponse>("/auth/login", { email, password });
 
       if (response.session?.access_token && response.user?.id) {
-        login(response.session.access_token, response.user.id);
+        login(response.session.access_token, response.user.id, response.session.refresh_token);
       }
 
       router.push(redirectTo || "/profile");

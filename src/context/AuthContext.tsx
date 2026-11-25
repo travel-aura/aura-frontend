@@ -1,13 +1,13 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { getToken, getUserId, removeToken, saveToken, saveUserId } from "@/lib/auth";
+import { getToken, getUserId, refreshSession, removeToken, saveRefreshToken, saveToken, saveUserId } from "@/lib/auth";
 
 interface AuthState {
   token: string | null;
   userId: string | null;
   ready: boolean;
-  login: (token: string, userId: string) => void;
+  login: (token: string, userId: string, refreshToken?: string) => void;
   logout: () => void;
 }
 
@@ -25,13 +25,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    setToken(getToken());
-    setUserId(getUserId());
-    setReady(true);
+    let cancelled = false;
+
+    // On open: renew the session first if the access token has expired or is about to.
+    refreshSession().then((fresh) => {
+      if (cancelled) return;
+      setToken(fresh);
+      setUserId(fresh ? getUserId() : null);
+      setReady(true);
+    });
+
+    // While the app is open, keep the token fresh, and check again when the user returns to the tab.
+    const renew = () => {
+      refreshSession().then((fresh) => {
+        if (cancelled) return;
+        setToken(fresh);
+        if (!fresh) setUserId(null);
+      });
+    };
+    const interval = window.setInterval(renew, 4 * 60 * 1000);
+    const onVisible = () => { if (document.visibilityState === "visible") renew(); };
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, []);
 
-  const login = useCallback((newToken: string, newUserId: string) => {
+  const login = useCallback((newToken: string, newUserId: string, refreshToken?: string) => {
     saveToken(newToken);
+    if (refreshToken) saveRefreshToken(refreshToken);
     saveUserId(newUserId);
     setToken(newToken);
     setUserId(newUserId);
