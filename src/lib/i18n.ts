@@ -341,7 +341,7 @@ export const UI_TEXT = {
   friendsTitle:       { en: "Find Friends",       "zh-CN": "发现好友",      "zh-TW": "發現好友" },
   searchPeople:       { en: "Search by name…","zh-CN": "搜索名字…","zh-TW": "搜尋名字…" },
   searching:          { en: "Searching…",         "zh-CN": "搜索中…",       "zh-TW": "搜尋中…" },
-  findPeopleTitle:    { en: "Find people on Aura","zh-CN": "在Aura上发现好友","zh-TW": "在Aura上發現好友" },
+  findPeopleTitle:    { en: "Find people on Vieuu","zh-CN": "在Vieuu上发现好友","zh-TW": "在Vieuu上發現好友" },
   findPeopleDesc:     { en: "Search by name to connect with friends", "zh-CN": "通过名字搜索好友", "zh-TW": "通過名字搜尋好友" },
   noUsersFound:       { en: "No users found",     "zh-CN": "未找到用户",    "zh-TW": "未找到用戶" },
   tryDifferentName:   { en: "Try a different name", "zh-CN": "换个名字试试", "zh-TW": "換個名字試試" },
