@@ -32,6 +32,7 @@ export interface AuraMetadata {
   lng?: number;
   exif_lat?: number;           // pre-extracted EXIF GPS from page scan — is_verified true
   exif_lng?: number;
+  hide_exact_location?: boolean; // store only a ~1 km rounded position
 }
 
 export interface UploadProgress {

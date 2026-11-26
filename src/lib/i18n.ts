@@ -373,6 +373,28 @@ export const UI_TEXT = {
   continueWithGoogle: { en: "Continue with Google", "zh-CN": "使用 Google 继续", "zh-TW": "使用 Google 繼續" },
   orDivider:          { en: "or",                 "zh-CN": "或",            "zh-TW": "或" },
   googleAuthError:    { en: "Google sign-in failed. Please try again.", "zh-CN": "Google 登录失败，请重试", "zh-TW": "Google 登入失敗，請再試一次" },
+  // Location privacy
+  hideExactLocation:      { en: "Hide exact location", "zh-CN": "隐藏精确位置", "zh-TW": "隱藏精確位置" },
+  hideExactLocationDesc:  { en: "Others see the area (about 1 km), not the exact spot.", "zh-CN": "其他人只会看到大致区域（约 1 公里），看不到具体地点。", "zh-TW": "其他人只會看到大致區域（約 1 公里），看不到具體地點。" },
+  privateLocationWarning: { en: "This looks like it could be a home or private address, so we've turned on Hide exact location. You can switch it off.", "zh-CN": "这里看起来可能是住宅或私人地址，已为你开启“隐藏精确位置”，你也可以关闭。", "zh-TW": "這裡看起來可能是住家或私人地址，已為你開啟「隱藏精確位置」，你也可以關閉。" },
+  approximateArea:        { en: "Approximate area", "zh-CN": "大致区域", "zh-TW": "大致區域" },
+  approximateAreaDesc:    { en: "The poster hid the exact spot. Shown within about 1 km.", "zh-CN": "发布者隐藏了具体地点，显示范围约 1 公里。", "zh-TW": "發布者隱藏了具體地點，顯示範圍約 1 公里。" },
+  // Settings
+  settings:               { en: "Settings", "zh-CN": "设置", "zh-TW": "設定" },
+  logOut:                 { en: "Log out", "zh-CN": "退出登录", "zh-TW": "登出" },
+  loggingOut:             { en: "Logging out…", "zh-CN": "正在退出…", "zh-TW": "正在登出…" },
+  deleteAccount:          { en: "Delete account", "zh-CN": "删除账号", "zh-TW": "刪除帳號" },
+  deleteAccountDesc:      { en: "Permanently deletes your posts, photos, followers and profile. This can't be undone.", "zh-CN": "将永久删除你的帖子、照片、关注和个人资料，且无法恢复。", "zh-TW": "將永久刪除你的貼文、照片、追蹤和個人資料，且無法復原。" },
+  deleteAccountPrompt:    { en: "Type DELETE to confirm", "zh-CN": "输入 DELETE 以确认", "zh-TW": "輸入 DELETE 以確認" },
+  deleteAccountButton:    { en: "Delete my account", "zh-CN": "永久删除我的账号", "zh-TW": "永久刪除我的帳號" },
+  deletingAccount:        { en: "Deleting…", "zh-CN": "正在删除…", "zh-TW": "正在刪除…" },
+  deleteAccountFailed:    { en: "Couldn't delete your account. Please try again.", "zh-CN": "删除账号失败，请重试。", "zh-TW": "刪除帳號失敗，請再試一次。" },
+  // Cities
+  citiesTitle:            { en: "Cities", "zh-CN": "城市", "zh-TW": "城市" },
+  noCitiesYet:            { en: "No cities yet", "zh-CN": "还没有城市", "zh-TW": "還沒有城市" },
+  noCitiesYetDesc:        { en: "Upload a post with a location to add your first city.", "zh-CN": "上传带位置的帖子，添加你的第一个城市。", "zh-TW": "上傳帶有位置的貼文，新增你的第一個城市。" },
+  postsCount:             { en: "posts", "zh-CN": "篇帖子", "zh-TW": "篇貼文" },
+  otherPlaces:            { en: "Other", "zh-CN": "其他", "zh-TW": "其他" },
 } satisfies Record<string, UIEntry>;
 
 export type UITextKey = keyof typeof UI_TEXT;

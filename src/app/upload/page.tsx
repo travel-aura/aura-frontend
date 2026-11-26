@@ -10,7 +10,7 @@ import EmojiStickerEditor from "@/components/EmojiStickerEditor";
 import { useLanguage } from "@/hooks/useLanguage";
 import { TAG_GROUPS, translateTag, translateGroupLabel, t } from "@/lib/i18n";
 import { useUpload } from "@/context/UploadContext";
-import { searchNearbyPOIs, searchPlaces, getCityFromCoordinates, type NearbyPOI } from "@/lib/geocoding";
+import { searchNearbyPOIs, searchPlaces, getCityFromCoordinates, looksLikePrivateAddress, type NearbyPOI } from "@/lib/geocoding";
 import { readExifGps } from "@/lib/exifGps";
 import type { NearbyPlace } from "../../../shared/aura-schema";
 
@@ -71,6 +71,9 @@ export default function UploadPage() {
   // ── TEMP GPS DIAGNOSTIC (remove after debugging Android) ──
   // Manual location for no-GPS photos
   const [manualLocation, setManualLocation] = useState<{ lat: number; lng: number; name: string } | null>(null);
+  // Location privacy: store only a ~1 km area instead of the exact spot
+  const [hideExactLocation, setHideExactLocation] = useState(false);
+  const [privateLocationWarning, setPrivateLocationWarning] = useState(false);
   const [locationSearch, setLocationSearch] = useState('');
   const [locationSuggestions, setLocationSuggestions] = useState<Array<{ name: string; lat: number; lng: number }>>([]);
   const [showLocationSearch, setShowLocationSearch] = useState(false);
@@ -178,6 +181,21 @@ export default function UploadPage() {
     return () => { cancelled = true; };
   }, [photos]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // When the photo's location looks like a home address, turn on "Hide exact location".
+  // The user can switch it off. Not offered when adding a shot to an existing spot.
+  const spotCoords = exifCoords ?? (manualLocation ? { lat: manualLocation.lat, lng: manualLocation.lng } : null);
+  useEffect(() => {
+    setPrivateLocationWarning(false);
+    if (!spotCoords || prefilledPlaceId) return;
+    let cancelled = false;
+    looksLikePrivateAddress(spotCoords.lat, spotCoords.lng).then((isPrivate) => {
+      if (cancelled || !isPrivate) return;
+      setHideExactLocation(true);
+      setPrivateLocationWarning(true);
+    });
+    return () => { cancelled = true; };
+  }, [spotCoords?.lat, spotCoords?.lng, prefilledPlaceId]);
+
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
@@ -214,6 +232,7 @@ export default function UploadPage() {
   };
 
   const doUpload = (placeId?: string | null) => {
+    const hideExact = hideExactLocation && !placeId;
     const gpsPhoto = photos[gpsAnchorIndex ?? 0];
     // Extract GPS from the untouched original — sticker editing produces a canvas
     // export with no EXIF, so the edited `file` would have no GPS to read.
@@ -221,9 +240,11 @@ export default function UploadPage() {
     const metadata: AuraMetadata = {
       title: title.trim(),
       description: description.trim() || undefined,
-      venue_id: selectedVenueId ?? undefined,
-      place_name: selectedVenueName ?? undefined,
+      // A hidden location never joins a venue or spot (that would reveal it)
+      venue_id: hideExact ? undefined : selectedVenueId ?? undefined,
+      place_name: hideExact ? undefined : selectedVenueName ?? undefined,
       place_id: placeId ?? undefined,
+      hide_exact_location: hideExact || undefined,
       tags: selectedTags.length > 0 ? selectedTags : undefined,
       // Manual location for no-GPS photos — upload service uses these when EXIF has no coords
       lat: manualLocation?.lat,
@@ -246,6 +267,12 @@ export default function UploadPage() {
     // Arrived from "Add your shot of this spot" — place already known, skip all place questions
     if (prefilledPlaceId) {
       doUpload(prefilledPlaceId);
+      return;
+    }
+
+    // Hidden location: no venue or nearby-spot questions, it gets its own approximate spot
+    if (hideExactLocation) {
+      doUpload();
       return;
     }
 
@@ -421,6 +448,29 @@ export default function UploadPage() {
             />
           </div>
 
+          {/* Location privacy */}
+          {spotCoords && !prefilledPlaceId && (
+            <div className="mt-4 px-3">
+              <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-[#D4C4A8] bg-[#F9F6F0] px-4 py-3">
+                <input
+                  type="checkbox"
+                  checked={hideExactLocation}
+                  onChange={(e) => { setHideExactLocation(e.target.checked); setPrivateLocationWarning(false); }}
+                  className="mt-1 size-4 shrink-0 accent-[#B85C38]"
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[15px] font-semibold text-[#1A1613]">{t('hideExactLocation', language)}</span>
+                  <span className="mt-0.5 block text-[12px] text-[#6B5F52]">{t('hideExactLocationDesc', language)}</span>
+                  {privateLocationWarning && (
+                    <span className="mt-2 block rounded-lg bg-[#F9ECE7] px-2.5 py-2 text-[12px] text-[#8A3F22]">
+                      {t('privateLocationWarning', language)}
+                    </span>
+                  )}
+                </span>
+              </label>
+            </div>
+          )}
+
           {/* Tags */}
           <div className="mt-5 px-3">
             <div className="flex items-center justify-between">
@@ -569,7 +619,7 @@ export default function UploadPage() {
           )}
 
           {/* Step 1 — Venue question (hidden when coming from a known place) */}
-          {exifCoords && !venueSkipped && !prefilledPlaceId && (
+          {exifCoords && !venueSkipped && !prefilledPlaceId && !hideExactLocation && (
             <div className="mt-5 px-3">
               <div className="rounded-2xl border border-[#D4C4A8] bg-[#F9F6F0] px-4 py-4">
                 <div className="flex items-start gap-3">

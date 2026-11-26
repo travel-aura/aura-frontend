@@ -29,6 +29,7 @@ export interface Place {
   venue_id: string | null;      // Mapbox POI feature ID — set for named venues, null for generic spots
   cover_post_id: string | null; // FK → auras.id — first/featured post at this place
   verified_count: number;       // # GPS-verified posts at this place
+  is_approximate?: boolean;     // true when the poster hid the exact location (~1 km)
 }
 
 // Nearby place entry returned by GET /api/places/nearby
@@ -130,6 +131,7 @@ export interface Post {
 // 3. What frontend sends as metadata JSON in upload FormData
 export interface AuraUploadMetadata {
   title: string;
+  hide_exact_location?: boolean; // store only a ~1 km rounded position
   description?: string;
   archetype_tag?: Archetype;
   // GPS — only present when EXIF has coordinates
@@ -218,6 +220,7 @@ export interface ArchetypeStats {
   friend_count?: number;  // mutual follows; shown as "Friends" when present
   top_tags: string[];
   cities: string[];
+  city_list?: CityEntry[];      // cities grouped with country and post count
 }
 
 // 8. Current user profile (GET /me)
@@ -338,4 +341,11 @@ export interface UserSearchResult {
 
 export interface UserSearchResponse {
   users: UserSearchResult[];
+}
+
+// One city on a profile's Cities page (GET /api/auras/me/stats, /api/users/:id)
+export interface CityEntry {
+  city: string;
+  country_code: string | null;   // ISO 3166 alpha-2, lowercase (e.g. "pt")
+  post_count: number;
 }

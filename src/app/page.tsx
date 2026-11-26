@@ -434,6 +434,21 @@ export default function AuraFeed() {
     fetchPosts({ coords: city, currentOffset: 0, following: isFollowing, tag: activeTag, query: null });
   };
 
+  // Arriving from a profile's Cities page (/?city=Rome&country=Italy): open that city
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const city = params.get("city");
+    if (!city) return;
+    const country = params.get("country");
+    window.history.replaceState(null, "", "/");
+    searchPlaces(country ? `${city}, ${country}` : city)
+      .then((found) => {
+        const p = found[0];
+        if (p) handleSelectCity({ id: "0", name: city, place_name: p.name, lat: p.lat, lng: p.lng });
+      })
+      .catch(() => {});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleClearLocation = () => {
     clearFeedCache();
     setLocationMode("global");

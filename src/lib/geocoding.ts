@@ -151,3 +151,38 @@ export async function searchPlaces(query: string): Promise<Array<{ name: string;
     return [];
   }
 }
+
+function metersBetween(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const r = (d: number) => (d * Math.PI) / 180;
+  const a = Math.sin(r(lat2 - lat1) / 2) ** 2 + Math.cos(r(lat1)) * Math.cos(r(lat2)) * Math.sin(r(lng2 - lng1) / 2) ** 2;
+  return 2 * 6371000 * Math.asin(Math.sqrt(a));
+}
+
+/**
+ * Guesses whether a spot might be someone's home: a street address right at
+ * the photo's position with no public place (shop, landmark, park…) nearby.
+ * Used only to suggest "Hide exact location"; false when unsure.
+ */
+export async function looksLikePrivateAddress(lat: number, lng: number): Promise<boolean> {
+  const token = await getMapboxToken();
+  if (!token) return false;
+  type Feature = { geometry?: { coordinates?: [number, number] } };
+  const nearest = async (types: string): Promise<number | null> => {
+    const url = `https://api.mapbox.com/search/searchbox/v1/reverse?longitude=${lng}&latitude=${lat}&access_token=${token}&types=${types}&limit=5`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data: { features?: Feature[] } = await res.json();
+    const distances = (data.features ?? [])
+      .map((f) => f.geometry?.coordinates)
+      .filter((c): c is [number, number] => Array.isArray(c))
+      .map(([fLng, fLat]) => metersBetween(lat, lng, fLat, fLng));
+    return distances.length ? Math.min(...distances) : null;
+  };
+  try {
+    const [poi, address] = await Promise.all([nearest("poi"), nearest("address")]);
+    if (poi !== null && poi <= 60) return false;          // a public place is right here
+    return address !== null && address <= 40;             // a street address is right here
+  } catch {
+    return false;
+  }
+}

@@ -447,10 +447,12 @@ export default function PostDetailClient({ initialPost, postId }: Props) {
 
           {/* ── Info card ────────────────────────────────────────────────────────── */}
           {(place || (post.lat && post.lng)) && (() => {
-            const hasGPS = !!(post.lat && post.lng);
+            // Hidden location: the stored point is only a ~1 km area, so no distance, Go or "add your shot"
+            const isApproximate = !!place?.is_approximate;
+            const hasGPS = !!(post.lat && post.lng) && !isApproximate;
             // Count starts at 1 if this post itself is verified, ensuring it's never zero for verified posts
             const verifiedCount = Math.max(place?.verified_count ?? 0, post.is_verified ? 1 : 0);
-            const showBeFirst = verifiedCount === 0;
+            const showBeFirst = verifiedCount === 0 && !isApproximate;
 
             return (
               <div className="mt-4 rounded-2xl bg-[#EDE6D9] px-4 py-4">
@@ -463,6 +465,18 @@ export default function PostDetailClient({ initialPost, postId }: Props) {
                     </svg>
                     <p className="text-[12px] text-[#6B5F52]">
                       {t('notVerified', language)}
+                    </p>
+                  </div>
+                )}
+
+                {/* Approximate-area notice */}
+                {isApproximate && (
+                  <div className="mb-3 flex items-start gap-2 rounded-xl bg-[#F7F3EC] px-3 py-2">
+                    <svg className="mt-0.5 size-3.5 shrink-0 text-[#A09080]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                    <p className="text-[12px] text-[#6B5F52]">
+                      <span className="font-semibold">{t('approximateArea', language)}</span> · {t('approximateAreaDesc', language)}
                     </p>
                   </div>
                 )}
@@ -561,7 +575,7 @@ export default function PostDetailClient({ initialPost, postId }: Props) {
           })()}
 
           {/* ── Static map ───────────────────────────────────────────────────────── */}
-          {post.lat && post.lng && mapToken && (() => {
+          {post.lat && post.lng && mapToken && !place?.is_approximate && (() => {
             const postPin = `pin-l+fa6460(${post.lng},${post.lat})`;
             const userPin = userCoords ? `,pin-s+4285f4(${userCoords.lng},${userCoords.lat})` : "";
             const viewport = userCoords ? `auto` : `${post.lng},${post.lat},14,0`;
@@ -626,7 +640,7 @@ export default function PostDetailClient({ initialPost, postId }: Props) {
         )}
 
         {/* ── Add your shot of this spot ────────────────────────────────────────── */}
-        {(place || post.is_verified) && (
+        {(place || post.is_verified) && !place?.is_approximate && (
           <div className="px-4 pt-4 pb-10">
             <button
               onClick={() => {
@@ -643,7 +657,7 @@ export default function PostDetailClient({ initialPost, postId }: Props) {
           </div>
         )}
 
-        {!place && !post.is_verified && <div className="h-10" />}
+        {((!place && !post.is_verified) || place?.is_approximate) && <div className="h-10" />}
       </div>
 
       {/* ── Delete confirmation sheet ─────────────────────────────────────────── */}
