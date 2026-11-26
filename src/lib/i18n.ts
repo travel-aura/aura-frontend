@@ -394,6 +394,7 @@ export const UI_TEXT = {
   noCitiesYet:            { en: "No cities yet", "zh-CN": "还没有城市", "zh-TW": "還沒有城市" },
   noCitiesYetDesc:        { en: "Upload a post with a location to add your first city.", "zh-CN": "上传带位置的帖子，添加你的第一个城市。", "zh-TW": "上傳帶有位置的貼文，新增你的第一個城市。" },
   postsCount:             { en: "posts", "zh-CN": "篇帖子", "zh-TW": "篇貼文" },
+  postCountOne:           { en: "post", "zh-CN": "篇帖子", "zh-TW": "篇貼文" },
   otherPlaces:            { en: "Other", "zh-CN": "其他", "zh-TW": "其他" },
 } satisfies Record<string, UIEntry>;
 

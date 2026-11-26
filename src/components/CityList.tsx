@@ -83,7 +83,7 @@ export default function CityList({ cities, language, emptyText }: Props) {
                 >
                   <p className="min-w-0 flex-1 truncate text-[16px] font-semibold text-[#1A1613]">{c.city}</p>
                   <span className="shrink-0 text-[13px] text-[#6B5F52]">
-                    {c.post_count} {t("postsCount", language)}
+                    {c.post_count} {t(c.post_count === 1 ? "postCountOne" : "postsCount", language)}
                   </span>
                 </button>
               </li>
