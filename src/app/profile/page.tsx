@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -10,20 +10,24 @@ import { useAuth } from "@/context/AuthContext";
 import TopBar from "@/components/TopBar";
 import PostGrid from "@/components/PostGrid";
 import BottomNav from "@/components/BottomNav";
+import AtlasSection from "@/components/profile/AtlasSection";
+import GuideCards from "@/components/profile/GuideCards";
+import { buildGuides, filterByCountry } from "@/lib/atlas";
 import { useLanguage } from "@/hooks/useLanguage";
 import { translateTag, t } from "@/lib/i18n";
 import type { Post, UserProfile, ArchetypeStats, SavedAurasResponse } from "../../../shared/aura-schema";
 
 // ── Profile Page ───────────────────────────────────────────────────────────────
 
-const TABS = ["Uploaded", "Saved"] as const;
+const TABS = ["Guides", "Uploaded", "Saved"] as const;
 type Tab = (typeof TABS)[number];
 
 export default function ProfilePage() {
   const { token, ready } = useAuth();
   const router = useRouter();
   const { language } = useLanguage();
-  const [activeTab, setActiveTab] = useState<Tab>("Uploaded");
+  const [activeTab, setActiveTab] = useState<Tab | null>(null);
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [uploadedPosts, setUploadedPosts] = useState<Post[]>([]);
   const [savedPosts, setSavedPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -98,6 +102,11 @@ export default function ProfilePage() {
   }, [ready, token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const topTags = stats.top_tags ?? [];
+
+  const visiblePosts = useMemo(() => filterByCountry(uploadedPosts, selectedCountry), [uploadedPosts, selectedCountry]);
+  const guides = useMemo(() => buildGuides(visiblePosts), [visiblePosts]);
+  // Guides first once there is at least one; otherwise start on the posts
+  const tab: Tab = activeTab ?? (guides.length > 0 ? "Guides" : "Uploaded");
 
   const copyShare = async () => {
     const url = userId ? `${window.location.origin}/profile/${userId}` : window.location.href;
@@ -200,16 +209,23 @@ export default function ProfilePage() {
           </Link>
         </div>
 
+        <AtlasSection
+          posts={uploadedPosts}
+          language={language}
+          selectedCountry={selectedCountry}
+          onSelectCountry={setSelectedCountry}
+        />
+
         {/* Tabs */}
         <div className="mt-4 flex border-b border-[#D4C4A8]">
-          {TABS.map((tab) => (
+          {TABS.map((name) => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
+              key={name}
+              onClick={() => setActiveTab(name)}
               className="relative flex-1 py-[10px] text-[14px] font-medium text-[#1A1613]"
             >
-              {tab === "Uploaded" ? t('uploaded', language) : t('saved', language)}
-              {activeTab === tab && (
+              {name === "Guides" ? t('guidesTab', language) : name === "Uploaded" ? t('uploaded', language) : t('saved', language)}
+              {tab === name && (
                 <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#B85C38]" />
               )}
             </button>
@@ -228,14 +244,23 @@ export default function ProfilePage() {
               <p className="text-[15px] text-red-500">{error}</p>
             </div>
           )}
-          {!loading && !error && activeTab === "Uploaded" && (
+          {!loading && !error && tab === "Guides" && (
+            <GuideCards
+              guides={guides}
+              userId={userId}
+              language={language}
+              emptyTitle={t('noGuidesYet', language)}
+              emptyMessage={t('noGuidesDesc', language)}
+            />
+          )}
+          {!loading && !error && tab === "Uploaded" && (
             <PostGrid
-              posts={uploadedPosts}
+              posts={visiblePosts}
               emptyTitle={t('noPostsYet', language)}
               emptyMessage={t('noPostsDesc', language)}
             />
           )}
-          {!loading && !error && activeTab === "Saved" && (
+          {!loading && !error && tab === "Saved" && (
             <PostGrid
               posts={savedPosts}
               emptyTitle={t('noSavedPosts', language)}

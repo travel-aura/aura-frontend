@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { API_BASE } from "@/lib/api";
@@ -10,6 +10,15 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { translateTag, t } from "@/lib/i18n";
 import type { PublicProfileResponse, ArchetypeStats, Aura } from "../../../../shared/aura-schema";
 import AvatarImage from "@/components/AvatarImage";
+import AtlasSection from "@/components/profile/AtlasSection";
+import GuideCards from "@/components/profile/GuideCards";
+import CommonGround from "@/components/profile/CommonGround";
+import { toCityEntries } from "@/components/CityList";
+import { buildGuides, filterByCountry } from "@/lib/atlas";
+import { getUserId } from "@/lib/auth";
+
+const TABS = ["Guides", "Posts"] as const;
+type Tab = (typeof TABS)[number];
 
 export default function PublicProfilePage() {
   const params = useParams();
@@ -27,6 +36,16 @@ export default function PublicProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [followPending, setFollowPending] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [activeTab, setActiveTab] = useState<Tab | null>(null);
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const [viewerId, setViewerId] = useState<string | null>(null);
+
+  useEffect(() => { setViewerId(getUserId()); }, []);
+
+  const visiblePosts = useMemo(() => filterByCountry(posts, selectedCountry), [posts, selectedCountry]);
+  const guides = useMemo(() => buildGuides(visiblePosts), [visiblePosts]);
+  const allGuides = useMemo(() => buildGuides(posts), [posts]);
+  const tab: Tab = activeTab ?? (guides.length > 0 ? "Guides" : "Posts");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -222,14 +241,51 @@ export default function PublicProfilePage() {
           </button>
         </div>
 
-        {/* Posts grid */}
-        <div className="mt-4 border-t border-[#D4C4A8]" />
-        <div className="px-0.5 py-0.5">
-          <PostGrid
-            posts={posts}
-            emptyTitle={t('noPostsYet', language)}
-            emptyMessage={t('noUserPosts', language)}
+        {viewerId && viewerId !== userId && (
+          <CommonGround
+            profileUserId={userId}
+            profileCities={toCityEntries(stats)}
+            guides={allGuides}
+            language={language}
           />
+        )}
+
+        <AtlasSection
+          posts={posts}
+          language={language}
+          selectedCountry={selectedCountry}
+          onSelectCountry={setSelectedCountry}
+        />
+
+        {/* Tabs */}
+        <div className="mt-4 flex border-b border-[#D4C4A8]">
+          {TABS.map((name) => (
+            <button
+              key={name}
+              onClick={() => setActiveTab(name)}
+              className="relative flex-1 py-[10px] text-[14px] font-medium text-[#1A1613]"
+            >
+              {name === "Guides" ? t('guidesTab', language) : t('postsTab', language)}
+              {tab === name && <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#B85C38]" />}
+            </button>
+          ))}
+        </div>
+        <div className="px-0.5 py-0.5">
+          {tab === "Guides" ? (
+            <GuideCards
+              guides={guides}
+              userId={userId}
+              language={language}
+              emptyTitle={t('noGuidesYet', language)}
+              emptyMessage={t('noUserGuides', language)}
+            />
+          ) : (
+            <PostGrid
+              posts={visiblePosts}
+              emptyTitle={t('noPostsYet', language)}
+              emptyMessage={t('noUserPosts', language)}
+            />
+          )}
         </div>
         </div>{/* end lg:max-w wrapper */}
       </div>

@@ -5,7 +5,7 @@
 
 let cachedToken: string | null = null;
 
-async function getMapboxToken(): Promise<string> {
+export async function getMapboxToken(): Promise<string> {
   if (cachedToken) return cachedToken;
 
   if (typeof window !== "undefined" && (window as { __MAPBOX_TOKEN__?: string }).__MAPBOX_TOKEN__) {

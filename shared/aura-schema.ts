@@ -107,6 +107,10 @@ export interface Aura {
   tz_offset?: string | null;        // e.g. "+08:00"
   gps_accuracy?: number | null;     // metres (GPSHPositioningError or GPSDOP)
   gps_timestamp?: string | null;    // UTC ISO from GPS chip
+  // Present on profile post lists
+  city_name?: string | null;
+  country_code?: string | null;
+  location_hidden?: boolean;        // true when the poster hid the exact spot (~1 km area)
 }
 
 // 2. Lightweight post for profile/feed display
@@ -126,6 +130,9 @@ export interface Post {
   like_count?: number;
   is_liked?: boolean;
   tags?: string[];
+  city_name?: string | null;
+  country_code?: string | null;
+  location_hidden?: boolean;
 }
 
 // 3. What frontend sends as metadata JSON in upload FormData

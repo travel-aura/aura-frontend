@@ -2,29 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { t, type Language } from "@/lib/i18n";
+import { countryName, flag } from "@/lib/places";
 import type { ArchetypeStats, CityEntry } from "../../shared/aura-schema";
 
 // Older backends only send city names; show them without a country.
 export function toCityEntries(stats?: Partial<ArchetypeStats> | null): CityEntry[] {
   if (stats?.city_list) return stats.city_list;
   return (stats?.cities ?? []).map((city) => ({ city, country_code: null, post_count: 0 }));
-}
-
-// Country code → localized country name ("pt" → "Portugal" / "葡萄牙")
-function countryName(code: string | null, language: Language): string | null {
-  if (!code) return null;
-  try {
-    const locale = language === "zh-CN" ? "zh-Hans" : language === "zh-TW" ? "zh-Hant" : "en";
-    return new Intl.DisplayNames([locale], { type: "region" }).of(code.toUpperCase()) ?? code.toUpperCase();
-  } catch {
-    return code.toUpperCase();
-  }
-}
-
-// Country code → flag emoji ("pt" → 🇵🇹)
-function flag(code: string | null): string {
-  if (!code || code.length !== 2) return "📍";
-  return String.fromCodePoint(...code.toUpperCase().split("").map((c) => 0x1f1a5 + c.charCodeAt(0)));
 }
 
 interface Props {
